@@ -1,0 +1,181 @@
+name: Build and Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  PROJECT_NAME: 6th-semester project
+  UNITY_VERSION: 6000.0.54f1
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+jobs:
+  get-version:
+    name: Determine Next Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Calculate Next Version
+        id: version
+        run: |
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+          fi
+          VERSION_WITHOUT_V="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_WITHOUT_V"
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_VERSION="v${MAJOR:-0}.${MINOR:-0}.$NEXT_PATCH"
+          echo "Próxima versão será $NEXT_VERSION"
+          echo "next=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+  test:
+    name: Run Automated Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Test-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Test-
+            Library-
+
+  build:
+    name: Build for ${{ matrix.targetPlatform }}
+    needs: [get-version, test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows64
+    steps:
+      # Checkout do código fonte
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Restaura/Salva cache da pasta Library para acelerar o build
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
+
+      # Executa a compilação do Unity
+      - name: Build Unity Project
+        uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: ${{ env.PROJECT_NAME }}
+
+      # Faz o upload do build temporariamente como artefato do GitHub Actions
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+
+  release:
+    name: Create GitHub Release and Notify
+    needs: [get-version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Baixa todos os artefatos compilados na etapa anterior
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # Compacta as pastas baixadas para anexar na release, e move o APK para a raiz
+      - name: Prepare Artifacts for Release
+        run: |
+          cd artifacts/${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-WebGL
+          zip -r ../../${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-WebGL.zip .
+          cd ../../
+          cd artifacts/${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-StandaloneWindows64
+          zip -r ../../${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-StandaloneWindows64.zip .
+          cd ../../
+          # Move o arquivo .apk da pasta Android para a raiz para upload direto
+          mv artifacts/${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-Android/*.apk ./
+
+      # Cria a Release no GitHub, gera as Notas de Versão automáticas e anexa os arquivos
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.get-version.outputs.new_version }}
+          name: Versão ${{ needs.get-version.outputs.new_version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-WebGL.zip
+            ${{ env.PROJECT_NAME }}-${{ needs.get-version.outputs.new_version }}-StandaloneWindows64.zip
+            *.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        # Cria a Release no GitHub, gera as Notas de Versão automáticas e anexa os arquivos
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Versão ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ${{ env.PROJECT_NAME }}-${{ github.ref_name }}-StandaloneWindows64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Discord
+        run: |
+          DATE_STR=$(date +'%d/%m/%Y')
+          DATETIME_STR=$(date +'%d/%m/%Y %H:%M')
+          
+          PAYLOAD=$(jq -n \
+            --arg proj "Senac Multiplayer" \
+            --arg ver "${{ github.ref_name }}" \
+            --arg plat "StandaloneWindows64" \
+            --arg date_str "$DATE_STR" \
+            --arg datetime_str "$DATETIME_STR" \
+            '{
+              embeds: [{
+                title: "📢 Nova versão disponível (StandaloneWindows64)",
+                description: "**Projeto:** \($proj)\n**Versão:** \($ver)\n**Plataforma:** \($plat)\n**Issues:** https://github.com/Senac-Code-Nuts/6th-Semester-Project/issues/new\n**Data:** \($date_str)",
+                color: 3066993,
+                footer: {
+                  text: $datetime_str
+                }
+              }]
+            }')
+            
+          curl -H "Content-Type: application/json" -d "$PAYLOAD" $DISCORD_WEBHOOK
