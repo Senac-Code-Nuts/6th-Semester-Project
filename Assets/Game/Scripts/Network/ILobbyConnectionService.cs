@@ -19,6 +19,7 @@ namespace PiGame.Networking
         event Action<LobbyConnectionFailure> ConnectionFailed;
 
         bool IsConnected { get; }
+        bool IsHost { get; }
 
         void StartHost();
         void StartClient();

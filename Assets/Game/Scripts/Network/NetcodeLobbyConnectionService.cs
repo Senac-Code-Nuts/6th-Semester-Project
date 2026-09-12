@@ -29,6 +29,7 @@ namespace PiGame.Networking
         public event Action<LobbyConnectionFailure> ConnectionFailed;
 
         public bool IsConnected => _networkManager != null && _networkManager.IsConnectedClient;
+        public bool IsHost => _networkManager != null && _networkManager.IsHost;
 
         private void Awake()
         {

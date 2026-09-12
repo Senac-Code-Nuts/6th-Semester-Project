@@ -6,8 +6,9 @@ using UnityEngine.UI;
 
 namespace PiGame.UI
 {
-    public class ConfirmationPanelUI : MonoBehaviour
+    public class ConfirmationPanelUI : MonoBehaviour, ICancelHandler
     {
+        [SerializeField] private Text _messageText;
         [SerializeField] private Button _confirmButton;
         [SerializeField] private Button _cancelButton;
 
@@ -15,6 +16,22 @@ namespace PiGame.UI
 
         public event Action Confirmed;
         public event Action Canceled;
+
+        public void Show(string message)
+        {
+            _messageText.text = message;
+            gameObject.SetActive(true);
+        }
+
+        public void Hide()
+        {
+            gameObject.SetActive(false);
+        }
+
+        public void OnCancel(BaseEventData eventData)
+        {
+            HandleCanceled();
+        }
 
         private void OnEnable()
         {

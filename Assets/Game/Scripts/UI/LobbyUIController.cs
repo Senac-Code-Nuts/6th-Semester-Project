@@ -1,3 +1,4 @@
+using PiGame.Lobby;
 using PiGame.Networking;
 using UnityEngine;
 
@@ -5,15 +6,24 @@ namespace PiGame.UI
 {
     public class LobbyUIController : MonoBehaviour
     {
+        private enum ConfirmationAction
+        {
+            None,
+            Quit,
+            Disconnect
+        }
+
         [Header("Panels")]
         [SerializeField] private ConnectionPanelUI _connectionPanel;
         [SerializeField] private GameObject _lobbyPanel;
-        [SerializeField] private ConfirmationPanelUI _quitConfirmationPanel;
+        [SerializeField] private LobbyCharacterSelectionController _characterSelectionController;
+        [SerializeField] private ConfirmationPanelUI _confirmationPanel;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
 
         private ILobbyConnectionService _connectionServiceContract;
+        private ConfirmationAction _pendingConfirmation;
 
         private void Awake()
         {
@@ -26,9 +36,10 @@ namespace PiGame.UI
             _connectionPanel.ClientRequested += HandleClientRequested;
             _connectionPanel.CancelConnectionRequested += HandleCancelConnectionRequested;
             _connectionPanel.QuitRequested += HandleQuitRequested;
-            _quitConfirmationPanel.Confirmed += HandleQuitConfirmed;
-            _quitConfirmationPanel.Canceled += HandleQuitCanceled;
-            _quitConfirmationPanel.gameObject.SetActive(false);
+            _characterSelectionController.DisconnectRequested += HandleDisconnectRequested;
+            _confirmationPanel.Confirmed += HandleConfirmationConfirmed;
+            _confirmationPanel.Canceled += HandleConfirmationCanceled;
+            _confirmationPanel.Hide();
 
             if (_connectionServiceContract == null)
             {
@@ -57,8 +68,9 @@ namespace PiGame.UI
             _connectionPanel.ClientRequested -= HandleClientRequested;
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
             _connectionPanel.QuitRequested -= HandleQuitRequested;
-            _quitConfirmationPanel.Confirmed -= HandleQuitConfirmed;
-            _quitConfirmationPanel.Canceled -= HandleQuitCanceled;
+            _characterSelectionController.DisconnectRequested -= HandleDisconnectRequested;
+            _confirmationPanel.Confirmed -= HandleConfirmationConfirmed;
+            _confirmationPanel.Canceled -= HandleConfirmationCanceled;
 
             if (_connectionServiceContract == null)
             {
@@ -102,10 +114,40 @@ namespace PiGame.UI
 
         private void HandleQuitRequested()
         {
-            _quitConfirmationPanel.gameObject.SetActive(true);
+            OpenConfirmation(ConfirmationAction.Quit, "DESEJA REALMENTE SAIR?");
         }
 
-        private static void HandleQuitConfirmed()
+        private void HandleDisconnectRequested()
+        {
+            string message = _connectionServiceContract != null && _connectionServiceContract.IsHost
+                ? "ENCERRAR LOBBY?"
+                : "DESCONECTAR DO LOBBY?";
+            OpenConfirmation(ConfirmationAction.Disconnect, message);
+        }
+
+        private void HandleConfirmationConfirmed()
+        {
+            ConfirmationAction confirmedAction = _pendingConfirmation;
+            _pendingConfirmation = ConfirmationAction.None;
+
+            if (confirmedAction == ConfirmationAction.Quit)
+            {
+                QuitApplication();
+                return;
+            }
+
+            if (confirmedAction != ConfirmationAction.Disconnect)
+            {
+                return;
+            }
+
+            _confirmationPanel.Hide();
+            _connectionServiceContract?.Shutdown();
+            ShowConnectionPanel();
+            _connectionPanel.ShowIdle();
+        }
+
+        private static void QuitApplication()
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -114,9 +156,19 @@ namespace PiGame.UI
 #endif
         }
 
-        private void HandleQuitCanceled()
+        private void HandleConfirmationCanceled()
         {
-            _quitConfirmationPanel.gameObject.SetActive(false);
+            ConfirmationAction canceledAction = _pendingConfirmation;
+            _pendingConfirmation = ConfirmationAction.None;
+            _confirmationPanel.Hide();
+
+            if (canceledAction == ConfirmationAction.Disconnect)
+            {
+                _characterSelectionController.SetInteractionEnabled(true);
+                return;
+            }
+
+            _connectionPanel.SetInteractionEnabled(true);
             _connectionPanel.FocusDefaultButton();
         }
 
@@ -147,21 +199,42 @@ namespace PiGame.UI
 
         private void ShowConnectionPanel()
         {
-            _quitConfirmationPanel.gameObject.SetActive(false);
+            _pendingConfirmation = ConfirmationAction.None;
+            _confirmationPanel.Hide();
             _connectionPanel.gameObject.SetActive(true);
+            _connectionPanel.SetInteractionEnabled(true);
             _lobbyPanel.SetActive(false);
         }
 
         private void ShowLobbyPanel()
         {
+            _pendingConfirmation = ConfirmationAction.None;
+            _confirmationPanel.Hide();
             _connectionPanel.gameObject.SetActive(false);
             _lobbyPanel.SetActive(true);
+            _characterSelectionController.SetInteractionEnabled(true);
         }
 
         private void ShowConnectionError(string message)
         {
             ShowConnectionPanel();
             _connectionPanel.ShowError(message);
+        }
+
+        private void OpenConfirmation(ConfirmationAction action, string message)
+        {
+            _pendingConfirmation = action;
+
+            if (action == ConfirmationAction.Disconnect)
+            {
+                _characterSelectionController.SetInteractionEnabled(false);
+            }
+            else
+            {
+                _connectionPanel.SetInteractionEnabled(false);
+            }
+
+            _confirmationPanel.Show(message);
         }
     }
 }

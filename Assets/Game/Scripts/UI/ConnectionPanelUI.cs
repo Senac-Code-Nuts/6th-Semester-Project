@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace PiGame.UI
 {
-    public class ConnectionPanelUI : MonoBehaviour
+    public class ConnectionPanelUI : MonoBehaviour, ICancelHandler
     {
         [SerializeField] private Button _hostButton;
         [SerializeField] private Button _clientButton;
@@ -83,6 +83,26 @@ namespace PiGame.UI
         public void FocusDefaultButton()
         {
             SelectButtonNextFrame(_hostButton.gameObject);
+        }
+
+        public void SetInteractionEnabled(bool enabled)
+        {
+            if (!enabled)
+            {
+                _hostButton.interactable = false;
+                _clientButton.interactable = false;
+                _secondaryButton.interactable = false;
+                return;
+            }
+
+            _hostButton.interactable = !_isConnecting;
+            _clientButton.interactable = !_isConnecting;
+            _secondaryButton.interactable = true;
+        }
+
+        public void OnCancel(BaseEventData eventData)
+        {
+            HandleSecondaryClicked();
         }
 
         private void HandleHostClicked()
