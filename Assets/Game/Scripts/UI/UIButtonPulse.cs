@@ -8,10 +8,9 @@ namespace PiGame.UI
     public class UIButtonPulse : MonoBehaviour,
         ISelectHandler,
         IDeselectHandler,
-        IPointerEnterHandler,
-        IPointerExitHandler
+        IPointerEnterHandler
     {
-        [SerializeField, Min(1f)] private float _selectedScale = 1.04f;
+        [SerializeField, Min(1f)] private float _selectedScale = 1.1f;
         [SerializeField, Range(0f, 0.05f)] private float _pulseAmount = 0.012f;
         [SerializeField, Min(0.1f)] private float _pulseSpeed = 2f;
         [SerializeField, Min(0.1f)] private float _transitionSpeed = 14f;
@@ -19,7 +18,6 @@ namespace PiGame.UI
         private Selectable _selectable;
         private Vector3 _baseScale;
         private bool _isSelected;
-        private bool _isPointerInside;
 
         private void Awake()
         {
@@ -32,12 +30,11 @@ namespace PiGame.UI
             _selectable ??= GetComponent<Selectable>();
             _baseScale = transform.localScale;
             _isSelected = EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject;
-            _isPointerInside = false;
         }
 
         private void Update()
         {
-            bool highlighted = _selectable != null && _selectable.IsInteractable() && (_isSelected || _isPointerInside);
+            bool highlighted = _selectable != null && _selectable.IsInteractable() && _isSelected;
             float pulse = highlighted
                 ? 1f + Mathf.Sin(Time.unscaledTime * Mathf.PI * _pulseSpeed) * _pulseAmount
                 : 1f;
@@ -50,13 +47,17 @@ namespace PiGame.UI
         {
             transform.localScale = _baseScale;
             _isSelected = false;
-            _isPointerInside = false;
         }
 
         public void OnSelect(BaseEventData eventData) => _isSelected = true;
         public void OnDeselect(BaseEventData eventData) => _isSelected = false;
-        public void OnPointerEnter(PointerEventData eventData) => _isPointerInside = true;
-        public void OnPointerExit(PointerEventData eventData) => _isPointerInside = false;
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (_selectable != null && _selectable.IsInteractable())
+            {
+                EventSystem.current?.SetSelectedGameObject(gameObject);
+            }
+        }
 
 #if UNITY_EDITOR
         private void OnValidate()
