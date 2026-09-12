@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _id: 3
   _displayName: REBELDE
-  _placeholderColor: {r: 0.12, g: 0.55, b: 0.25, a: 1}
+  _color: {r: 0.12, g: 0.55, b: 0.25, a: 1}
   _portrait: {fileID: 0}
   _playerPrefab: {fileID: 0}

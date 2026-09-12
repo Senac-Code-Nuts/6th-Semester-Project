@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _id: 0
   _displayName: COWBOY
-  _placeholderColor: {r: 0.55, g: 0.24, b: 0.08, a: 1}
+  _color: {r: 0.76, g: 0.37, b: 0.08, a: 1}
   _portrait: {fileID: 0}
   _playerPrefab: {fileID: 0}

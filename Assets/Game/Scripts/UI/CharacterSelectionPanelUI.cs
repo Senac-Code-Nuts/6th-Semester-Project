@@ -167,7 +167,7 @@ namespace PiGame.UI
             portrait.gameObject.SetActive(true);
             portrait.sprite = character != null ? character.Portrait : null;
             portrait.color = character != null && character.Portrait == null
-                ? character.PlaceholderColor
+                ? character.Color
                 : Color.white;
 
             string characterName = character != null ? character.DisplayName : "ESCOLHENDO";

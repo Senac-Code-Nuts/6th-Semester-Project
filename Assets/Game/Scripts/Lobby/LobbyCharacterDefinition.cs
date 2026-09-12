@@ -7,13 +7,13 @@ namespace PiGame.Lobby
     {
         [SerializeField] private LobbyCharacterId _id = LobbyCharacterId.None;
         [SerializeField] private string _displayName;
-        [SerializeField] private Color _placeholderColor = Color.white;
+        [SerializeField] private Color _color = Color.white;
         [SerializeField] private Sprite _portrait;
         [SerializeField] private GameObject _playerPrefab;
 
         public LobbyCharacterId Id => _id;
         public string DisplayName => _displayName;
-        public Color PlaceholderColor => _placeholderColor;
+        public Color Color => _color;
         public Sprite Portrait => _portrait;
         public GameObject PlayerPrefab => _playerPrefab;
     }
