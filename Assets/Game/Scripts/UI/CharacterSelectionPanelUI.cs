@@ -220,7 +220,7 @@ namespace PiGame.UI
                 ? Vector3.one * 1.08f
                 : Vector3.one;
 
-            Color slotColor = _slotColors[slot];
+            Color slotColor = character != null ? character.Color : _slotColors[slot];
             slotColor.a = isLocalPlayer ? 1f : 0.88f;
             _slotBackgrounds[slot].color = slotColor;
 
@@ -228,11 +228,11 @@ namespace PiGame.UI
             portrait.gameObject.SetActive(true);
             portrait.sprite = character != null ? character.Portrait : null;
             portrait.color = character != null && character.Portrait == null
-                ? character.Color
+                ? Color.Lerp(character.Color, Color.black, 0.38f)
                 : Color.white;
 
             string characterName = character != null ? character.DisplayName : "ESCOLHENDO";
-            _slotLabels[slot].text = $"P{slot + 1}\n{characterName.ToUpperInvariant()}";
+            _slotLabels[slot].text = characterName.ToUpperInvariant();
 
             Image deviceIcon = _deviceIcons[slot];
             Sprite deviceSprite = GetDeviceSprite(player.InputDevice);
@@ -242,14 +242,14 @@ namespace PiGame.UI
             Text statusText = _statusTexts[slot];
             if (player.IsReady)
             {
-                statusText.text = "PRONTO";
+                statusText.text = $"<size=15>P{slot + 1}</size>\nPRONTO";
                 statusText.fontSize = 28;
                 statusText.color = new Color(0.42f, 1f, 0.58f, 1f);
             }
             else
             {
-                statusText.text = "ESCOLHENDO...";
-                statusText.fontSize = isLocalPlayer ? 16 : 14;
+                statusText.text = $"<size=14>P{slot + 1}</size>\nESCOLHENDO...";
+                statusText.fontSize = isLocalPlayer ? 18 : 16;
                 statusText.color = isLocalPlayer
                     ? Color.white
                     : new Color(0.78f, 0.78f, 0.84f, 1f);
@@ -264,9 +264,9 @@ namespace PiGame.UI
             _slotBackgrounds[slot].color = emptyColor;
             _characterPortraits[slot].gameObject.SetActive(false);
             _deviceIcons[slot].gameObject.SetActive(false);
-            _slotLabels[slot].text = $"P{slot + 1}\nAGUARDANDO";
-            _statusTexts[slot].text = "AGUARDANDO JOGADOR";
-            _statusTexts[slot].fontSize = 12;
+            _slotLabels[slot].text = "AGUARDANDO";
+            _statusTexts[slot].text = $"<size=14>P{slot + 1}</size>\nAGUARDANDO";
+            _statusTexts[slot].fontSize = 16;
             _statusTexts[slot].color = new Color(0.58f, 0.58f, 0.64f, 1f);
         }
 

@@ -18,6 +18,7 @@ namespace PiGame.UI
         [SerializeField] private GameObject _lobbyPanel;
         [SerializeField] private LobbyCharacterSelectionController _characterSelectionController;
         [SerializeField] private ConfirmationPanelUI _confirmationPanel;
+        [SerializeField] private MatchSettingsPanelUI _matchSettingsPanel;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
@@ -39,6 +40,8 @@ namespace PiGame.UI
             _characterSelectionController.DisconnectRequested += HandleDisconnectRequested;
             _confirmationPanel.Confirmed += HandleConfirmationConfirmed;
             _confirmationPanel.Canceled += HandleConfirmationCanceled;
+            _matchSettingsPanel.Opened += HandleMatchSettingsOpened;
+            _matchSettingsPanel.Closed += HandleMatchSettingsClosed;
             _confirmationPanel.Hide();
 
             if (_connectionServiceContract == null)
@@ -71,6 +74,8 @@ namespace PiGame.UI
             _characterSelectionController.DisconnectRequested -= HandleDisconnectRequested;
             _confirmationPanel.Confirmed -= HandleConfirmationConfirmed;
             _confirmationPanel.Canceled -= HandleConfirmationCanceled;
+            _matchSettingsPanel.Opened -= HandleMatchSettingsOpened;
+            _matchSettingsPanel.Closed -= HandleMatchSettingsClosed;
 
             if (_connectionServiceContract == null)
             {
@@ -201,6 +206,7 @@ namespace PiGame.UI
         {
             _pendingConfirmation = ConfirmationAction.None;
             _confirmationPanel.Hide();
+            _matchSettingsPanel.ResetView();
             _connectionPanel.gameObject.SetActive(true);
             _connectionPanel.SetInteractionEnabled(true);
             _lobbyPanel.SetActive(false);
@@ -212,6 +218,18 @@ namespace PiGame.UI
             _confirmationPanel.Hide();
             _connectionPanel.gameObject.SetActive(false);
             _lobbyPanel.SetActive(true);
+            _matchSettingsPanel.ResetView();
+            _matchSettingsPanel.SetMenuVisible(_connectionServiceContract.IsHost);
+            _characterSelectionController.SetInteractionEnabled(true);
+        }
+
+        private void HandleMatchSettingsOpened()
+        {
+            _characterSelectionController.SetInteractionEnabled(false);
+        }
+
+        private void HandleMatchSettingsClosed()
+        {
             _characterSelectionController.SetInteractionEnabled(true);
         }
 
