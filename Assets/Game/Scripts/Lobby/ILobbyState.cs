@@ -16,8 +16,11 @@ namespace PiGame.Lobby
         ulong LocalClientId { get; }
         LobbyStage Stage { get; }
         LobbyMapId WinningMap { get; }
+        LobbyMatchSettingsData MatchSettings { get; }
         int MatchDurationMinutes { get; }
         LobbyMatchMode MatchMode { get; }
+        int MinimumPlayers { get; }
+        bool RequireUniqueCharacters { get; }
         bool LocalClientIsHost { get; }
         bool AllPlayersReady { get; }
         bool CanStartMatch { get; }

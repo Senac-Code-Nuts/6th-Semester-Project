@@ -142,7 +142,10 @@ namespace PiGame.Lobby
                 snapshot.Add(_lobbyStateContract.GetPlayer(i));
             }
 
-            _view.Render(snapshot, _lobbyStateContract.LocalClientId);
+            _view.Render(
+                snapshot,
+                _lobbyStateContract.LocalClientId,
+                _lobbyStateContract.RequireUniqueCharacters);
         }
     }
 }

@@ -5431,7 +5431,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _maximumPlayers: 4
+  _rules: {fileID: 11400000, guid: c0400000000000000000000000000006, type: 2}
   _maps:
   - {fileID: 11400000, guid: c0400000000000000000000000000005, type: 2}
   _mapResultDisplaySeconds: 2.5
@@ -5768,7 +5768,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -300, y: -60}
-  m_SizeDelta: {x: 520, y: 72}
+  m_SizeDelta: {x: 520, y: 94}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2130000602
 CanvasRenderer:
@@ -5875,7 +5875,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: e8303ca10b827f249a0301ba66b72d3b, type: 3}
-    m_FontSize: 18
+    m_FontSize: 15
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -5886,7 +5886,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'PARTIDA: 3 MIN  |  MODO: SOLO'
+  m_Text: "PARTIDA: 3 MIN  |  MODO: SOLO\nMINIMO: 2  |  REPETIDOS: SIM"
 --- !u!1 &2130000100
 GameObject:
   m_ObjectHideFlags: 0

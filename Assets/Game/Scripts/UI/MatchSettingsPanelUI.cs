@@ -11,6 +11,7 @@ namespace PiGame.UI
     {
         private const int DefaultDurationMinutes = 3;
         private const LobbyMatchMode DefaultMode = LobbyMatchMode.Solo;
+        private const int DefaultMinimumPlayers = 2;
 
         [Header("Panels")]
         [SerializeField] private Button _menuButton;
@@ -40,6 +41,9 @@ namespace PiGame.UI
         public int SelectedDurationMinutes { get; private set; } = DefaultDurationMinutes;
         public LobbyMatchMode SelectedMode { get; private set; } = DefaultMode;
         public bool IsOpen => _overlay != null && _overlay.activeSelf;
+
+        private int _minimumPlayers = DefaultMinimumPlayers;
+        private bool _requireUniqueCharacters;
 
         private void Awake()
         {
@@ -126,10 +130,12 @@ namespace PiGame.UI
             RefreshSummary();
         }
 
-        public void Render(int durationMinutes, LobbyMatchMode mode)
+        public void Render(LobbyMatchSettingsData settings)
         {
-            SelectedDurationMinutes = durationMinutes;
-            SelectedMode = mode;
+            SelectedDurationMinutes = settings.DurationMinutes;
+            SelectedMode = settings.Mode;
+            _minimumPlayers = settings.MinimumPlayers;
+            _requireUniqueCharacters = settings.RequireUniqueCharacters;
             RefreshSelectionVisuals();
             RefreshSummary();
         }
@@ -231,7 +237,10 @@ namespace PiGame.UI
             }
 
             string modeName = SelectedMode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
-            _summaryText.text = $"PARTIDA: {SelectedDurationMinutes} MIN  |  MODO: {modeName}";
+            string repeatedCharacters = _requireUniqueCharacters ? "NAO" : "SIM";
+            _summaryText.text =
+                $"PARTIDA: {SelectedDurationMinutes} MIN  |  MODO: {modeName}\n"
+                + $"MINIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
         }
     }
 }

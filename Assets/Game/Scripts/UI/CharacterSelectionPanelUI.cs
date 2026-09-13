@@ -150,7 +150,10 @@ namespace PiGame.UI
             eventData.Use();
         }
 
-        public void Render(IReadOnlyList<LobbyPlayerData> players, ulong localClientId)
+        public void Render(
+            IReadOnlyList<LobbyPlayerData> players,
+            ulong localClientId,
+            bool requireUniqueCharacters)
         {
             _localPlayerSlot = -1;
             _localPlayerIsReady = true;
@@ -171,7 +174,8 @@ namespace PiGame.UI
                         _localPlayerIsReady = player.IsReady;
                     }
 
-                    bool isCharacterLocked = TryFindCharacterLock(players, player, out _);
+                    bool isCharacterLocked = requireUniqueCharacters
+                        && TryFindCharacterLock(players, player, out _);
                     RenderConnectedSlot(slot, player, isLocalPlayer, isCharacterLocked);
                 }
                 else

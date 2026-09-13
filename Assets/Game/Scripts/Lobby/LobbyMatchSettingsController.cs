@@ -49,9 +49,7 @@ namespace PiGame.Lobby
                 return;
             }
 
-            _view.Render(
-                _lobbyStateContract.MatchDurationMinutes,
-                _lobbyStateContract.MatchMode);
+            _view.Render(_lobbyStateContract.MatchSettings);
         }
     }
 }
