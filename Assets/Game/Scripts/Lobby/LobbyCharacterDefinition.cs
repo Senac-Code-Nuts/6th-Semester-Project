@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace PiGame.Lobby
@@ -9,12 +10,12 @@ namespace PiGame.Lobby
         [SerializeField] private string _displayName;
         [SerializeField] private Color _color = Color.white;
         [SerializeField] private Sprite _portrait;
-        [SerializeField] private GameObject _playerPrefab;
+        [SerializeField] private NetworkObject _playerPrefab;
 
         public LobbyCharacterId Id => _id;
         public string DisplayName => _displayName;
         public Color Color => _color;
         public Sprite Portrait => _portrait;
-        public GameObject PlayerPrefab => _playerPrefab;
+        public NetworkObject PlayerPrefab => _playerPrefab;
     }
 }

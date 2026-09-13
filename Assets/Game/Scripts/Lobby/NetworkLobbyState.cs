@@ -16,6 +16,7 @@ namespace PiGame.Lobby
 
         [SerializeField] private LobbyRulesDefinition _rules;
         [SerializeField] private LobbyMapDefinition[] _maps;
+        
         [SerializeField, Min(0.1f)] private float _mapResultDisplaySeconds = 2.5f;
 
         private readonly NetworkList<LobbyPlayerData> _players = new();
@@ -48,6 +49,7 @@ namespace PiGame.Lobby
         public bool RequireUniqueCharacters => MatchSettings.RequireUniqueCharacters;
         public bool LocalClientIsHost => NetworkManager != null && NetworkManager.IsHost;
         public bool CanStartMatch => _players.Count >= MinimumPlayers && AllPlayersReady;
+
 
         public bool AllMapVotesConfirmed
         {
@@ -668,6 +670,11 @@ namespace PiGame.Lobby
             }
 
             return null;
+        }
+
+        public LobbyMapDefinition FindWinningMap(LobbyMapId winningMapId)
+        {
+            return FindMap(winningMapId);
         }
 
         private void TryBeginMapVotingServer()
