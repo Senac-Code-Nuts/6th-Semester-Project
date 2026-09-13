@@ -26,6 +26,11 @@ namespace PiGame.UI
         [SerializeField] private Text[] _slotLabels;
         [SerializeField] private Text[] _statusTexts;
 
+        [Header("Character navigation")]
+        [SerializeField] private RectTransform _browseControlsRoot;
+        [SerializeField] private Button _previousCharacterButton;
+        [SerializeField] private Button _nextCharacterButton;
+
         [Header("Input icons")]
         [SerializeField] private Sprite _keyboardDeviceSprite;
         [SerializeField] private Sprite _gamepadDeviceSprite;
@@ -44,6 +49,8 @@ namespace PiGame.UI
         private readonly Color[] _slotColors = new Color[4];
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
         private bool _interactionEnabled = true;
+        private int _localPlayerSlot = -1;
+        private bool _localPlayerIsReady = true;
 
         private void Awake()
         {
@@ -57,7 +64,15 @@ namespace PiGame.UI
 
         private void OnEnable()
         {
+            _previousCharacterButton.onClick.AddListener(HandlePreviousCharacterClicked);
+            _nextCharacterButton.onClick.AddListener(HandleNextCharacterClicked);
             StartCoroutine(FocusNextFrame());
+        }
+
+        private void OnDisable()
+        {
+            _previousCharacterButton.onClick.RemoveListener(HandlePreviousCharacterClicked);
+            _nextCharacterButton.onClick.RemoveListener(HandleNextCharacterClicked);
         }
 
         private void Update()
@@ -71,14 +86,14 @@ namespace PiGame.UI
 
         public void OnMove(AxisEventData eventData)
         {
-            if (!_interactionEnabled || Mathf.Abs(eventData.moveVector.x) < 0.5f)
+            if (!_interactionEnabled || Mathf.Abs(eventData.moveVector.y) < 0.5f)
             {
                 return;
             }
 
             LobbyInputDeviceKind inputDevice = ResolveInputDevice();
             SetLastInputDevice(inputDevice);
-            BrowseRequested?.Invoke(eventData.moveVector.x > 0f ? 1 : -1, inputDevice);
+            BrowseRequested?.Invoke(eventData.moveVector.y > 0f ? -1 : 1, inputDevice);
             eventData.Use();
         }
 
@@ -114,6 +129,9 @@ namespace PiGame.UI
 
         public void Render(IReadOnlyList<LobbyPlayerData> players, ulong localClientId)
         {
+            _localPlayerSlot = -1;
+            _localPlayerIsReady = true;
+
             for (int slot = 0; slot < _slotRoots.Length; slot++)
             {
                 if (TryFindPlayerInSlot(players, slot, out LobbyPlayerData player))
@@ -124,6 +142,12 @@ namespace PiGame.UI
                         SetLastInputDevice(player.InputDevice);
                     }
 
+                    if (isLocalPlayer)
+                    {
+                        _localPlayerSlot = slot;
+                        _localPlayerIsReady = player.IsReady;
+                    }
+
                     RenderConnectedSlot(slot, player, isLocalPlayer);
                 }
                 else
@@ -132,15 +156,52 @@ namespace PiGame.UI
                 }
             }
 
+            RefreshBrowseControls();
             Focus();
         }
 
         public void SetInteractionEnabled(bool isEnabled)
         {
             _interactionEnabled = isEnabled;
+            RefreshBrowseControls();
             if (isEnabled)
             {
                 Focus();
+            }
+        }
+
+        private void HandlePreviousCharacterClicked()
+        {
+            HandleBrowseButtonClicked(-1);
+        }
+
+        private void HandleNextCharacterClicked()
+        {
+            HandleBrowseButtonClicked(1);
+        }
+
+        private void HandleBrowseButtonClicked(int direction)
+        {
+            if (!_interactionEnabled)
+            {
+                return;
+            }
+
+            SetLastInputDevice(LobbyInputDeviceKind.Keyboard);
+            BrowseRequested?.Invoke(direction, LobbyInputDeviceKind.Keyboard);
+            Focus();
+        }
+
+        private void RefreshBrowseControls()
+        {
+            bool shouldShow = _interactionEnabled
+                && _localPlayerSlot >= 0
+                && !_localPlayerIsReady;
+
+            _browseControlsRoot.gameObject.SetActive(shouldShow);
+            if (shouldShow)
+            {
+                _browseControlsRoot.anchoredPosition = _slotRoots[_localPlayerSlot].anchoredPosition;
             }
         }
 
@@ -286,7 +347,7 @@ namespace PiGame.UI
                 && (Gamepad.current.buttonSouth.wasPressedThisFrame
                     || Gamepad.current.buttonEast.wasPressedThisFrame
                     || Gamepad.current.dpad.IsPressed()
-                    || Mathf.Abs(Gamepad.current.leftStick.x.ReadValue()) > 0.5f))
+                    || Mathf.Abs(Gamepad.current.leftStick.y.ReadValue()) > 0.5f))
             {
                 return LobbyInputDeviceKind.Gamepad;
             }
