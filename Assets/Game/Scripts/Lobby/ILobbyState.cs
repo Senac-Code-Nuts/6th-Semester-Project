@@ -8,6 +8,7 @@ namespace PiGame.Lobby
         event Action<int> CharacterReadyRejected;
         event Action StageChanged;
         event Action MapVotesChanged;
+        event Action MatchSettingsChanged;
         event Action<LobbyMapId> MatchStartRequested;
 
         int PlayerCount { get; }
@@ -15,6 +16,8 @@ namespace PiGame.Lobby
         ulong LocalClientId { get; }
         LobbyStage Stage { get; }
         LobbyMapId WinningMap { get; }
+        int MatchDurationMinutes { get; }
+        LobbyMatchMode MatchMode { get; }
         bool LocalClientIsHost { get; }
         bool AllPlayersReady { get; }
         bool CanStartMatch { get; }
@@ -34,5 +37,6 @@ namespace PiGame.Lobby
         void RequestMapVote(LobbyMapId mapId);
         void RequestMapVoteConfirmation(bool isConfirmed);
         void RequestReturnToCharacterSelection();
+        void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode);
     }
 }

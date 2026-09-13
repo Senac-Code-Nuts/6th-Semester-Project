@@ -8,6 +8,8 @@ namespace PiGame.Lobby
 {
     public class NetworkLobbyState : NetworkBehaviour, ILobbyState
     {
+        private const int DefaultMatchDurationMinutes = 3;
+
         [SerializeField, Min(1)] private int _maximumPlayers = 4;
         [SerializeField] private LobbyMapDefinition[] _maps;
         [SerializeField, Min(0.1f)] private float _mapResultDisplaySeconds = 2.5f;
@@ -16,6 +18,8 @@ namespace PiGame.Lobby
         private readonly NetworkList<LobbyMapVoteData> _mapVotes = new();
         private readonly NetworkVariable<LobbyStage> _stage = new(LobbyStage.CharacterSelection);
         private readonly NetworkVariable<LobbyMapId> _winningMap = new(LobbyMapId.None);
+        private readonly NetworkVariable<int> _matchDurationMinutes = new(DefaultMatchDurationMinutes);
+        private readonly NetworkVariable<LobbyMatchMode> _matchMode = new(LobbyMatchMode.Solo);
 
         private Coroutine _matchStartRoutine;
 
@@ -23,6 +27,7 @@ namespace PiGame.Lobby
         public event Action<int> CharacterReadyRejected;
         public event Action StageChanged;
         public event Action MapVotesChanged;
+        public event Action MatchSettingsChanged;
         public event Action<LobbyMapId> MatchStartRequested;
 
         public int PlayerCount => _players.Count;
@@ -32,6 +37,8 @@ namespace PiGame.Lobby
             : ulong.MaxValue;
         public LobbyStage Stage => _stage.Value;
         public LobbyMapId WinningMap => _winningMap.Value;
+        public int MatchDurationMinutes => _matchDurationMinutes.Value;
+        public LobbyMatchMode MatchMode => _matchMode.Value;
         public bool LocalClientIsHost => NetworkManager != null && NetworkManager.IsHost;
         public bool CanStartMatch => _players.Count >= 2 && AllPlayersReady;
 
@@ -84,9 +91,13 @@ namespace PiGame.Lobby
             _mapVotes.OnListChanged += HandleMapVotesChanged;
             _stage.OnValueChanged += HandleStageChanged;
             _winningMap.OnValueChanged += HandleWinningMapChanged;
+            _matchDurationMinutes.OnValueChanged += HandleMatchDurationChanged;
+            _matchMode.OnValueChanged += HandleMatchModeChanged;
 
             if (IsServer)
             {
+                _matchDurationMinutes.Value = DefaultMatchDurationMinutes;
+                _matchMode.Value = LobbyMatchMode.Solo;
                 NetworkManager.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.OnClientDisconnectCallback += HandleClientDisconnected;
 
@@ -99,6 +110,7 @@ namespace PiGame.Lobby
             PlayersChanged?.Invoke();
             MapVotesChanged?.Invoke();
             StageChanged?.Invoke();
+            MatchSettingsChanged?.Invoke();
         }
 
         public override void OnNetworkDespawn()
@@ -107,6 +119,8 @@ namespace PiGame.Lobby
             _mapVotes.OnListChanged -= HandleMapVotesChanged;
             _stage.OnValueChanged -= HandleStageChanged;
             _winningMap.OnValueChanged -= HandleWinningMapChanged;
+            _matchDurationMinutes.OnValueChanged -= HandleMatchDurationChanged;
+            _matchMode.OnValueChanged -= HandleMatchModeChanged;
 
             StopMatchStartRoutine();
 
@@ -119,6 +133,7 @@ namespace PiGame.Lobby
             PlayersChanged?.Invoke();
             MapVotesChanged?.Invoke();
             StageChanged?.Invoke();
+            MatchSettingsChanged?.Invoke();
         }
 
         public LobbyPlayerData GetPlayer(int index)
@@ -254,6 +269,19 @@ namespace PiGame.Lobby
             }
 
             ReturnToCharacterSelectionRpc();
+        }
+
+        public void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode)
+        {
+            if (!IsSpawned
+                || _stage.Value != LobbyStage.CharacterSelection
+                || !LocalClientIsHost
+                || !AreValidMatchSettings(durationMinutes, mode))
+            {
+                return;
+            }
+
+            SetMatchSettingsRpc(durationMinutes, mode);
         }
 
         [Rpc(SendTo.Server)]
@@ -424,6 +452,24 @@ namespace PiGame.Lobby
             ReturnToCharacterSelectionServer();
         }
 
+        [Rpc(SendTo.Server)]
+        private void SetMatchSettingsRpc(
+            int durationMinutes,
+            LobbyMatchMode mode,
+            RpcParams rpcParams = default)
+        {
+            if (_stage.Value != LobbyStage.CharacterSelection
+                || NetworkManager == null
+                || rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId
+                || !AreValidMatchSettings(durationMinutes, mode))
+            {
+                return;
+            }
+
+            _matchDurationMinutes.Value = durationMinutes;
+            _matchMode.Value = mode;
+        }
+
         private void HandlePlayersChanged(NetworkListEvent<LobbyPlayerData> changeEvent)
         {
             PlayersChanged?.Invoke();
@@ -442,6 +488,23 @@ namespace PiGame.Lobby
         private void HandleWinningMapChanged(LobbyMapId previousMap, LobbyMapId currentMap)
         {
             StageChanged?.Invoke();
+        }
+
+        private void HandleMatchDurationChanged(int previousDuration, int currentDuration)
+        {
+            MatchSettingsChanged?.Invoke();
+        }
+
+        private void HandleMatchModeChanged(LobbyMatchMode previousMode, LobbyMatchMode currentMode)
+        {
+            MatchSettingsChanged?.Invoke();
+        }
+
+        private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode)
+        {
+            return durationMinutes >= 2
+                && durationMinutes <= 5
+                && (mode == LobbyMatchMode.Team || mode == LobbyMatchMode.Solo);
         }
 
         private void HandleClientConnected(ulong clientId)

@@ -23,6 +23,9 @@ namespace PiGame.UI
         [Header("Mode")]
         [SerializeField] private Button[] _modeButtons;
 
+        [Header("Summary")]
+        [SerializeField] private Text _summaryText;
+
         [Header("Selection visual")]
         [SerializeField] private Color _normalColor = new Color(0.82f, 0.76f, 0.88f, 1f);
         [SerializeField] private Color _selectedColor = new Color(0.45f, 0.22f, 0.63f, 1f);
@@ -41,6 +44,7 @@ namespace PiGame.UI
         private void Awake()
         {
             RefreshSelectionVisuals();
+            RefreshSummary();
         }
 
         private void OnEnable()
@@ -116,11 +120,18 @@ namespace PiGame.UI
 
         public void ResetView()
         {
-            SelectedDurationMinutes = DefaultDurationMinutes;
-            SelectedMode = DefaultMode;
             _overlay.SetActive(false);
             _menuButton.interactable = true;
             RefreshSelectionVisuals();
+            RefreshSummary();
+        }
+
+        public void Render(int durationMinutes, LobbyMatchMode mode)
+        {
+            SelectedDurationMinutes = durationMinutes;
+            SelectedMode = mode;
+            RefreshSelectionVisuals();
+            RefreshSummary();
         }
 
         public void SetMenuVisible(bool isVisible)
@@ -167,6 +178,7 @@ namespace PiGame.UI
         {
             SelectedDurationMinutes = durationMinutes;
             RefreshSelectionVisuals();
+            RefreshSummary();
             SelectionChanged?.Invoke(SelectedDurationMinutes, SelectedMode);
         }
 
@@ -174,6 +186,7 @@ namespace PiGame.UI
         {
             SelectedMode = mode;
             RefreshSelectionVisuals();
+            RefreshSummary();
             SelectionChanged?.Invoke(SelectedDurationMinutes, SelectedMode);
         }
 
@@ -208,6 +221,17 @@ namespace PiGame.UI
         {
             int durationIndex = Mathf.Clamp(SelectedDurationMinutes - 2, 0, _durationButtons.Length - 1);
             EventSystem.current?.SetSelectedGameObject(_durationButtons[durationIndex].gameObject);
+        }
+
+        private void RefreshSummary()
+        {
+            if (_summaryText == null)
+            {
+                return;
+            }
+
+            string modeName = SelectedMode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
+            _summaryText.text = $"PARTIDA: {SelectedDurationMinutes} MIN  |  MODO: {modeName}";
         }
     }
 }
