@@ -10,11 +10,14 @@ using UnityEngine.UI;
 namespace PiGame.UI
 {
     public class CharacterSelectionPanelUI : MonoBehaviour,
-        IMoveHandler,
         ISubmitHandler,
         ICancelHandler,
-        IPointerEnterHandler
+        IPointerEnterHandler,
+        IPointerClickHandler
     {
+        private const float NavigationRepeatDelay = 0.4f;
+        private const float NavigationRepeatRate = 0.12f;
+
         [Header("Characters")]
         [SerializeField] private LobbyCharacterDefinition[] _characters;
 
@@ -51,9 +54,18 @@ namespace PiGame.UI
         private bool _interactionEnabled = true;
         private int _localPlayerSlot = -1;
         private bool _localPlayerIsReady = true;
+        private int _heldNavigationDirection;
+        private float _nextNavigationTime;
+        private int _blockedFeedbackSlot = -1;
+        private int _lockingPlayerSlot = -1;
+        private Vector2 _blockedSlotOriginalPosition;
+        private Coroutine _blockedFeedbackRoutine;
 
         private void Awake()
         {
+            DisableAutomaticNavigation(_previousCharacterButton);
+            DisableAutomaticNavigation(_nextCharacterButton);
+
             for (int i = 0; i < _slotColors.Length && i < _slotBackgrounds.Length; i++)
             {
                 _slotColors[i] = _slotBackgrounds[i].color;
@@ -73,6 +85,8 @@ namespace PiGame.UI
         {
             _previousCharacterButton.onClick.RemoveListener(HandlePreviousCharacterClicked);
             _nextCharacterButton.onClick.RemoveListener(HandleNextCharacterClicked);
+            ResetNavigationInput();
+            StopBlockedFeedback(false);
         }
 
         private void Update()
@@ -82,19 +96,8 @@ namespace PiGame.UI
             {
                 SetLastInputDevice(detectedDevice);
             }
-        }
 
-        public void OnMove(AxisEventData eventData)
-        {
-            if (!_interactionEnabled || Mathf.Abs(eventData.moveVector.y) < 0.5f)
-            {
-                return;
-            }
-
-            LobbyInputDeviceKind inputDevice = ResolveInputDevice();
-            SetLastInputDevice(inputDevice);
-            BrowseRequested?.Invoke(eventData.moveVector.y > 0f ? -1 : 1, inputDevice);
-            eventData.Use();
+            ProcessNavigationInput();
         }
 
         public void OnSubmit(BaseEventData eventData)
@@ -127,6 +130,26 @@ namespace PiGame.UI
             Focus();
         }
 
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (!_interactionEnabled
+                || eventData.button != PointerEventData.InputButton.Left
+                || _localPlayerSlot < 0
+                || _localPlayerSlot >= _slotRoots.Length
+                || !RectTransformUtility.RectangleContainsScreenPoint(
+                    _slotRoots[_localPlayerSlot],
+                    eventData.position,
+                    eventData.pressEventCamera))
+            {
+                return;
+            }
+
+            SetLastInputDevice(LobbyInputDeviceKind.Keyboard);
+            SubmitRequested?.Invoke(LobbyInputDeviceKind.Keyboard);
+            Focus();
+            eventData.Use();
+        }
+
         public void Render(IReadOnlyList<LobbyPlayerData> players, ulong localClientId)
         {
             _localPlayerSlot = -1;
@@ -148,7 +171,8 @@ namespace PiGame.UI
                         _localPlayerIsReady = player.IsReady;
                     }
 
-                    RenderConnectedSlot(slot, player, isLocalPlayer);
+                    bool isCharacterLocked = TryFindCharacterLock(players, player, out _);
+                    RenderConnectedSlot(slot, player, isLocalPlayer, isCharacterLocked);
                 }
                 else
                 {
@@ -163,11 +187,32 @@ namespace PiGame.UI
         public void SetInteractionEnabled(bool isEnabled)
         {
             _interactionEnabled = isEnabled;
+            ResetNavigationInput();
             RefreshBrowseControls();
             if (isEnabled)
             {
                 Focus();
             }
+        }
+
+        public void ShowCharacterBlocked(int lockingPlayerSlot)
+        {
+            if (_localPlayerSlot < 0 || _localPlayerIsReady)
+            {
+                return;
+            }
+
+            StopBlockedFeedback(false);
+            _blockedFeedbackSlot = _localPlayerSlot;
+            _lockingPlayerSlot = lockingPlayerSlot;
+            _blockedSlotOriginalPosition = _slotRoots[_blockedFeedbackSlot].anchoredPosition;
+            RenderBlockedStatus(_blockedFeedbackSlot, _lockingPlayerSlot);
+            _blockedFeedbackRoutine = StartCoroutine(PlayBlockedFeedback());
+        }
+
+        public void ClearCharacterBlockedFeedback()
+        {
+            StopBlockedFeedback(true);
         }
 
         private void HandlePreviousCharacterClicked()
@@ -188,8 +233,15 @@ namespace PiGame.UI
             }
 
             SetLastInputDevice(LobbyInputDeviceKind.Keyboard);
-            BrowseRequested?.Invoke(direction, LobbyInputDeviceKind.Keyboard);
+            ResetNavigationInput();
+            RequestBrowse(direction, LobbyInputDeviceKind.Keyboard);
             Focus();
+        }
+
+        private void RequestBrowse(int direction, LobbyInputDeviceKind inputDevice)
+        {
+            ClearCharacterBlockedFeedback();
+            BrowseRequested?.Invoke(direction, inputDevice);
         }
 
         private void RefreshBrowseControls()
@@ -213,7 +265,11 @@ namespace PiGame.UI
             }
         }
 
-        private void RenderConnectedSlot(int slot, LobbyPlayerData player, bool isLocalPlayer)
+        private void RenderConnectedSlot(
+            int slot,
+            LobbyPlayerData player,
+            bool isLocalPlayer,
+            bool isCharacterLocked)
         {
             LobbyCharacterDefinition character = FindCharacter(player.CharacterId);
             _slotRoots[slot].localScale = isLocalPlayer && !player.IsReady
@@ -221,18 +277,23 @@ namespace PiGame.UI
                 : Vector3.one;
 
             Color slotColor = character != null ? character.Color : _slotColors[slot];
-            slotColor.a = isLocalPlayer ? 1f : 0.88f;
+            slotColor.a = isCharacterLocked ? 0.38f : isLocalPlayer ? 1f : 0.88f;
             _slotBackgrounds[slot].color = slotColor;
 
             Image portrait = _characterPortraits[slot];
             portrait.gameObject.SetActive(true);
             portrait.sprite = character != null ? character.Portrait : null;
-            portrait.color = character != null && character.Portrait == null
+            Color portraitColor = character != null && character.Portrait == null
                 ? Color.Lerp(character.Color, Color.black, 0.38f)
                 : Color.white;
+            portraitColor.a = isCharacterLocked ? 0.42f : 1f;
+            portrait.color = portraitColor;
 
             string characterName = character != null ? character.DisplayName : "ESCOLHENDO";
             _slotLabels[slot].text = characterName.ToUpperInvariant();
+            _slotLabels[slot].color = isCharacterLocked
+                ? new Color(1f, 1f, 1f, 0.52f)
+                : Color.white;
 
             Image deviceIcon = _deviceIcons[slot];
             Sprite deviceSprite = GetDeviceSprite(player.InputDevice);
@@ -248,11 +309,12 @@ namespace PiGame.UI
             }
             else
             {
-                statusText.text = $"<size=14>P{slot + 1}</size>\nESCOLHENDO...";
-                statusText.fontSize = isLocalPlayer ? 18 : 16;
-                statusText.color = isLocalPlayer
-                    ? Color.white
-                    : new Color(0.78f, 0.78f, 0.84f, 1f);
+                RenderChoosingStatus(slot, isLocalPlayer);
+            }
+
+            if (isLocalPlayer && _blockedFeedbackSlot == slot)
+            {
+                RenderBlockedStatus(slot, _lockingPlayerSlot);
             }
         }
 
@@ -265,9 +327,201 @@ namespace PiGame.UI
             _characterPortraits[slot].gameObject.SetActive(false);
             _deviceIcons[slot].gameObject.SetActive(false);
             _slotLabels[slot].text = "AGUARDANDO";
+            _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
             _statusTexts[slot].text = $"<size=14>P{slot + 1}</size>\nAGUARDANDO";
             _statusTexts[slot].fontSize = 16;
             _statusTexts[slot].color = new Color(0.58f, 0.58f, 0.64f, 1f);
+        }
+
+        private void RenderChoosingStatus(int slot, bool isLocalPlayer)
+        {
+            Text statusText = _statusTexts[slot];
+            statusText.text = $"<size=14>P{slot + 1}</size>\nESCOLHENDO...";
+            statusText.fontSize = isLocalPlayer ? 18 : 16;
+            statusText.color = isLocalPlayer
+                ? Color.white
+                : new Color(0.78f, 0.78f, 0.84f, 1f);
+        }
+
+        private void RenderBlockedStatus(int slot, int lockingPlayerSlot)
+        {
+            Text statusText = _statusTexts[slot];
+            statusText.text = $"<size=14>P{slot + 1}</size>\nBLOQUEADO - P{lockingPlayerSlot + 1}";
+            statusText.fontSize = 18;
+            statusText.color = new Color(1f, 0.42f, 0.38f, 1f);
+        }
+
+        private IEnumerator PlayBlockedFeedback()
+        {
+            const float shakeDuration = 0.24f;
+            const float messageDuration = 1.5f;
+            const float shakeAmplitude = 9f;
+            float elapsed = 0f;
+
+            while (elapsed < shakeDuration && _blockedFeedbackSlot >= 0)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float offset = Mathf.Sin(elapsed * 95f) * shakeAmplitude;
+                _slotRoots[_blockedFeedbackSlot].anchoredPosition =
+                    _blockedSlotOriginalPosition + Vector2.right * offset;
+                yield return null;
+            }
+
+            if (_blockedFeedbackSlot >= 0)
+            {
+                _slotRoots[_blockedFeedbackSlot].anchoredPosition = _blockedSlotOriginalPosition;
+                RefreshBrowseControls();
+            }
+
+            yield return new WaitForSecondsRealtime(messageDuration - shakeDuration);
+
+            int feedbackSlot = _blockedFeedbackSlot;
+            _blockedFeedbackSlot = -1;
+            _lockingPlayerSlot = -1;
+            _blockedFeedbackRoutine = null;
+            if (feedbackSlot >= 0 && feedbackSlot < _statusTexts.Length)
+            {
+                RenderChoosingStatus(feedbackSlot, feedbackSlot == _localPlayerSlot);
+            }
+        }
+
+        private void StopBlockedFeedback(bool restoreStatus)
+        {
+            if (_blockedFeedbackRoutine != null)
+            {
+                StopCoroutine(_blockedFeedbackRoutine);
+                _blockedFeedbackRoutine = null;
+            }
+
+            int feedbackSlot = _blockedFeedbackSlot;
+            if (feedbackSlot >= 0 && feedbackSlot < _slotRoots.Length)
+            {
+                _slotRoots[feedbackSlot].anchoredPosition = _blockedSlotOriginalPosition;
+            }
+
+            _blockedFeedbackSlot = -1;
+            _lockingPlayerSlot = -1;
+            RefreshBrowseControls();
+
+            if (restoreStatus && feedbackSlot >= 0 && feedbackSlot < _statusTexts.Length)
+            {
+                RenderChoosingStatus(feedbackSlot, feedbackSlot == _localPlayerSlot);
+            }
+        }
+
+        private void ProcessNavigationInput()
+        {
+            if (!_interactionEnabled || _localPlayerIsReady)
+            {
+                ResetNavigationInput();
+                return;
+            }
+
+            int direction = ReadVerticalNavigationDirection(out LobbyInputDeviceKind inputDevice);
+            if (direction == 0)
+            {
+                ResetNavigationInput();
+                return;
+            }
+
+            bool directionChanged = direction != _heldNavigationDirection;
+            if (!directionChanged && Time.unscaledTime < _nextNavigationTime)
+            {
+                return;
+            }
+
+            _heldNavigationDirection = direction;
+            _nextNavigationTime = Time.unscaledTime
+                + (directionChanged ? NavigationRepeatDelay : NavigationRepeatRate);
+            SetLastInputDevice(inputDevice);
+            Focus();
+            RequestBrowse(direction, inputDevice);
+        }
+
+        private static int ReadVerticalNavigationDirection(out LobbyInputDeviceKind inputDevice)
+        {
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.upArrowKey.wasPressedThisFrame
+                    || Keyboard.current.wKey.wasPressedThisFrame)
+                {
+                    inputDevice = LobbyInputDeviceKind.Keyboard;
+                    return -1;
+                }
+
+                if (Keyboard.current.downArrowKey.wasPressedThisFrame
+                    || Keyboard.current.sKey.wasPressedThisFrame)
+                {
+                    inputDevice = LobbyInputDeviceKind.Keyboard;
+                    return 1;
+                }
+            }
+
+            if (Gamepad.current != null)
+            {
+                if (Gamepad.current.dpad.up.wasPressedThisFrame)
+                {
+                    inputDevice = LobbyInputDeviceKind.Gamepad;
+                    return -1;
+                }
+
+                if (Gamepad.current.dpad.down.wasPressedThisFrame)
+                {
+                    inputDevice = LobbyInputDeviceKind.Gamepad;
+                    return 1;
+                }
+            }
+
+            if (Keyboard.current != null
+                && (Keyboard.current.upArrowKey.isPressed || Keyboard.current.wKey.isPressed))
+            {
+                inputDevice = LobbyInputDeviceKind.Keyboard;
+                return -1;
+            }
+
+            if (Keyboard.current != null
+                && (Keyboard.current.downArrowKey.isPressed || Keyboard.current.sKey.isPressed))
+            {
+                inputDevice = LobbyInputDeviceKind.Keyboard;
+                return 1;
+            }
+
+            if (Gamepad.current != null)
+            {
+                float verticalInput = Gamepad.current.leftStick.y.ReadValue();
+                if (Gamepad.current.dpad.up.isPressed || verticalInput > 0.65f)
+                {
+                    inputDevice = LobbyInputDeviceKind.Gamepad;
+                    return -1;
+                }
+
+                if (Gamepad.current.dpad.down.isPressed || verticalInput < -0.65f)
+                {
+                    inputDevice = LobbyInputDeviceKind.Gamepad;
+                    return 1;
+                }
+            }
+
+            inputDevice = LobbyInputDeviceKind.Unknown;
+            return 0;
+        }
+
+        private void ResetNavigationInput()
+        {
+            _heldNavigationDirection = 0;
+            _nextNavigationTime = 0f;
+        }
+
+        private static void DisableAutomaticNavigation(Selectable selectable)
+        {
+            if (selectable == null)
+            {
+                return;
+            }
+
+            Navigation navigation = selectable.navigation;
+            navigation.mode = Navigation.Mode.None;
+            selectable.navigation = navigation;
         }
 
         private void SetLastInputDevice(LobbyInputDeviceKind inputDevice)
@@ -338,6 +592,27 @@ namespace PiGame.UI
             }
 
             player = default;
+            return false;
+        }
+
+        private static bool TryFindCharacterLock(
+            IReadOnlyList<LobbyPlayerData> players,
+            LobbyPlayerData requestingPlayer,
+            out int lockingPlayerSlot)
+        {
+            for (int i = 0; i < players.Count; i++)
+            {
+                LobbyPlayerData player = players[i];
+                if (player.ClientId != requestingPlayer.ClientId
+                    && player.IsReady
+                    && player.CharacterId == requestingPlayer.CharacterId)
+                {
+                    lockingPlayerSlot = player.PlayerSlot;
+                    return true;
+                }
+            }
+
+            lockingPlayerSlot = -1;
             return false;
         }
 

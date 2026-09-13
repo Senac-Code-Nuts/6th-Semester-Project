@@ -5,17 +5,34 @@ namespace PiGame.Lobby
     public interface ILobbyState
     {
         event Action PlayersChanged;
+        event Action<int> CharacterReadyRejected;
+        event Action StageChanged;
+        event Action MapVotesChanged;
+        event Action<LobbyMapId> MatchStartRequested;
 
         int PlayerCount { get; }
+        int MapVoteCount { get; }
         ulong LocalClientId { get; }
+        LobbyStage Stage { get; }
+        LobbyMapId WinningMap { get; }
+        bool LocalClientIsHost { get; }
         bool AllPlayersReady { get; }
         bool CanStartMatch { get; }
+        bool AllMapVotesConfirmed { get; }
 
         LobbyPlayerData GetPlayer(int index);
+        LobbyMapVoteData GetMapVote(int index);
         bool TryGetPlayer(ulong clientId, out LobbyPlayerData player);
-        bool IsCharacterAvailable(LobbyCharacterId characterId, ulong requestingClientId);
+        bool TryGetMapVote(ulong clientId, out LobbyMapVoteData vote);
+        bool TryGetCharacterLock(
+            LobbyCharacterId characterId,
+            ulong requestingClientId,
+            out int lockingPlayerSlot);
         void RequestCharacterSelection(LobbyCharacterId characterId);
         void RequestInputDevice(LobbyInputDeviceKind inputDevice);
         void RequestReadyState(bool isReady);
+        void RequestMapVote(LobbyMapId mapId);
+        void RequestMapVoteConfirmation(bool isConfirmed);
+        void RequestReturnToCharacterSelection();
     }
 }

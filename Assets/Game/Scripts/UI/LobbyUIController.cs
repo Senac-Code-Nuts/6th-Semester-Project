@@ -17,6 +17,7 @@ namespace PiGame.UI
         [SerializeField] private ConnectionPanelUI _connectionPanel;
         [SerializeField] private GameObject _lobbyPanel;
         [SerializeField] private LobbyCharacterSelectionController _characterSelectionController;
+        [SerializeField] private LobbyMapVotingController _mapVotingController;
         [SerializeField] private ConfirmationPanelUI _confirmationPanel;
         [SerializeField] private MatchSettingsPanelUI _matchSettingsPanel;
 
@@ -38,6 +39,8 @@ namespace PiGame.UI
             _connectionPanel.CancelConnectionRequested += HandleCancelConnectionRequested;
             _connectionPanel.QuitRequested += HandleQuitRequested;
             _characterSelectionController.DisconnectRequested += HandleDisconnectRequested;
+            _mapVotingController.DisconnectRequested += HandleDisconnectRequested;
+            _mapVotingController.VisibilityChanged += HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed += HandleConfirmationConfirmed;
             _confirmationPanel.Canceled += HandleConfirmationCanceled;
             _matchSettingsPanel.Opened += HandleMatchSettingsOpened;
@@ -72,6 +75,8 @@ namespace PiGame.UI
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
             _connectionPanel.QuitRequested -= HandleQuitRequested;
             _characterSelectionController.DisconnectRequested -= HandleDisconnectRequested;
+            _mapVotingController.DisconnectRequested -= HandleDisconnectRequested;
+            _mapVotingController.VisibilityChanged -= HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed -= HandleConfirmationConfirmed;
             _confirmationPanel.Canceled -= HandleConfirmationCanceled;
             _matchSettingsPanel.Opened -= HandleMatchSettingsOpened;
@@ -169,7 +174,7 @@ namespace PiGame.UI
 
             if (canceledAction == ConfirmationAction.Disconnect)
             {
-                _characterSelectionController.SetInteractionEnabled(true);
+                SetLobbyInteractionEnabled(true);
                 return;
             }
 
@@ -219,18 +224,28 @@ namespace PiGame.UI
             _connectionPanel.gameObject.SetActive(false);
             _lobbyPanel.SetActive(true);
             _matchSettingsPanel.ResetView();
-            _matchSettingsPanel.SetMenuVisible(_connectionServiceContract.IsHost);
-            _characterSelectionController.SetInteractionEnabled(true);
+            _matchSettingsPanel.SetMenuVisible(
+                _connectionServiceContract.IsHost && !_mapVotingController.IsVisible);
+            SetLobbyInteractionEnabled(true);
         }
 
         private void HandleMatchSettingsOpened()
         {
-            _characterSelectionController.SetInteractionEnabled(false);
+            SetLobbyInteractionEnabled(false);
         }
 
         private void HandleMatchSettingsClosed()
         {
-            _characterSelectionController.SetInteractionEnabled(true);
+            SetLobbyInteractionEnabled(true);
+        }
+
+        private void HandleMapVotingVisibilityChanged(bool isVisible)
+        {
+            _matchSettingsPanel.SetMenuVisible(
+                !isVisible
+                && _connectionServiceContract != null
+                && _connectionServiceContract.IsHost);
+            SetLobbyInteractionEnabled(true);
         }
 
         private void ShowConnectionError(string message)
@@ -245,7 +260,7 @@ namespace PiGame.UI
 
             if (action == ConfirmationAction.Disconnect)
             {
-                _characterSelectionController.SetInteractionEnabled(false);
+                SetLobbyInteractionEnabled(false);
             }
             else
             {
@@ -253,6 +268,13 @@ namespace PiGame.UI
             }
 
             _confirmationPanel.Show(message);
+        }
+
+        private void SetLobbyInteractionEnabled(bool isEnabled)
+        {
+            bool mapVotingIsVisible = _mapVotingController.IsVisible;
+            _characterSelectionController.SetInteractionEnabled(isEnabled && !mapVotingIsVisible);
+            _mapVotingController.SetInteractionEnabled(isEnabled && mapVotingIsVisible);
         }
     }
 }

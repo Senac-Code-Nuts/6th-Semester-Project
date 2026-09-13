@@ -28,6 +28,8 @@ namespace PiGame.Lobby
             if (_lobbyStateContract != null)
             {
                 _lobbyStateContract.PlayersChanged += Refresh;
+                _lobbyStateContract.CharacterReadyRejected += HandleCharacterReadyRejected;
+                _lobbyStateContract.StageChanged += Refresh;
             }
 
             Refresh();
@@ -42,6 +44,8 @@ namespace PiGame.Lobby
             if (_lobbyStateContract != null)
             {
                 _lobbyStateContract.PlayersChanged -= Refresh;
+                _lobbyStateContract.CharacterReadyRejected -= HandleCharacterReadyRejected;
+                _lobbyStateContract.StageChanged -= Refresh;
             }
         }
 
@@ -53,6 +57,7 @@ namespace PiGame.Lobby
         private void HandleBrowseRequested(int direction, LobbyInputDeviceKind inputDevice)
         {
             if (_lobbyStateContract == null
+                || _lobbyStateContract.Stage != LobbyStage.CharacterSelection
                 || !_lobbyStateContract.TryGetPlayer(_lobbyStateContract.LocalClientId, out LobbyPlayerData player)
                 || player.IsReady)
             {
@@ -60,52 +65,68 @@ namespace PiGame.Lobby
             }
 
             _lobbyStateContract.RequestInputDevice(inputDevice);
-            LobbyCharacterId nextCharacter = FindNextAvailableCharacter(player, direction);
-            if (nextCharacter != LobbyCharacterId.None)
-            {
-                _lobbyStateContract.RequestCharacterSelection(nextCharacter);
-            }
+            _view.ClearCharacterBlockedFeedback();
+            _lobbyStateContract.RequestCharacterSelection(FindNextCharacter(player, direction));
         }
 
         private void HandleSubmitRequested(LobbyInputDeviceKind inputDevice)
         {
             if (_lobbyStateContract == null
+                || _lobbyStateContract.Stage != LobbyStage.CharacterSelection
                 || !_lobbyStateContract.TryGetPlayer(_lobbyStateContract.LocalClientId, out LobbyPlayerData player))
             {
                 return;
             }
 
             _lobbyStateContract.RequestInputDevice(inputDevice);
-            if (player.CharacterId != LobbyCharacterId.None)
+            if (player.IsReady)
             {
-                _lobbyStateContract.RequestReadyState(!player.IsReady);
+                _lobbyStateContract.RequestReadyState(false);
+                return;
             }
+
+            if (player.CharacterId == LobbyCharacterId.None)
+            {
+                return;
+            }
+
+            if (_lobbyStateContract.TryGetCharacterLock(
+                    player.CharacterId,
+                    player.ClientId,
+                    out int lockingPlayerSlot))
+            {
+                _view.ShowCharacterBlocked(lockingPlayerSlot);
+                return;
+            }
+
+            _lobbyStateContract.RequestReadyState(true);
         }
 
         private void HandleBackRequested()
         {
+            if (_lobbyStateContract == null
+                || _lobbyStateContract.Stage != LobbyStage.CharacterSelection)
+            {
+                return;
+            }
+
             DisconnectRequested?.Invoke();
         }
 
-        private LobbyCharacterId FindNextAvailableCharacter(LobbyPlayerData player, int direction)
+        private static LobbyCharacterId FindNextCharacter(LobbyPlayerData player, int direction)
         {
             const int characterCount = 4;
             int step = direction >= 0 ? 1 : -1;
             int currentIndex = player.CharacterId == LobbyCharacterId.None
                 ? (step > 0 ? -1 : 0)
                 : (int)player.CharacterId;
+            int candidateIndex = (currentIndex + step + characterCount) % characterCount;
+            return (LobbyCharacterId)candidateIndex;
+        }
 
-            for (int offset = 1; offset <= characterCount; offset++)
-            {
-                int candidateIndex = (currentIndex + step * offset + characterCount * 2) % characterCount;
-                LobbyCharacterId candidate = (LobbyCharacterId)candidateIndex;
-                if (_lobbyStateContract.IsCharacterAvailable(candidate, player.ClientId))
-                {
-                    return candidate;
-                }
-            }
-
-            return LobbyCharacterId.None;
+        private void HandleCharacterReadyRejected(int lockingPlayerSlot)
+        {
+            _view.ShowCharacterBlocked(lockingPlayerSlot);
         }
 
         private void Refresh()

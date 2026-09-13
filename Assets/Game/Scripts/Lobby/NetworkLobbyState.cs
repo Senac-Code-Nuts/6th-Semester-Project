@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,16 +9,52 @@ namespace PiGame.Lobby
     public class NetworkLobbyState : NetworkBehaviour, ILobbyState
     {
         [SerializeField, Min(1)] private int _maximumPlayers = 4;
+        [SerializeField] private LobbyMapDefinition[] _maps;
+        [SerializeField, Min(0.1f)] private float _mapResultDisplaySeconds = 2.5f;
 
         private readonly NetworkList<LobbyPlayerData> _players = new();
+        private readonly NetworkList<LobbyMapVoteData> _mapVotes = new();
+        private readonly NetworkVariable<LobbyStage> _stage = new(LobbyStage.CharacterSelection);
+        private readonly NetworkVariable<LobbyMapId> _winningMap = new(LobbyMapId.None);
+
+        private Coroutine _matchStartRoutine;
 
         public event Action PlayersChanged;
+        public event Action<int> CharacterReadyRejected;
+        public event Action StageChanged;
+        public event Action MapVotesChanged;
+        public event Action<LobbyMapId> MatchStartRequested;
 
         public int PlayerCount => _players.Count;
+        public int MapVoteCount => _mapVotes.Count;
         public ulong LocalClientId => NetworkManager != null
             ? NetworkManager.LocalClientId
             : ulong.MaxValue;
+        public LobbyStage Stage => _stage.Value;
+        public LobbyMapId WinningMap => _winningMap.Value;
+        public bool LocalClientIsHost => NetworkManager != null && NetworkManager.IsHost;
         public bool CanStartMatch => _players.Count >= 2 && AllPlayersReady;
+
+        public bool AllMapVotesConfirmed
+        {
+            get
+            {
+                if (_players.Count < 2 || _mapVotes.Count != _players.Count)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < _mapVotes.Count; i++)
+                {
+                    if (!_mapVotes[i].IsConfirmed)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
 
         public bool AllPlayersReady
         {
@@ -43,6 +81,9 @@ namespace PiGame.Lobby
         public override void OnNetworkSpawn()
         {
             _players.OnListChanged += HandlePlayersChanged;
+            _mapVotes.OnListChanged += HandleMapVotesChanged;
+            _stage.OnValueChanged += HandleStageChanged;
+            _winningMap.OnValueChanged += HandleWinningMapChanged;
 
             if (IsServer)
             {
@@ -56,11 +97,18 @@ namespace PiGame.Lobby
             }
 
             PlayersChanged?.Invoke();
+            MapVotesChanged?.Invoke();
+            StageChanged?.Invoke();
         }
 
         public override void OnNetworkDespawn()
         {
             _players.OnListChanged -= HandlePlayersChanged;
+            _mapVotes.OnListChanged -= HandleMapVotesChanged;
+            _stage.OnValueChanged -= HandleStageChanged;
+            _winningMap.OnValueChanged -= HandleWinningMapChanged;
+
+            StopMatchStartRoutine();
 
             if (NetworkManager != null && IsServer)
             {
@@ -69,6 +117,8 @@ namespace PiGame.Lobby
             }
 
             PlayersChanged?.Invoke();
+            MapVotesChanged?.Invoke();
+            StageChanged?.Invoke();
         }
 
         public LobbyPlayerData GetPlayer(int index)
@@ -79,6 +129,16 @@ namespace PiGame.Lobby
             }
 
             return _players[index];
+        }
+
+        public LobbyMapVoteData GetMapVote(int index)
+        {
+            if (index < 0 || index >= _mapVotes.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            return _mapVotes[index];
         }
 
         public bool TryGetPlayer(ulong clientId, out LobbyPlayerData player)
@@ -94,28 +154,51 @@ namespace PiGame.Lobby
             return false;
         }
 
-        public bool IsCharacterAvailable(LobbyCharacterId characterId, ulong requestingClientId)
+        public bool TryGetMapVote(ulong clientId, out LobbyMapVoteData vote)
+        {
+            int voteIndex = FindMapVoteIndex(clientId);
+            if (voteIndex >= 0)
+            {
+                vote = _mapVotes[voteIndex];
+                return true;
+            }
+
+            vote = default;
+            return false;
+        }
+
+        public bool TryGetCharacterLock(
+            LobbyCharacterId characterId,
+            ulong requestingClientId,
+            out int lockingPlayerSlot)
         {
             if (!IsValidCharacter(characterId))
             {
+                lockingPlayerSlot = -1;
                 return false;
             }
 
             for (int i = 0; i < _players.Count; i++)
             {
                 LobbyPlayerData player = _players[i];
-                if (player.ClientId != requestingClientId && player.CharacterId == characterId)
+                if (player.ClientId != requestingClientId
+                    && player.IsReady
+                    && player.CharacterId == characterId)
                 {
-                    return false;
+                    lockingPlayerSlot = player.PlayerSlot;
+                    return true;
                 }
             }
 
-            return true;
+            lockingPlayerSlot = -1;
+            return false;
         }
 
         public void RequestCharacterSelection(LobbyCharacterId characterId)
         {
-            if (!IsSpawned || !IsValidCharacter(characterId))
+            if (!IsSpawned
+                || _stage.Value != LobbyStage.CharacterSelection
+                || !IsValidCharacter(characterId))
             {
                 return;
             }
@@ -125,7 +208,7 @@ namespace PiGame.Lobby
 
         public void RequestReadyState(bool isReady)
         {
-            if (!IsSpawned)
+            if (!IsSpawned || _stage.Value != LobbyStage.CharacterSelection)
             {
                 return;
             }
@@ -143,30 +226,69 @@ namespace PiGame.Lobby
             SetInputDeviceRpc(inputDevice);
         }
 
+        public void RequestMapVote(LobbyMapId mapId)
+        {
+            if (!IsSpawned || _stage.Value != LobbyStage.MapVoting || !IsValidMapVoteOption(mapId))
+            {
+                return;
+            }
+
+            SelectMapVoteRpc(mapId);
+        }
+
+        public void RequestMapVoteConfirmation(bool isConfirmed)
+        {
+            if (!IsSpawned || _stage.Value != LobbyStage.MapVoting)
+            {
+                return;
+            }
+
+            SetMapVoteConfirmationRpc(isConfirmed);
+        }
+
+        public void RequestReturnToCharacterSelection()
+        {
+            if (!IsSpawned || _stage.Value != LobbyStage.MapVoting || !LocalClientIsHost)
+            {
+                return;
+            }
+
+            ReturnToCharacterSelectionRpc();
+        }
+
         [Rpc(SendTo.Server)]
         private void SelectCharacterRpc(LobbyCharacterId characterId, RpcParams rpcParams = default)
         {
+            if (_stage.Value != LobbyStage.CharacterSelection || !IsValidCharacter(characterId))
+            {
+                return;
+            }
+
             ulong senderClientId = rpcParams.Receive.SenderClientId;
             int playerIndex = FindPlayerIndex(senderClientId);
-            if (playerIndex < 0 || !IsCharacterAvailable(characterId, senderClientId))
+            if (playerIndex < 0)
             {
                 return;
             }
 
             LobbyPlayerData player = _players[playerIndex];
-            if (player.CharacterId == characterId && !player.IsReady)
+            if (player.IsReady || player.CharacterId == characterId)
             {
                 return;
             }
 
             player.CharacterId = characterId;
-            player.IsReady = false;
             _players[playerIndex] = player;
         }
 
         [Rpc(SendTo.Server)]
         private void SetReadyStateRpc(bool isReady, RpcParams rpcParams = default)
         {
+            if (_stage.Value != LobbyStage.CharacterSelection)
+            {
+                return;
+            }
+
             int playerIndex = FindPlayerIndex(rpcParams.Receive.SenderClientId);
             if (playerIndex < 0)
             {
@@ -174,8 +296,20 @@ namespace PiGame.Lobby
             }
 
             LobbyPlayerData player = _players[playerIndex];
-            if (isReady && player.CharacterId == LobbyCharacterId.None)
+            if (isReady && !IsValidCharacter(player.CharacterId))
             {
+                return;
+            }
+
+            if (isReady
+                && TryGetCharacterLock(
+                    player.CharacterId,
+                    player.ClientId,
+                    out int lockingPlayerSlot))
+            {
+                CharacterReadyRejectedRpc(
+                    lockingPlayerSlot,
+                    RpcTarget.Single(player.ClientId, RpcTargetUse.Temp));
                 return;
             }
 
@@ -186,6 +320,14 @@ namespace PiGame.Lobby
 
             player.IsReady = isReady;
             _players[playerIndex] = player;
+
+            TryBeginMapVotingServer();
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void CharacterReadyRejectedRpc(int lockingPlayerSlot, RpcParams rpcParams)
+        {
+            CharacterReadyRejected?.Invoke(lockingPlayerSlot);
         }
 
         [Rpc(SendTo.Server)]
@@ -215,13 +357,100 @@ namespace PiGame.Lobby
             _players[playerIndex] = player;
         }
 
+        [Rpc(SendTo.Server)]
+        private void SelectMapVoteRpc(LobbyMapId mapId, RpcParams rpcParams = default)
+        {
+            if (_stage.Value != LobbyStage.MapVoting || !IsValidMapVoteOption(mapId))
+            {
+                return;
+            }
+
+            int voteIndex = FindMapVoteIndex(rpcParams.Receive.SenderClientId);
+            if (voteIndex < 0)
+            {
+                return;
+            }
+
+            LobbyMapVoteData vote = _mapVotes[voteIndex];
+            if (vote.MapId == mapId && !vote.IsConfirmed)
+            {
+                return;
+            }
+
+            vote.MapId = mapId;
+            vote.IsConfirmed = false;
+            _mapVotes[voteIndex] = vote;
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetMapVoteConfirmationRpc(bool isConfirmed, RpcParams rpcParams = default)
+        {
+            if (_stage.Value != LobbyStage.MapVoting)
+            {
+                return;
+            }
+
+            int voteIndex = FindMapVoteIndex(rpcParams.Receive.SenderClientId);
+            if (voteIndex < 0)
+            {
+                return;
+            }
+
+            LobbyMapVoteData vote = _mapVotes[voteIndex];
+            if (vote.IsConfirmed == isConfirmed)
+            {
+                return;
+            }
+
+            vote.IsConfirmed = isConfirmed;
+            _mapVotes[voteIndex] = vote;
+
+            if (isConfirmed)
+            {
+                TryResolveMapVoteServer();
+            }
+        }
+
+        [Rpc(SendTo.Server)]
+        private void ReturnToCharacterSelectionRpc(RpcParams rpcParams = default)
+        {
+            if (_stage.Value != LobbyStage.MapVoting
+                || NetworkManager == null
+                || rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId)
+            {
+                return;
+            }
+
+            ReturnToCharacterSelectionServer();
+        }
+
         private void HandlePlayersChanged(NetworkListEvent<LobbyPlayerData> changeEvent)
         {
             PlayersChanged?.Invoke();
         }
 
+        private void HandleMapVotesChanged(NetworkListEvent<LobbyMapVoteData> changeEvent)
+        {
+            MapVotesChanged?.Invoke();
+        }
+
+        private void HandleStageChanged(LobbyStage previousStage, LobbyStage currentStage)
+        {
+            StageChanged?.Invoke();
+        }
+
+        private void HandleWinningMapChanged(LobbyMapId previousMap, LobbyMapId currentMap)
+        {
+            StageChanged?.Invoke();
+        }
+
         private void HandleClientConnected(ulong clientId)
         {
+            if (_stage.Value != LobbyStage.CharacterSelection)
+            {
+                ReturnToCharacterSelectionServer();
+            }
+
             AddPlayer(clientId);
         }
 
@@ -231,6 +460,23 @@ namespace PiGame.Lobby
             if (playerIndex >= 0)
             {
                 _players.RemoveAt(playerIndex);
+            }
+
+            int voteIndex = FindMapVoteIndex(clientId);
+            if (voteIndex >= 0)
+            {
+                _mapVotes.RemoveAt(voteIndex);
+            }
+
+            if (_stage.Value != LobbyStage.CharacterSelection && _players.Count < 2)
+            {
+                ReturnToCharacterSelectionServer();
+                return;
+            }
+
+            if (_stage.Value == LobbyStage.MapVoting)
+            {
+                TryResolveMapVoteServer();
             }
         }
 
@@ -248,7 +494,7 @@ namespace PiGame.Lobby
                 return;
             }
 
-            LobbyCharacterId initialCharacter = FindFirstAvailableCharacter(clientId);
+            LobbyCharacterId initialCharacter = FindInitialCharacter();
             _players.Add(new LobbyPlayerData(clientId, availableSlot, initialCharacter));
         }
 
@@ -257,6 +503,19 @@ namespace PiGame.Lobby
             for (int i = 0; i < _players.Count; i++)
             {
                 if (_players[i].ClientId == clientId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int FindMapVoteIndex(ulong clientId)
+        {
+            for (int i = 0; i < _mapVotes.Count; i++)
+            {
+                if (_mapVotes[i].ClientId == clientId)
                 {
                     return i;
                 }
@@ -294,24 +553,193 @@ namespace PiGame.Lobby
                 && characterId <= LobbyCharacterId.Rebel;
         }
 
-        private LobbyCharacterId FindFirstAvailableCharacter(ulong clientId)
+        private bool IsValidMapVoteOption(LobbyMapId mapId)
+        {
+            if (mapId == LobbyMapId.Random)
+            {
+                return true;
+            }
+
+            return FindMap(mapId) != null;
+        }
+
+        private LobbyMapDefinition FindMap(LobbyMapId mapId)
+        {
+            if (_maps == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _maps.Length; i++)
+            {
+                if (_maps[i] != null && _maps[i].Id == mapId)
+                {
+                    return _maps[i];
+                }
+            }
+
+            return null;
+        }
+
+        private void TryBeginMapVotingServer()
+        {
+            if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || !CanStartMatch)
+            {
+                return;
+            }
+
+            _mapVotes.Clear();
+            for (int i = 0; i < _players.Count; i++)
+            {
+                _mapVotes.Add(new LobbyMapVoteData(_players[i].ClientId));
+            }
+
+            _winningMap.Value = LobbyMapId.None;
+            _stage.Value = LobbyStage.MapVoting;
+        }
+
+        private void TryResolveMapVoteServer()
+        {
+            if (!IsServer || _stage.Value != LobbyStage.MapVoting || !AllMapVotesConfirmed)
+            {
+                return;
+            }
+
+            LobbyMapId winningOption = ResolveWinningVoteOption();
+            LobbyMapId concreteMap = winningOption == LobbyMapId.Random
+                ? PickRandomConcreteMap()
+                : winningOption;
+
+            if (concreteMap == LobbyMapId.None)
+            {
+                Debug.LogError("The lobby cannot start because no valid map is configured.", this);
+                return;
+            }
+
+            _winningMap.Value = concreteMap;
+            _stage.Value = LobbyStage.MatchStarting;
+            StopMatchStartRoutine();
+            _matchStartRoutine = StartCoroutine(RequestMatchStartAfterResult(concreteMap));
+        }
+
+        private LobbyMapId ResolveWinningVoteOption()
+        {
+            Dictionary<LobbyMapId, int> voteCounts = new();
+            int highestCount = 0;
+
+            for (int i = 0; i < _mapVotes.Count; i++)
+            {
+                LobbyMapId mapId = _mapVotes[i].MapId;
+                voteCounts.TryGetValue(mapId, out int currentCount);
+                int updatedCount = currentCount + 1;
+                voteCounts[mapId] = updatedCount;
+                highestCount = Mathf.Max(highestCount, updatedCount);
+            }
+
+            List<LobbyMapId> tiedOptions = new();
+            foreach (KeyValuePair<LobbyMapId, int> entry in voteCounts)
+            {
+                if (entry.Value == highestCount)
+                {
+                    tiedOptions.Add(entry.Key);
+                }
+            }
+
+            return tiedOptions[UnityEngine.Random.Range(0, tiedOptions.Count)];
+        }
+
+        private LobbyMapId PickRandomConcreteMap()
+        {
+            List<LobbyMapId> validMaps = new();
+            if (_maps != null)
+            {
+                for (int i = 0; i < _maps.Length; i++)
+                {
+                    LobbyMapDefinition map = _maps[i];
+                    if (map != null && map.Id != LobbyMapId.None && map.Id != LobbyMapId.Random)
+                    {
+                        validMaps.Add(map.Id);
+                    }
+                }
+            }
+
+            return validMaps.Count > 0
+                ? validMaps[UnityEngine.Random.Range(0, validMaps.Count)]
+                : LobbyMapId.None;
+        }
+
+        private IEnumerator RequestMatchStartAfterResult(LobbyMapId mapId)
+        {
+            yield return new WaitForSecondsRealtime(_mapResultDisplaySeconds);
+
+            _matchStartRoutine = null;
+            if (IsServer && _stage.Value == LobbyStage.MatchStarting && _winningMap.Value == mapId)
+            {
+                MatchStartRequested?.Invoke(mapId);
+            }
+        }
+
+        private void ReturnToCharacterSelectionServer()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            StopMatchStartRoutine();
+            _mapVotes.Clear();
+            _winningMap.Value = LobbyMapId.None;
+
+            for (int i = 0; i < _players.Count; i++)
+            {
+                LobbyPlayerData player = _players[i];
+                player.IsReady = false;
+                _players[i] = player;
+            }
+
+            _stage.Value = LobbyStage.CharacterSelection;
+        }
+
+        private void StopMatchStartRoutine()
+        {
+            if (_matchStartRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_matchStartRoutine);
+            _matchStartRoutine = null;
+        }
+
+        private LobbyCharacterId FindInitialCharacter()
         {
             for (int characterIndex = 0; characterIndex < 4; characterIndex++)
             {
                 LobbyCharacterId characterId = (LobbyCharacterId)characterIndex;
-                if (IsCharacterAvailable(characterId, clientId))
+                bool isAlreadySelected = false;
+                for (int playerIndex = 0; playerIndex < _players.Count; playerIndex++)
+                {
+                    if (_players[playerIndex].CharacterId == characterId)
+                    {
+                        isAlreadySelected = true;
+                        break;
+                    }
+                }
+
+                if (!isAlreadySelected)
                 {
                     return characterId;
                 }
             }
 
-            return LobbyCharacterId.None;
+            return LobbyCharacterId.Cowboy;
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
             _maximumPlayers = Mathf.Max(1, _maximumPlayers);
+            _mapResultDisplaySeconds = Mathf.Max(0.1f, _mapResultDisplaySeconds);
         }
 #endif
     }
