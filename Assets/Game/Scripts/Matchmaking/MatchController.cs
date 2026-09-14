@@ -1,54 +1,259 @@
-using UnityEngine;
-using Unity.Netcode;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using PiGame.Lobby;
+using Unity.Netcode;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace PiGame.Gameplay
 {
     public class MatchController : NetworkBehaviour
     {
-        private int _durationMinutes;
-        private LobbyMatchMode _mode;
+        [SerializeField] private int _killLimit = 3;
+        [SerializeField] private float _respawnDelaySeconds = 2f;
+        [SerializeField] private float _resultDisplaySeconds = 3f;
 
-        private NetworkVariable<float> _remainingTime = new NetworkVariable<float>();
+        private readonly NetworkVariable<float> _remainingTime =
+            new NetworkVariable<float>();
+        private readonly NetworkVariable<MatchPhase> _phase =
+            new NetworkVariable<MatchPhase>(MatchPhase.WaitingForPlayers);
+        private readonly NetworkVariable<int> _winningPlayerSlot =
+            new NetworkVariable<int>(-1);
+
+        private NetworkList<MatchPlayerScoreData> _scores;
+        private readonly Dictionary<ulong, NetworkPlayerState> _players =
+            new Dictionary<ulong, NetworkPlayerState>();
+        private readonly Dictionary<ulong, Vector3> _spawnPositions =
+            new Dictionary<ulong, Vector3>();
+
+        public event Action ScoresChanged;
+        public event Action PhaseChanged;
+
         public float RemainingTime => _remainingTime.Value;
-        private bool _matchRunning;
+        public MatchPhase Phase => _phase.Value;
+        public int WinningPlayerSlot => _winningPlayerSlot.Value;
+        public int KillLimit => _killLimit;
+        public int ScoreCount => _scores != null ? _scores.Count : 0;
 
-        public void Initialize(LobbyMatchSettingsData settings)
+        private void Awake()
         {
-            if(!IsServer)
-                return;
-
-            _durationMinutes = settings.DurationMinutes;
-            _mode = settings.Mode;
-
-            _remainingTime.Value = _durationMinutes * 60;
-
-            _matchRunning = true;
+            _scores = new NetworkList<MatchPlayerScoreData>();
         }
 
-        public void Update()
+        public override void OnNetworkSpawn()
         {
-            if(!IsServer || !_matchRunning)
-                return;
-            
-            _remainingTime.Value -= Time.deltaTime;
+            _scores.OnListChanged += HandleScoresChanged;
+            _phase.OnValueChanged += HandlePhaseChanged;
+            _winningPlayerSlot.OnValueChanged += HandleWinningPlayerChanged;
 
-            if(_remainingTime.Value <= 0f)
+            if (IsServer)
             {
-                _remainingTime.Value = 0f;
-                EndMatch();
+                NetworkManager.OnClientDisconnectCallback += HandleClientDisconnected;
+            }
+
+            ScoresChanged?.Invoke();
+            PhaseChanged?.Invoke();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _scores.OnListChanged -= HandleScoresChanged;
+            _phase.OnValueChanged -= HandlePhaseChanged;
+            _winningPlayerSlot.OnValueChanged -= HandleWinningPlayerChanged;
+
+            if (NetworkManager != null)
+            {
+                NetworkManager.OnClientDisconnectCallback -= HandleClientDisconnected;
             }
         }
 
-        private void EndMatch()
+        public MatchPlayerScoreData GetScore(int index)
         {
-            _matchRunning = false;
+            return _scores[index];
+        }
 
-            MatchSession.Instance.Clear();
+        public void Initialize(LobbyMatchSettingsData settings)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
 
-            NetworkManager.SceneManager.LoadScene("scene_lobby",LoadSceneMode.Single);
+            int durationMinutes = Mathf.Max(1, settings.DurationMinutes);
+            _remainingTime.Value = durationMinutes * 60f;
+            _winningPlayerSlot.Value = -1;
+            _phase.Value = MatchPhase.Playing;
+        }
+
+        public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition)
+        {
+            if (!IsServer || player == null)
+            {
+                return;
+            }
+
+            _players[player.OwnerClientId] = player;
+            _spawnPositions[player.OwnerClientId] = spawnPosition;
+            player.Died += HandlePlayerDied;
+
+            if (FindScoreIndex(player.OwnerClientId) < 0)
+            {
+                _scores.Add(new MatchPlayerScoreData(
+                    player.OwnerClientId,
+                    player.PlayerSlot));
+            }
+        }
+
+        private void Update()
+        {
+            if (!IsServer || _phase.Value != MatchPhase.Playing)
+            {
+                return;
+            }
+
+            _remainingTime.Value = Mathf.Max(0f, _remainingTime.Value - Time.deltaTime);
+            if (_remainingTime.Value <= 0f)
+            {
+                EndByHighestScore();
+            }
+        }
+
+        private void HandlePlayerDied(NetworkPlayerState victim, ulong attackerClientId)
+        {
+            if (!IsServer || _phase.Value != MatchPhase.Playing)
+            {
+                return;
+            }
+
+            int attackerIndex = FindScoreIndex(attackerClientId);
+            if (attackerIndex >= 0 && attackerClientId != victim.OwnerClientId)
+            {
+                MatchPlayerScoreData score = _scores[attackerIndex];
+                score.Kills++;
+                _scores[attackerIndex] = score;
+
+                if (score.Kills >= _killLimit)
+                {
+                    StartCoroutine(FinishMatch(score.PlayerSlot));
+                    return;
+                }
+            }
+
+            StartCoroutine(RespawnAfterDelay(victim));
+        }
+
+        private IEnumerator RespawnAfterDelay(NetworkPlayerState player)
+        {
+            yield return new WaitForSeconds(_respawnDelaySeconds);
+
+            if (_phase.Value != MatchPhase.Playing
+                || player == null
+                || !player.IsSpawned
+                || !_spawnPositions.TryGetValue(player.OwnerClientId, out Vector3 spawnPosition))
+            {
+                yield break;
+            }
+
+            player.RespawnServer(spawnPosition);
+        }
+
+        private void EndByHighestScore()
+        {
+            int highestKills = -1;
+            int winningSlot = -1;
+            bool tied = false;
+
+            for (int i = 0; i < _scores.Count; i++)
+            {
+                MatchPlayerScoreData score = _scores[i];
+                if (score.Kills > highestKills)
+                {
+                    highestKills = score.Kills;
+                    winningSlot = score.PlayerSlot;
+                    tied = false;
+                }
+                else if (score.Kills == highestKills)
+                {
+                    tied = true;
+                }
+            }
+
+            StartCoroutine(FinishMatch(tied ? -1 : winningSlot));
+        }
+
+        private IEnumerator FinishMatch(int winningPlayerSlot)
+        {
+            if (_phase.Value != MatchPhase.Playing)
+            {
+                yield break;
+            }
+
+            _winningPlayerSlot.Value = winningPlayerSlot;
+            _phase.Value = MatchPhase.ShowingResult;
+
+            foreach (NetworkPlayerState player in _players.Values)
+            {
+                if (player != null && player.IsSpawned)
+                {
+                    player.SetMatchActiveServer(false);
+                }
+            }
+
+            yield return new WaitForSeconds(_resultDisplaySeconds);
+
+            NetworkManager.SceneManager.LoadScene("scene_lobby", LoadSceneMode.Single);
+        }
+
+        private void HandleClientDisconnected(ulong clientId)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            if (_players.TryGetValue(clientId, out NetworkPlayerState player)
+                && player != null)
+            {
+                player.Died -= HandlePlayerDied;
+            }
+
+            _players.Remove(clientId);
+            _spawnPositions.Remove(clientId);
+
+            int scoreIndex = FindScoreIndex(clientId);
+            if (scoreIndex >= 0)
+            {
+                _scores.RemoveAt(scoreIndex);
+            }
+        }
+
+        private int FindScoreIndex(ulong clientId)
+        {
+            for (int i = 0; i < _scores.Count; i++)
+            {
+                if (_scores[i].ClientId == clientId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private void HandleScoresChanged(NetworkListEvent<MatchPlayerScoreData> changeEvent)
+        {
+            ScoresChanged?.Invoke();
+        }
+
+        private void HandlePhaseChanged(MatchPhase previousValue, MatchPhase currentValue)
+        {
+            PhaseChanged?.Invoke();
+        }
+
+        private void HandleWinningPlayerChanged(int previousValue, int currentValue)
+        {
+            PhaseChanged?.Invoke();
         }
     }
 }
-

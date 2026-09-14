@@ -1,112 +1,116 @@
-using UnityEngine;
-using Unity.Netcode;
-using PiGame.Lobby;
+using System.Collections;
 using System.Collections.Generic;
+using PiGame.Lobby;
+using Unity.Netcode;
+using UnityEngine;
 
 namespace PiGame.Gameplay
 {
     public class MatchManager : NetworkBehaviour
     {
-        private MatchSnapshot _snapshot;
-
         [SerializeField] private Transform[] _spawnPoints;
 
         [Header("Characters")]
         [SerializeField] private List<LobbyCharacterDefinition> _characterDefinitions;
-
-        private int _durationMinutes;
-        private LobbyMatchMode _mode;
-
         [SerializeField] private MatchController _matchController;
+
+        private MatchSnapshot _snapshot;
 
         public override void OnNetworkSpawn()
         {
-            if(!IsServer)
+            if (!IsServer)
+            {
                 return;
+            }
+
+            if (MatchSession.Instance == null || MatchSession.Instance.Snapshot == null)
+            {
+                Debug.LogError("MatchSnapshot não encontrado.");
+                return;
+            }
 
             _snapshot = MatchSession.Instance.Snapshot;
-
-            if(_snapshot == null)
-            {
-                Debug.LogError("MatchSnapshot não encontrado");
-                return;
-            }
-
-            StartMatch();
+            StartCoroutine(StartMatchWhenReady());
         }
 
-        private void StartMatch()
+        private IEnumerator StartMatchWhenReady()
         {
-            InitializeRules();
-            SpawnPlayers();
+            yield return new WaitUntil(() =>
+                _matchController != null && _matchController.IsSpawned);
 
             _matchController.Initialize(_snapshot.MatchSettings);
-        }
-
-        private void InitializeRules()
-        {
-            LobbyMatchSettingsData settings = _snapshot.MatchSettings;
-            if(settings == null)
-            {
-                Debug.LogError("Configurações não encontradas");
-                return;
-            }
-
-            _durationMinutes = settings.DurationMinutes;
-            _mode = settings.Mode;
-        }
-
-        private LobbyCharacterDefinition FindCharacter(LobbyCharacterId lobbyCharacterId)
-        {
-            foreach(LobbyCharacterDefinition character in _characterDefinitions)
-            {
-                if(character.Id == lobbyCharacterId)
-                {
-                    return character;
-                }
-            }
-            return null;
+            SpawnPlayers();
         }
 
         private void SpawnPlayers()
         {
-            List<int> availableSpawnPoints = new List<int>();
-
-            for(int i = 0; i < _spawnPoints.Length; i++)
+            if (_snapshot.Players == null || _spawnPoints == null)
             {
-                availableSpawnPoints.Add(i);
+                return;
             }
 
-            foreach(LobbyPlayerData playerData in _snapshot.Players)
+            List<int> availableSpawnPoints = new List<int>();
+            for (int i = 0; i < _spawnPoints.Length; i++)
             {
-                if(availableSpawnPoints.Count == 0)
+                if (_spawnPoints[i] != null)
                 {
+                    availableSpawnPoints.Add(i);
+                }
+            }
+
+            foreach (LobbyPlayerData playerData in _snapshot.Players)
+            {
+                if (availableSpawnPoints.Count == 0)
+                {
+                    Debug.LogWarning("Não há spawn points suficientes para todos os jogadores.");
                     return;
                 }
 
-                int randomIndex = Random.Range(0,availableSpawnPoints.Count);
-
-                int spawnPointIndex = availableSpawnPoints[randomIndex];
-
-                availableSpawnPoints.RemoveAt(randomIndex);
-
-                Transform spawnPoint = _spawnPoints[spawnPointIndex];
-
                 LobbyCharacterDefinition character = FindCharacter(playerData.CharacterId);
-
-                if(character == null)
+                if (character == null || character.PlayerPrefab == null)
                 {
-                    Debug.LogError($"Personagem {playerData.CharacterId} não encontrado");
-
+                    Debug.LogError($"Personagem {playerData.CharacterId} não encontrado.");
                     continue;
                 }
 
-                NetworkObject player = Instantiate(character.PlayerPrefab, spawnPoint.position, spawnPoint.rotation);
+                int randomIndex = Random.Range(0, availableSpawnPoints.Count);
+                int spawnPointIndex = availableSpawnPoints[randomIndex];
+                availableSpawnPoints.RemoveAt(randomIndex);
 
-                player.SpawnAsPlayerObject(playerData.ClientId);
+                Transform spawnPoint = _spawnPoints[spawnPointIndex];
+                NetworkObject playerObject = Instantiate(
+                    character.PlayerPrefab,
+                    spawnPoint.position,
+                    spawnPoint.rotation);
+
+                playerObject.SpawnAsPlayerObject(playerData.ClientId, true);
+
+                NetworkPlayerState playerState =
+                    playerObject.GetComponent<NetworkPlayerState>();
+                if (playerState == null)
+                {
+                    Debug.LogError(
+                        $"O prefab de {playerData.CharacterId} precisa de NetworkPlayerState.");
+                    playerObject.Despawn(true);
+                    continue;
+                }
+
+                playerState.InitializeServer(playerData, character.Color);
+                _matchController.RegisterPlayer(playerState, spawnPoint.position);
             }
         }
-    }  
+
+        private LobbyCharacterDefinition FindCharacter(LobbyCharacterId characterId)
+        {
+            foreach (LobbyCharacterDefinition character in _characterDefinitions)
+            {
+                if (character != null && character.Id == characterId)
+                {
+                    return character;
+                }
+            }
+
+            return null;
+        }
+    }
 }
-
-

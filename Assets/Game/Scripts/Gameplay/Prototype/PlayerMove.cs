@@ -14,10 +14,12 @@ namespace PiGame.Gameplay
         [SerializeField] private InputActionReference _jumpAction;
 
         private Rigidbody2D _rigidbody;
+        private NetworkPlayerState _playerState;
 
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody2D>();
+            _playerState = GetComponent<NetworkPlayerState>();
         }
 
         public override void OnNetworkSpawn()
@@ -41,6 +43,12 @@ namespace PiGame.Gameplay
         {
             if(!IsOwner)
                 return;
+
+            if(_playerState != null && !_playerState.CanAct)
+            {
+                _rigidbody.linearVelocity = Vector2.zero;
+                return;
+            }
             
             HandleMovement();
             HandleJump();
