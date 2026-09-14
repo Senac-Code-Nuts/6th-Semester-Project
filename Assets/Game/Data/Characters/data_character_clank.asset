@@ -15,5 +15,5 @@ MonoBehaviour:
   _id: 2
   _displayName: CLANK
   _color: {r: 0.55, g: 0.24, b: 0.08, a: 1}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: 2f2d2910e1c44e42a68f0c18850f3b91, type: 3}
   _playerPrefab: {fileID: 5788769337959252140, guid: f407cadd58a3a3742a605d2391400aec, type: 3}
