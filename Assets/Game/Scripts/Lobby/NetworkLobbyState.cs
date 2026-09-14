@@ -605,7 +605,8 @@ namespace PiGame.Lobby
             }
 
             LobbyCharacterId initialCharacter = hasPreviousPlayer
-                ? LobbyCharacterId.None
+                && IsValidCharacter(previousPlayer.CharacterId)
+                ? previousPlayer.CharacterId
                 : FindInitialCharacter();
             LobbyInputDeviceKind inputDevice = hasPreviousPlayer
                 ? previousPlayer.InputDevice
