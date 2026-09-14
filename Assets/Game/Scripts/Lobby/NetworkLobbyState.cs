@@ -104,13 +104,24 @@ namespace PiGame.Lobby
 
             if (IsServer)
             {
-                _matchSettings.Value = CreateInitialMatchSettings();
+                MatchSnapshot previousMatch = MatchSession.Instance != null
+                    ? MatchSession.Instance.Snapshot
+                    : null;
+
+                _matchSettings.Value = previousMatch != null
+                    ? previousMatch.MatchSettings
+                    : CreateInitialMatchSettings();
                 NetworkManager.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.OnClientDisconnectCallback += HandleClientDisconnected;
 
                 foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
                 {
-                    AddPlayer(clientId);
+                    AddPlayer(clientId, previousMatch);
+                }
+
+                if (previousMatch != null)
+                {
+                    MatchSession.Instance.Clear();
                 }
             }
 
@@ -569,20 +580,84 @@ namespace PiGame.Lobby
 
         private void AddPlayer(ulong clientId)
         {
+            AddPlayer(clientId, null);
+        }
+
+        private void AddPlayer(ulong clientId, MatchSnapshot previousMatch)
+        {
             if (FindPlayerIndex(clientId) >= 0)
             {
                 return;
             }
 
-            int availableSlot = FindAvailableSlot();
+            bool hasPreviousPlayer = TryFindPreviousPlayer(
+                previousMatch,
+                clientId,
+                out LobbyPlayerData previousPlayer);
+            int availableSlot = hasPreviousPlayer
+                && IsSlotAvailable(previousPlayer.PlayerSlot)
+                ? previousPlayer.PlayerSlot
+                : FindAvailableSlot();
             if (availableSlot < 0)
             {
                 NetworkManager.DisconnectClient(clientId, "Lobby cheio.");
                 return;
             }
 
-            LobbyCharacterId initialCharacter = FindInitialCharacter();
-            _players.Add(new LobbyPlayerData(clientId, availableSlot, initialCharacter));
+            LobbyCharacterId initialCharacter = hasPreviousPlayer
+                ? LobbyCharacterId.None
+                : FindInitialCharacter();
+            LobbyInputDeviceKind inputDevice = hasPreviousPlayer
+                ? previousPlayer.InputDevice
+                : LobbyInputDeviceKind.Unknown;
+            _players.Add(new LobbyPlayerData(
+                clientId,
+                availableSlot,
+                initialCharacter,
+                inputDevice,
+                false));
+        }
+
+        private static bool TryFindPreviousPlayer(
+            MatchSnapshot previousMatch,
+            ulong clientId,
+            out LobbyPlayerData previousPlayer)
+        {
+            if (previousMatch != null && previousMatch.Players != null)
+            {
+                foreach (LobbyPlayerData player in previousMatch.Players)
+                {
+                    if (player.ClientId == clientId)
+                    {
+                        previousPlayer = player;
+                        return true;
+                    }
+                }
+            }
+
+            previousPlayer = default;
+            return false;
+        }
+
+        private bool IsSlotAvailable(int playerSlot)
+        {
+            int maximumPlayers = _rules != null
+                ? Mathf.Clamp(_rules.MaximumPlayers, 1, 4)
+                : 4;
+            if (playerSlot < 0 || playerSlot >= maximumPlayers)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _players.Count; i++)
+            {
+                if (_players[i].PlayerSlot == playerSlot)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private int FindPlayerIndex(ulong clientId)

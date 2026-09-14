@@ -17,6 +17,7 @@ namespace PiGame.Networking
         [SerializeField] private NetworkManager _networkManager;
         [SerializeField, Min(1f)] private float _clientConnectionTimeoutSeconds = 8f;
 
+        private bool _isDuplicate;
         private SessionRole _sessionRole;
         private Coroutine _connectionTimeoutRoutine;
         private bool _isStarting;
@@ -28,16 +29,30 @@ namespace PiGame.Networking
         public event Action Disconnected;
         public event Action<LobbyConnectionFailure> ConnectionFailed;
 
+        public static NetcodeLobbyConnectionService Instance { get; private set; }
         public bool IsConnected => _networkManager != null && _networkManager.IsConnectedClient;
         public bool IsHost => _networkManager != null && _networkManager.IsHost;
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                _isDuplicate = true;
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
             _networkManager ??= GetComponent<NetworkManager>();
         }
 
         private void OnEnable()
         {
+            if (_isDuplicate)
+            {
+                return;
+            }
+
             RegisterCallbacks();
         }
 
@@ -45,6 +60,14 @@ namespace PiGame.Networking
         {
             UnregisterCallbacks();
             StopConnectionTimeout();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         public void StartHost()

@@ -29,6 +29,11 @@ namespace PiGame.UI
 
         private void Awake()
         {
+            if (NetcodeLobbyConnectionService.Instance != null)
+            {
+                _connectionService = NetcodeLobbyConnectionService.Instance;
+            }
+
             _connectionServiceContract = _connectionService;
         }
 

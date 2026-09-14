@@ -26,7 +26,16 @@ namespace PiGame.Lobby
 
             MatchSnapshot snapshot = CreateMatchSnapshot(winningMap);
 
-            _matchSession.SetSnapshot(snapshot);
+            MatchSession matchSession = MatchSession.Instance != null
+                ? MatchSession.Instance
+                : _matchSession;
+            if (matchSession == null)
+            {
+                Debug.LogError("MatchSession não encontrada.");
+                return;
+            }
+
+            matchSession.SetSnapshot(snapshot);
 
 
             LoadGameplayScene(winningMap);
