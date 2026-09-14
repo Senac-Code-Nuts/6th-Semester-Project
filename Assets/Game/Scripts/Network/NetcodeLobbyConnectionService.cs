@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
+using System.Net;
+using System.Net.Sockets;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 namespace PiGame.Networking
@@ -18,6 +21,7 @@ namespace PiGame.Networking
         [SerializeField, Min(1f)] private float _clientConnectionTimeoutSeconds = 8f;
 
         private bool _isDuplicate;
+        private UnityTransport _transport;
         private SessionRole _sessionRole;
         private Coroutine _connectionTimeoutRoutine;
         private bool _isStarting;
@@ -32,6 +36,7 @@ namespace PiGame.Networking
         public static NetcodeLobbyConnectionService Instance { get; private set; }
         public bool IsConnected => _networkManager != null && _networkManager.IsConnectedClient;
         public bool IsHost => _networkManager != null && _networkManager.IsHost;
+        public string LocalAddress => FindLocalIpv4Address();
 
         private void Awake()
         {
@@ -44,6 +49,9 @@ namespace PiGame.Networking
 
             Instance = this;
             _networkManager ??= GetComponent<NetworkManager>();
+            _transport = _networkManager != null
+                ? _networkManager.GetComponent<UnityTransport>()
+                : null;
         }
 
         private void OnEnable()
@@ -77,18 +85,37 @@ namespace PiGame.Networking
                 return;
             }
 
+            if (_transport == null)
+            {
+                ReportFailure(LobbyConnectionFailure.NetworkManagerUnavailable, false);
+                return;
+            }
+
+            ushort port = _transport.ConnectionData.Port;
+            _transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+
             if (!_networkManager.StartHost())
             {
                 ReportFailure(LobbyConnectionFailure.StartFailed, false);
             }
         }
 
-        public void StartClient()
+        public void StartClient(string address)
         {
             if (!TryBeginSession(SessionRole.Client))
             {
                 return;
             }
+
+            if (_transport == null || !TryNormalizeIpv4(address, out string normalizedAddress))
+            {
+                ReportFailure(LobbyConnectionFailure.InvalidAddress, false);
+                return;
+            }
+
+            _transport.SetConnectionData(
+                normalizedAddress,
+                _transport.ConnectionData.Port);
 
             if (!_networkManager.StartClient())
             {
@@ -282,6 +309,70 @@ namespace PiGame.Networking
 
             StopCoroutine(_connectionTimeoutRoutine);
             _connectionTimeoutRoutine = null;
+        }
+
+        private static bool TryNormalizeIpv4(string address, out string normalizedAddress)
+        {
+            normalizedAddress = string.Empty;
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                return false;
+            }
+
+            string[] parts = address.Trim().Split('.');
+            if (parts.Length != 4)
+            {
+                return false;
+            }
+
+            int[] octets = new int[4];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (!byte.TryParse(parts[i], out byte octet))
+                {
+                    return false;
+                }
+
+                octets[i] = octet;
+            }
+
+            normalizedAddress =
+                $"{octets[0]}.{octets[1]}.{octets[2]}.{octets[3]}";
+            return true;
+        }
+
+        private static string FindLocalIpv4Address()
+        {
+            try
+            {
+                IPAddress fallbackAddress = null;
+                foreach (IPAddress address in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+                {
+                    if (address.AddressFamily != AddressFamily.InterNetwork
+                        || IPAddress.IsLoopback(address))
+                    {
+                        continue;
+                    }
+
+                    fallbackAddress ??= address;
+                    byte[] bytes = address.GetAddressBytes();
+                    bool isPrivate = bytes[0] == 10
+                        || (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31)
+                        || (bytes[0] == 192 && bytes[1] == 168);
+                    if (isPrivate)
+                    {
+                        return address.ToString();
+                    }
+                }
+
+                return fallbackAddress != null
+                    ? fallbackAddress.ToString()
+                    : "NAO ENCONTRADO";
+            }
+            catch (SocketException)
+            {
+                return "NAO ENCONTRADO";
+            }
         }
 
 #if UNITY_EDITOR

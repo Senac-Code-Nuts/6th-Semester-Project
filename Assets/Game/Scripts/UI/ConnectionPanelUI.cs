@@ -14,20 +14,25 @@ namespace PiGame.UI
         [SerializeField] private Text _secondaryButtonLabel;
         [SerializeField] private Text _statusText;
 
+        private InputField _addressInput;
+        private Text _clientButtonLabel;
         private Coroutine _selectionRoutine;
         private GameObject _selectionTarget;
         private Navigation _hostNavigation;
         private Navigation _clientNavigation;
         private Navigation _secondaryNavigation;
         private bool _isConnecting;
+        private bool _isEnteringAddress;
 
         public event Action HostRequested;
-        public event Action ClientRequested;
+        public event Action<string> ClientRequested;
         public event Action CancelConnectionRequested;
         public event Action QuitRequested;
 
         private void Awake()
         {
+            _clientButtonLabel = _clientButton.GetComponentInChildren<Text>();
+            CreateAddressInput();
             _hostNavigation = _hostButton.navigation;
             _clientNavigation = _clientButton.navigation;
             _secondaryNavigation = _secondaryButton.navigation;
@@ -38,6 +43,7 @@ namespace PiGame.UI
             _hostButton.onClick.AddListener(HandleHostClicked);
             _clientButton.onClick.AddListener(HandleClientClicked);
             _secondaryButton.onClick.AddListener(HandleSecondaryClicked);
+            _addressInput.onValueChanged.AddListener(HandleAddressChanged);
             FocusDefaultButton();
         }
 
@@ -46,6 +52,7 @@ namespace PiGame.UI
             _hostButton.onClick.RemoveListener(HandleHostClicked);
             _clientButton.onClick.RemoveListener(HandleClientClicked);
             _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
+            _addressInput.onValueChanged.RemoveListener(HandleAddressChanged);
             StopSelectionRoutine();
             RestoreNavigation();
         }
@@ -53,8 +60,14 @@ namespace PiGame.UI
         public void ShowIdle()
         {
             _isConnecting = false;
+            _isEnteringAddress = false;
+            _hostButton.gameObject.SetActive(true);
+            _clientButton.gameObject.SetActive(true);
+            _addressInput.gameObject.SetActive(false);
+            _addressInput.interactable = true;
             SetButtonsInteractable(true);
             RestoreNavigation();
+            SetClientButtonLabel("CLIENT");
             _secondaryButtonLabel.text = "SAIR";
             SetStatus("ESCOLHA HOST OU CLIENTE");
             FocusDefaultButton();
@@ -64,6 +77,7 @@ namespace PiGame.UI
         {
             _isConnecting = true;
             SetButtonsInteractable(false);
+            _addressInput.interactable = false;
             DisableNavigation();
             _secondaryButtonLabel.text = "CANCELAR";
             SetStatus(message);
@@ -73,6 +87,22 @@ namespace PiGame.UI
         public void ShowError(string message)
         {
             _isConnecting = false;
+            if (_isEnteringAddress)
+            {
+                _hostButton.gameObject.SetActive(false);
+                _clientButton.gameObject.SetActive(true);
+                _addressInput.gameObject.SetActive(true);
+                _addressInput.interactable = true;
+                _clientButton.interactable = true;
+                _secondaryButton.interactable = true;
+                SetClientButtonLabel("CONECTAR");
+                _secondaryButtonLabel.text = "CANCELAR";
+                ConfigureAddressNavigation();
+                SetStatus(message);
+                FocusAddressInput();
+                return;
+            }
+
             SetButtonsInteractable(true);
             RestoreNavigation();
             _secondaryButtonLabel.text = "SAIR";
@@ -97,6 +127,7 @@ namespace PiGame.UI
 
             _hostButton.interactable = !_isConnecting;
             _clientButton.interactable = !_isConnecting;
+            _addressInput.interactable = _isEnteringAddress && !_isConnecting;
             _secondaryButton.interactable = true;
         }
 
@@ -112,7 +143,21 @@ namespace PiGame.UI
 
         private void HandleClientClicked()
         {
-            ClientRequested?.Invoke();
+            if (!_isEnteringAddress)
+            {
+                ShowAddressEntry();
+                return;
+            }
+
+            if (!TryNormalizeIpv4(_addressInput.text, out string normalizedAddress))
+            {
+                SetStatus("IP INVALIDO");
+                FocusAddressInput();
+                return;
+            }
+
+            _addressInput.SetTextWithoutNotify(normalizedAddress);
+            ClientRequested?.Invoke(normalizedAddress);
         }
 
         private void HandleSecondaryClicked()
@@ -123,7 +168,27 @@ namespace PiGame.UI
                 return;
             }
 
+            if (_isEnteringAddress)
+            {
+                ShowIdle();
+                return;
+            }
+
             QuitRequested?.Invoke();
+        }
+
+        private void ShowAddressEntry()
+        {
+            _isEnteringAddress = true;
+            _hostButton.gameObject.SetActive(false);
+            _clientButton.gameObject.SetActive(true);
+            _addressInput.gameObject.SetActive(true);
+            _addressInput.interactable = true;
+            SetClientButtonLabel("CONECTAR");
+            _secondaryButtonLabel.text = "CANCELAR";
+            SetStatus("DIGITE O IP DO HOST");
+            ConfigureAddressNavigation();
+            FocusAddressInput();
         }
 
         private void SetButtonsInteractable(bool interactable)
@@ -148,6 +213,27 @@ namespace PiGame.UI
             _secondaryButton.navigation = _secondaryNavigation;
         }
 
+        private void ConfigureAddressNavigation()
+        {
+            Navigation inputNavigation = Navigation.defaultNavigation;
+            inputNavigation.mode = Navigation.Mode.Explicit;
+            inputNavigation.selectOnUp = _secondaryButton;
+            inputNavigation.selectOnDown = _clientButton;
+            _addressInput.navigation = inputNavigation;
+
+            Navigation clientNavigation = Navigation.defaultNavigation;
+            clientNavigation.mode = Navigation.Mode.Explicit;
+            clientNavigation.selectOnUp = _addressInput;
+            clientNavigation.selectOnDown = _secondaryButton;
+            _clientButton.navigation = clientNavigation;
+
+            Navigation secondaryNavigation = Navigation.defaultNavigation;
+            secondaryNavigation.mode = Navigation.Mode.Explicit;
+            secondaryNavigation.selectOnUp = _clientButton;
+            secondaryNavigation.selectOnDown = _addressInput;
+            _secondaryButton.navigation = secondaryNavigation;
+        }
+
         private void SetStatus(string message)
         {
             _statusText.text = message;
@@ -167,6 +253,10 @@ namespace PiGame.UI
             if (_selectionTarget != null && _selectionTarget.activeInHierarchy)
             {
                 EventSystem.current?.SetSelectedGameObject(_selectionTarget);
+                if (_selectionTarget == _addressInput.gameObject)
+                {
+                    _addressInput.ActivateInputField();
+                }
             }
 
             _selectionTarget = null;
@@ -183,6 +273,145 @@ namespace PiGame.UI
             StopCoroutine(_selectionRoutine);
             _selectionRoutine = null;
             _selectionTarget = null;
+        }
+
+        private void FocusAddressInput()
+        {
+            SelectButtonNextFrame(_addressInput.gameObject);
+        }
+
+        private void SetClientButtonLabel(string label)
+        {
+            if (_clientButtonLabel != null)
+            {
+                _clientButtonLabel.text = label;
+            }
+        }
+
+        private void HandleAddressChanged(string value)
+        {
+            char[] filteredCharacters = new char[value.Length];
+            int filteredLength = 0;
+            int dotCount = 0;
+
+            foreach (char character in value)
+            {
+                if (char.IsDigit(character))
+                {
+                    filteredCharacters[filteredLength++] = character;
+                }
+                else if (character == '.' && dotCount < 3)
+                {
+                    filteredCharacters[filteredLength++] = character;
+                    dotCount++;
+                }
+            }
+
+            string filteredValue = new string(filteredCharacters, 0, filteredLength);
+            if (filteredValue != value)
+            {
+                _addressInput.SetTextWithoutNotify(filteredValue);
+            }
+        }
+
+        private static bool TryNormalizeIpv4(string address, out string normalizedAddress)
+        {
+            normalizedAddress = string.Empty;
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                return false;
+            }
+
+            string[] parts = address.Trim().Split('.');
+            if (parts.Length != 4)
+            {
+                return false;
+            }
+
+            int[] octets = new int[4];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (!byte.TryParse(parts[i], out byte octet))
+                {
+                    return false;
+                }
+
+                octets[i] = octet;
+            }
+
+            normalizedAddress =
+                $"{octets[0]}.{octets[1]}.{octets[2]}.{octets[3]}";
+            return true;
+        }
+
+        private void CreateAddressInput()
+        {
+            GameObject inputObject = new GameObject(
+                "ClientAddressInput",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(InputField));
+            inputObject.layer = gameObject.layer;
+            inputObject.transform.SetParent(_hostButton.transform.parent, false);
+
+            RectTransform inputRect = inputObject.GetComponent<RectTransform>();
+            inputRect.anchorMin = new Vector2(0.5f, 0.5f);
+            inputRect.anchorMax = new Vector2(0.5f, 0.5f);
+            inputRect.anchoredPosition = new Vector2(0f, 90f);
+            inputRect.sizeDelta = new Vector2(350f, 58f);
+
+            Image inputBackground = inputObject.GetComponent<Image>();
+            inputBackground.color = new Color(0.09f, 0.08f, 0.16f, 0.9f);
+
+            Text inputText = CreateInputText(inputObject.transform, "Text", Color.white);
+            Text placeholderText = CreateInputText(
+                inputObject.transform,
+                "Placeholder",
+                new Color(1f, 1f, 1f, 0.35f));
+            placeholderText.text = "192.168.0.10";
+
+            _addressInput = inputObject.GetComponent<InputField>();
+            _addressInput.targetGraphic = inputBackground;
+            _addressInput.textComponent = inputText;
+            _addressInput.placeholder = placeholderText;
+            _addressInput.characterLimit = 15;
+            _addressInput.lineType = InputField.LineType.SingleLine;
+            _addressInput.contentType = InputField.ContentType.Standard;
+            _addressInput.caretColor = Color.white;
+            _addressInput.selectionColor = new Color(0.32f, 0.86f, 0.78f, 0.45f);
+            inputObject.SetActive(false);
+        }
+
+        private Text CreateInputText(
+            Transform parent,
+            string objectName,
+            Color color)
+        {
+            GameObject textObject = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Text));
+            textObject.layer = gameObject.layer;
+            textObject.transform.SetParent(parent, false);
+
+            RectTransform textRect = textObject.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = new Vector2(14f, 6f);
+            textRect.offsetMax = new Vector2(-14f, -6f);
+
+            Text text = textObject.GetComponent<Text>();
+            text.font = _statusText.font;
+            text.fontSize = 21;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = color;
+            text.raycastTarget = false;
+            text.supportRichText = false;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            return text;
         }
     }
 }

@@ -1,6 +1,7 @@
 using PiGame.Lobby;
 using PiGame.Networking;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PiGame.UI
 {
@@ -20,6 +21,7 @@ namespace PiGame.UI
         [SerializeField] private LobbyMapVotingController _mapVotingController;
         [SerializeField] private ConfirmationPanelUI _confirmationPanel;
         [SerializeField] private MatchSettingsPanelUI _matchSettingsPanel;
+        [SerializeField] private Text _localNetworkAddressText;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
@@ -109,7 +111,7 @@ namespace PiGame.UI
             _connectionServiceContract.StartHost();
         }
 
-        private void HandleClientRequested()
+        private void HandleClientRequested(string address)
         {
             if (_connectionServiceContract == null)
             {
@@ -118,7 +120,7 @@ namespace PiGame.UI
             }
 
             _connectionPanel.ShowConnecting("CONECTANDO AO HOST...");
-            _connectionServiceContract.StartClient();
+            _connectionServiceContract.StartClient(address);
         }
 
         private void HandleCancelConnectionRequested()
@@ -206,6 +208,7 @@ namespace PiGame.UI
                 LobbyConnectionFailure.HostUnavailable => "HOST NAO ENCONTRADO",
                 LobbyConnectionFailure.TimedOut => "TEMPO DE CONEXAO ESGOTADO",
                 LobbyConnectionFailure.TransportFailure => "FALHA NO TRANSPORTE DE REDE",
+                LobbyConnectionFailure.InvalidAddress => "IP INVALIDO",
                 _ => "NAO FOI POSSIVEL INICIAR A CONEXAO"
             };
 
@@ -231,7 +234,24 @@ namespace PiGame.UI
             _matchSettingsPanel.ResetView();
             _matchSettingsPanel.SetMenuVisible(
                 _connectionServiceContract.IsHost && !_mapVotingController.IsVisible);
+            RefreshLocalNetworkAddress();
             SetLobbyInteractionEnabled(true);
+        }
+
+        private void RefreshLocalNetworkAddress()
+        {
+            if (_localNetworkAddressText == null || _connectionServiceContract == null)
+            {
+                return;
+            }
+
+            bool showAddress = _connectionServiceContract.IsHost;
+            _localNetworkAddressText.gameObject.SetActive(showAddress);
+            if (showAddress)
+            {
+                _localNetworkAddressText.text =
+                    $"IP DA REDE LOCAL: {_connectionServiceContract.LocalAddress}";
+            }
         }
 
         private void HandleMatchSettingsOpened()

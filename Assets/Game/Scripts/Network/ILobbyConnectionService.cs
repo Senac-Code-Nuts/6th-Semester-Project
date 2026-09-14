@@ -9,7 +9,8 @@ namespace PiGame.Networking
         StartFailed,
         HostUnavailable,
         TimedOut,
-        TransportFailure
+        TransportFailure,
+        InvalidAddress
     }
 
     public interface ILobbyConnectionService
@@ -20,9 +21,10 @@ namespace PiGame.Networking
 
         bool IsConnected { get; }
         bool IsHost { get; }
+        string LocalAddress { get; }
 
         void StartHost();
-        void StartClient();
+        void StartClient(string address);
         void Shutdown();
     }
 }
