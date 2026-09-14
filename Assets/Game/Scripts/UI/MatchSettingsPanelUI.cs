@@ -16,6 +16,7 @@ namespace PiGame.UI
         [Header("Panels")]
         [SerializeField] private Button _menuButton;
         [SerializeField] private GameObject _overlay;
+        [SerializeField] private Button _confirmButton;
         [SerializeField] private Button _closeButton;
 
         [Header("Duration")]
@@ -36,7 +37,7 @@ namespace PiGame.UI
 
         public event Action Opened;
         public event Action Closed;
-        public event Action<int, LobbyMatchMode> SelectionChanged;
+        public event Action<int, LobbyMatchMode> SettingsConfirmed;
 
         public int SelectedDurationMinutes { get; private set; } = DefaultDurationMinutes;
         public LobbyMatchMode SelectedMode { get; private set; } = DefaultMode;
@@ -44,9 +45,15 @@ namespace PiGame.UI
 
         private int _minimumPlayers = DefaultMinimumPlayers;
         private bool _requireUniqueCharacters;
+        private LobbyMatchSettingsData _confirmedSettings;
 
         private void Awake()
         {
+            _confirmedSettings = new LobbyMatchSettingsData(
+                DefaultDurationMinutes,
+                DefaultMode,
+                DefaultMinimumPlayers,
+                false);
             RefreshSelectionVisuals();
             RefreshSummary();
         }
@@ -54,6 +61,7 @@ namespace PiGame.UI
         private void OnEnable()
         {
             _menuButton.onClick.AddListener(Show);
+            _confirmButton.onClick.AddListener(ConfirmSelection);
             _closeButton.onClick.AddListener(Hide);
 
             _durationButtons[0].onClick.AddListener(SelectTwoMinutes);
@@ -68,6 +76,7 @@ namespace PiGame.UI
         private void OnDisable()
         {
             _menuButton.onClick.RemoveListener(Show);
+            _confirmButton.onClick.RemoveListener(ConfirmSelection);
             _closeButton.onClick.RemoveListener(Hide);
 
             _durationButtons[0].onClick.RemoveListener(SelectTwoMinutes);
@@ -104,6 +113,7 @@ namespace PiGame.UI
 
             _overlay.SetActive(true);
             _menuButton.interactable = false;
+            LoadDraftFromConfirmedSettings();
             RefreshSelectionVisuals();
             SelectCurrentOption();
             Opened?.Invoke();
@@ -118,6 +128,8 @@ namespace PiGame.UI
 
             _overlay.SetActive(false);
             _menuButton.interactable = true;
+            LoadDraftFromConfirmedSettings();
+            RefreshSelectionVisuals();
             EventSystem.current?.SetSelectedGameObject(_menuButton.gameObject);
             Closed?.Invoke();
         }
@@ -126,16 +138,22 @@ namespace PiGame.UI
         {
             _overlay.SetActive(false);
             _menuButton.interactable = true;
+            LoadDraftFromConfirmedSettings();
             RefreshSelectionVisuals();
             RefreshSummary();
         }
 
         public void Render(LobbyMatchSettingsData settings)
         {
-            SelectedDurationMinutes = settings.DurationMinutes;
-            SelectedMode = settings.Mode;
+            _confirmedSettings = settings;
             _minimumPlayers = settings.MinimumPlayers;
             _requireUniqueCharacters = settings.RequireUniqueCharacters;
+
+            if (!IsOpen)
+            {
+                LoadDraftFromConfirmedSettings();
+            }
+
             RefreshSelectionVisuals();
             RefreshSummary();
         }
@@ -184,16 +202,18 @@ namespace PiGame.UI
         {
             SelectedDurationMinutes = durationMinutes;
             RefreshSelectionVisuals();
-            RefreshSummary();
-            SelectionChanged?.Invoke(SelectedDurationMinutes, SelectedMode);
         }
 
         private void SelectMode(LobbyMatchMode mode)
         {
             SelectedMode = mode;
             RefreshSelectionVisuals();
-            RefreshSummary();
-            SelectionChanged?.Invoke(SelectedDurationMinutes, SelectedMode);
+        }
+
+        private void ConfirmSelection()
+        {
+            SettingsConfirmed?.Invoke(SelectedDurationMinutes, SelectedMode);
+            Hide();
         }
 
         private void RefreshSelectionVisuals()
@@ -236,11 +256,17 @@ namespace PiGame.UI
                 return;
             }
 
-            string modeName = SelectedMode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
+            string modeName = _confirmedSettings.Mode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
             string repeatedCharacters = _requireUniqueCharacters ? "NAO" : "SIM";
             _summaryText.text =
-                $"PARTIDA: {SelectedDurationMinutes} MIN  |  MODO: {modeName}\n"
+                $"PARTIDA: {_confirmedSettings.DurationMinutes} MIN  |  MODO: {modeName}\n"
                 + $"MINIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
+        }
+
+        private void LoadDraftFromConfirmedSettings()
+        {
+            SelectedDurationMinutes = _confirmedSettings.DurationMinutes;
+            SelectedMode = _confirmedSettings.Mode;
         }
     }
 }

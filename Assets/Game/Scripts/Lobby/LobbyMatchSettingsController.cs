@@ -17,7 +17,7 @@ namespace PiGame.Lobby
 
         private void OnEnable()
         {
-            _view.SelectionChanged += HandleSelectionChanged;
+            _view.SettingsConfirmed += HandleSettingsConfirmed;
 
             if (_lobbyStateContract != null)
             {
@@ -29,7 +29,7 @@ namespace PiGame.Lobby
 
         private void OnDisable()
         {
-            _view.SelectionChanged -= HandleSelectionChanged;
+            _view.SettingsConfirmed -= HandleSettingsConfirmed;
 
             if (_lobbyStateContract != null)
             {
@@ -37,7 +37,7 @@ namespace PiGame.Lobby
             }
         }
 
-        private void HandleSelectionChanged(int durationMinutes, LobbyMatchMode mode)
+        private void HandleSettingsConfirmed(int durationMinutes, LobbyMatchMode mode)
         {
             _lobbyStateContract?.RequestMatchSettings(durationMinutes, mode);
         }
