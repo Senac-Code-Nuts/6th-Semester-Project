@@ -21,6 +21,8 @@ namespace PiGame.UI
         private Navigation _hostNavigation;
         private Navigation _clientNavigation;
         private Navigation _secondaryNavigation;
+        private bool _navigationCached;
+        private bool _initializationErrorReported;
         private bool _isConnecting;
         private bool _isEnteringAddress;
 
@@ -31,15 +33,20 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            _clientButtonLabel = _clientButton.GetComponentInChildren<Text>();
-            CreateAddressInput();
-            _hostNavigation = _hostButton.navigation;
-            _clientNavigation = _clientButton.navigation;
-            _secondaryNavigation = _secondaryButton.navigation;
+            EnsureInitialized();
         }
 
         private void OnEnable()
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
+            _hostButton.onClick.RemoveListener(HandleHostClicked);
+            _clientButton.onClick.RemoveListener(HandleClientClicked);
+            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
+            _addressInput.onValueChanged.RemoveListener(HandleAddressChanged);
             _hostButton.onClick.AddListener(HandleHostClicked);
             _clientButton.onClick.AddListener(HandleClientClicked);
             _secondaryButton.onClick.AddListener(HandleSecondaryClicked);
@@ -49,16 +56,40 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
-            _hostButton.onClick.RemoveListener(HandleHostClicked);
-            _clientButton.onClick.RemoveListener(HandleClientClicked);
-            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
-            _addressInput.onValueChanged.RemoveListener(HandleAddressChanged);
+            if (_hostButton != null)
+            {
+                _hostButton.onClick.RemoveListener(HandleHostClicked);
+            }
+
+            if (_clientButton != null)
+            {
+                _clientButton.onClick.RemoveListener(HandleClientClicked);
+            }
+
+            if (_secondaryButton != null)
+            {
+                _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
+            }
+
+            if (_addressInput != null)
+            {
+                _addressInput.onValueChanged.RemoveListener(HandleAddressChanged);
+            }
+
             StopSelectionRoutine();
-            RestoreNavigation();
+            if (_navigationCached)
+            {
+                RestoreNavigation();
+            }
         }
 
         public void ShowIdle()
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             _isConnecting = false;
             _isEnteringAddress = false;
             _hostButton.gameObject.SetActive(true);
@@ -75,6 +106,11 @@ namespace PiGame.UI
 
         public void ShowConnecting(string message)
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             _isConnecting = true;
             SetButtonsInteractable(false);
             _addressInput.interactable = false;
@@ -86,6 +122,11 @@ namespace PiGame.UI
 
         public void ShowError(string message)
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             _isConnecting = false;
             if (_isEnteringAddress)
             {
@@ -112,11 +153,21 @@ namespace PiGame.UI
 
         public void FocusDefaultButton()
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             SelectButtonNextFrame(_hostButton.gameObject);
         }
 
         public void SetInteractionEnabled(bool enabled)
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             if (!enabled)
             {
                 _hostButton.interactable = false;
@@ -342,6 +393,53 @@ namespace PiGame.UI
             normalizedAddress =
                 $"{octets[0]}.{octets[1]}.{octets[2]}.{octets[3]}";
             return true;
+        }
+
+        private bool EnsureInitialized()
+        {
+            if (_hostButton == null
+                || _clientButton == null
+                || _secondaryButton == null
+                || _secondaryButtonLabel == null
+                || _statusText == null)
+            {
+                if (!_initializationErrorReported)
+                {
+                    Debug.LogError(
+                        "ConnectionPanelUI possui referencias obrigatorias ausentes.",
+                        this);
+                    _initializationErrorReported = true;
+                }
+
+                return false;
+            }
+
+            _clientButtonLabel ??= _clientButton.GetComponentInChildren<Text>();
+
+            if (_addressInput == null)
+            {
+                Transform inputParent = _hostButton.transform.parent;
+                Transform existingInput = inputParent.Find("ClientAddressInput");
+                if (existingInput != null)
+                {
+                    _addressInput = existingInput.GetComponent<InputField>();
+                }
+
+                if (_addressInput == null)
+                {
+                    CreateAddressInput();
+                }
+            }
+
+            if (!_navigationCached)
+            {
+                _hostNavigation = _hostButton.navigation;
+                _clientNavigation = _clientButton.navigation;
+                _secondaryNavigation = _secondaryButton.navigation;
+                _navigationCached = true;
+            }
+
+            return _addressInput != null;
         }
 
         private void CreateAddressInput()
