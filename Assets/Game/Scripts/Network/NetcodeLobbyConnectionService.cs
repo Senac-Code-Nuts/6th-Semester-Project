@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Net;
 using System.Net.Sockets;
+using PiGame.Lobby;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -136,6 +137,12 @@ namespace PiGame.Networking
 
             if (_networkManager != null && _networkManager.IsListening)
             {
+                if (_networkManager.IsHost)
+                {
+                    NetworkLobbyState lobbyState = FindFirstObjectByType<NetworkLobbyState>();
+                    lobbyState?.ResetSession();
+                }
+
                 _networkManager.Shutdown();
             }
         }

@@ -108,6 +108,7 @@ namespace PiGame.Lobby
                     ? MatchSession.Instance.Snapshot
                     : null;
 
+                ResetReplicatedSessionStateServer();
                 _matchSettings.Value = previousMatch != null
                     ? previousMatch.MatchSettings
                     : CreateInitialMatchSettings();
@@ -129,6 +130,18 @@ namespace PiGame.Lobby
             MapVotesChanged?.Invoke();
             StageChanged?.Invoke();
             MatchSettingsChanged?.Invoke();
+        }
+
+        public void ResetSession()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            ResetReplicatedSessionStateServer();
+            _matchSettings.Value = CreateInitialMatchSettings();
+            MatchSession.Instance?.Clear();
         }
 
         public override void OnNetworkDespawn()
@@ -869,6 +882,15 @@ namespace PiGame.Lobby
                 _players[i] = player;
             }
 
+            _stage.Value = LobbyStage.CharacterSelection;
+        }
+
+        private void ResetReplicatedSessionStateServer()
+        {
+            StopMatchStartRoutine();
+            _players.Clear();
+            _mapVotes.Clear();
+            _winningMap.Value = LobbyMapId.None;
             _stage.Value = LobbyStage.CharacterSelection;
         }
 
