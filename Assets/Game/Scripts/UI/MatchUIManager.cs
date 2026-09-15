@@ -14,6 +14,7 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             CreateMissingTexts();
+            ConfigureHudLayout();
         }
 
         private void OnEnable()
@@ -69,7 +70,10 @@ namespace PiGame.Gameplay
                     scoreBuilder.Append("   ");
                 }
 
-                scoreBuilder.Append($"P{score.PlayerSlot + 1}: {score.Kills}/{_matchController.KillLimit}");
+                string playerColor = PlayerSlotColors.GetHtml(score.PlayerSlot);
+                scoreBuilder.Append(
+                    $"<color=#{playerColor}>P{score.PlayerSlot + 1}: "
+                    + $"{score.Kills}/{_matchController.KillLimit}</color>");
             }
 
             _scoreText.text = scoreBuilder.ToString();
@@ -89,9 +93,16 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _resultText.text = _matchController.WinningPlayerSlot >= 0
-                ? $"P{_matchController.WinningPlayerSlot + 1} VENCEU!"
-                : "EMPATE!";
+            int winningPlayerSlot = _matchController.WinningPlayerSlot;
+            if (winningPlayerSlot < 0)
+            {
+                _resultText.text = "EMPATE!";
+                return;
+            }
+
+            string playerColor = PlayerSlotColors.GetHtml(winningPlayerSlot);
+            _resultText.text =
+                $"<color=#{playerColor}>P{winningPlayerSlot + 1} VENCEU!</color>";
         }
 
         private void CreateMissingTexts()
@@ -103,30 +114,78 @@ namespace PiGame.Gameplay
 
             if (_scoreText == null)
             {
-                _scoreText = CreateText("ScoreText", new Vector2(0f, 190f), 28f);
+                _scoreText = CreateText("ScoreText", 28f);
             }
 
             if (_resultText == null)
             {
-                _resultText = CreateText("ResultText", Vector2.zero, 56f);
+                _resultText = CreateText("ResultText", 56f);
                 _resultText.gameObject.SetActive(false);
             }
         }
 
-        private TMP_Text CreateText(string objectName, Vector2 position, float fontSize)
+        private void ConfigureHudLayout()
+        {
+            ConfigureTextRect(
+                _scoreText,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                Vector2.zero,
+                new Vector2(1100f, 60f),
+                TextAlignmentOptions.Center);
+
+            ConfigureTextRect(
+                _timerText,
+                Vector2.zero,
+                Vector2.zero,
+                new Vector2(32f, 24f),
+                new Vector2(260f, 60f),
+                TextAlignmentOptions.Left);
+
+            ConfigureTextRect(
+                _resultText,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(1400f, 180f),
+                TextAlignmentOptions.Center);
+        }
+
+        private TMP_Text CreateText(string objectName, float fontSize)
         {
             TMP_Text text = Instantiate(_timerText, _timerText.transform.parent);
             text.name = objectName;
             text.text = string.Empty;
+            text.enableAutoSizing = false;
             text.fontSize = fontSize;
             text.alignment = TextAlignmentOptions.Center;
 
-            RectTransform rectTransform = text.rectTransform;
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = position;
-            rectTransform.sizeDelta = new Vector2(900f, 100f);
             return text;
+        }
+
+        private static void ConfigureTextRect(
+            TMP_Text text,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 position,
+            Vector2 size,
+            TextAlignmentOptions alignment)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.alignment = alignment;
+            text.margin = Vector4.zero;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.overflowMode = TextOverflowModes.Overflow;
+            RectTransform rectTransform = text.rectTransform;
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.pivot = anchorMax;
+            rectTransform.anchoredPosition = position;
+            rectTransform.sizeDelta = size;
         }
     }
 }
