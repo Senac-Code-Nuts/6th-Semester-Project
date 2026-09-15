@@ -186,7 +186,7 @@ namespace PiGame.UI
         {
             if (_optionLabels.Length > 0)
             {
-                _optionLabels[0].text = "ALEATORIO";
+                _optionLabels[0].text = "ALEATÓRIO";
             }
 
             for (int i = 0; i < _maps.Length && i + 1 < _optionLabels.Length; i++)
