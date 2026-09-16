@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
+using System;
 
 namespace PiGame.Gameplay
 {
@@ -16,6 +17,8 @@ namespace PiGame.Gameplay
         private Rigidbody2D _rigidbody;
         private NetworkPlayerState _playerState;
 
+        private Animator _playerAnimator;
+        private SpriteRenderer _spriteRenderer;
         [Header("Ground")]
         [SerializeField] private float _groundCheckDistance = 0.1f;
         [SerializeField] private LayerMask _groundLayer;
@@ -48,6 +51,8 @@ namespace PiGame.Gameplay
         {
             _rigidbody = GetComponent<Rigidbody2D>();
             _playerState = GetComponent<NetworkPlayerState>();
+            _playerAnimator = GetComponent<Animator>();
+            _spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
         public override void OnNetworkSpawn()
@@ -118,12 +123,18 @@ namespace PiGame.Gameplay
                 return;
             Vector2 input = _moveAction.action.ReadValue<Vector2>();
             _rigidbody.linearVelocity = new Vector2(input.x * _moveSpeed, _rigidbody.linearVelocity.y);
+            _playerAnimator.SetFloat("xVelocity",Math.Abs(_rigidbody.linearVelocity.x));
+            _playerAnimator.SetFloat("yVelocity",_rigidbody.linearVelocity.y);
+            _spriteRenderer.flipX = _rigidbody.linearVelocity.x < 0 ? false : true; 
         }
 
         private void HandleJump()
         {
             if(!_jumpAction.action.WasPressedThisFrame())
                 return;
+            
+            _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
+            _playerAnimator.SetBool("isJumping", true);
             if(_isWallSliding)
             {
                 float jumpDirection = -_wallDirection;
