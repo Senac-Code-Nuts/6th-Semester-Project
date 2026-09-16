@@ -15,6 +15,7 @@ namespace PiGame.Gameplay
         [SerializeField] private InputActionReference _jumpAction;
 
         private Rigidbody2D _rigidbody;
+        private Collider2D _bodyCollider;
         private NetworkPlayerState _playerState;
 
         private Animator _playerAnimator;
@@ -50,6 +51,7 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody2D>();
+            _bodyCollider = GetComponent<Collider2D>();
             _playerState = GetComponent<NetworkPlayerState>();
             _playerAnimator = GetComponent<Animator>();
             _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -125,21 +127,27 @@ namespace PiGame.Gameplay
             _rigidbody.linearVelocity = new Vector2(input.x * _moveSpeed, _rigidbody.linearVelocity.y);
             _playerAnimator.SetFloat("xVelocity",Math.Abs(_rigidbody.linearVelocity.x));
             _playerAnimator.SetFloat("yVelocity",_rigidbody.linearVelocity.y);
-            _spriteRenderer.flipX = _rigidbody.linearVelocity.x < 0 ? false : true; 
+            if (input.x > 0.01f)
+            {
+                _spriteRenderer.flipX = false;
+            }
+            else if (input.x < -0.01f)
+            {
+                _spriteRenderer.flipX = true;
+            }
         }
 
         private void HandleJump()
         {
             if(!_jumpAction.action.WasPressedThisFrame())
                 return;
-            
-            _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
-            _playerAnimator.SetBool("isJumping", true);
+
             if(_isWallSliding)
             {
                 float jumpDirection = -_wallDirection;
 
                 _rigidbody.linearVelocity = new Vector2(jumpDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
+                _playerAnimator.SetBool("isJumping", true);
 
                 _wallJumpControlTimer  = _wallJumpControlLockTime;
 
@@ -148,17 +156,49 @@ namespace PiGame.Gameplay
 
                 return;
             }
-            if(_isGrounded)
+
+            if(!_isGrounded)
             {
-                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
+                return;
             }
+
+            _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
+            _playerAnimator.SetBool("isJumping", true);
+            _isGrounded = false;
         }
 
         private void CheckGround()
         {
-            RaycastHit2D hit = Physics2D.Raycast(_groundCheck.position, Vector2.down, _groundCheckDistance, _groundLayer);
+            if (_bodyCollider == null || _groundCheck == null)
+            {
+                _isGrounded = false;
+                return;
+            }
 
-            _isGrounded = hit.collider != null;
+            Bounds bounds = _bodyCollider.bounds;
+            Vector2 probeOrigin = new Vector2(
+                _groundCheck.position.x,
+                bounds.min.y + Physics2D.defaultContactOffset);
+            Vector2 probeSize = new Vector2(
+                Mathf.Max(0.05f, bounds.size.x * 0.75f),
+                Physics2D.defaultContactOffset * 2f);
+
+            RaycastHit2D hit = Physics2D.BoxCast(
+                probeOrigin,
+                probeSize,
+                0f,
+                Vector2.down,
+                _groundCheckDistance,
+                _groundLayer);
+
+            bool isFallingOrStill = _rigidbody.linearVelocity.y <= 0.05f;
+            bool foundFloor = hit.collider != null && hit.normal.y >= 0.5f;
+            _isGrounded = isFallingOrStill && foundFloor;
+
+            if (_isGrounded)
+            {
+                _playerAnimator.SetBool("isJumping", false);
+            }
         }
 
         private void CheckWall()

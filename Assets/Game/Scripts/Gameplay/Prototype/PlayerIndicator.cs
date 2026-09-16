@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace PiGame.Gameplay
@@ -6,9 +7,11 @@ namespace PiGame.Gameplay
     public class PlayerIndicator : MonoBehaviour
     {
         [SerializeField] private Vector3 _localPosition = new Vector3(0f, 1.45f, 0f);
+        [SerializeField] private Vector3 _labelLocalPosition = new Vector3(0f, 2f, 0f);
 
         private NetworkPlayerState _playerState;
         private MeshRenderer _renderer;
+        private TextMeshPro _playerLabel;
 
         private void Awake()
         {
@@ -48,7 +51,31 @@ namespace PiGame.Gameplay
             indicator.AddComponent<MeshFilter>().sharedMesh = mesh;
             _renderer = indicator.AddComponent<MeshRenderer>();
             _renderer.material = new Material(Shader.Find("Sprites/Default"));
+            SpriteRenderer playerRenderer = GetComponentInChildren<SpriteRenderer>();
+            if (playerRenderer != null)
+            {
+                _renderer.sortingLayerID = playerRenderer.sortingLayerID;
+            }
             _renderer.sortingOrder = 30;
+
+            GameObject labelObject = new GameObject(
+                "PlayerSlotLabel",
+                typeof(RectTransform));
+            labelObject.transform.SetParent(transform, false);
+            labelObject.transform.localPosition = _labelLocalPosition;
+
+            _playerLabel = labelObject.AddComponent<TextMeshPro>();
+            _playerLabel.alignment = TextAlignmentOptions.Center;
+            _playerLabel.enableAutoSizing = false;
+            _playerLabel.fontSize = 5f;
+            _playerLabel.fontStyle = FontStyles.Bold;
+            _playerLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            _playerLabel.overflowMode = TextOverflowModes.Overflow;
+            _playerLabel.outlineColor = Color.black;
+            _playerLabel.outlineWidth = 0.2f;
+            _playerLabel.rectTransform.sizeDelta = new Vector2(2.2f, 0.8f);
+            _playerLabel.renderer.sortingLayerID = _renderer.sortingLayerID;
+            _playerLabel.renderer.sortingOrder = 31;
         }
 
         private void Refresh()
@@ -58,8 +85,22 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _renderer.enabled = _playerState.IsAlive;
-            _renderer.material.color = _playerState.IndicatorColor;
+            bool shouldShow = _playerState.IsAlive && _playerState.PlayerSlot >= 0;
+            Color playerColor = _playerState.IndicatorColor;
+
+            _renderer.enabled = shouldShow;
+            _renderer.material.color = playerColor;
+
+            if (_playerLabel == null)
+            {
+                return;
+            }
+
+            _playerLabel.enabled = shouldShow;
+            _playerLabel.text = shouldShow
+                ? $"P{_playerState.PlayerSlot + 1}"
+                : string.Empty;
+            _playerLabel.color = playerColor;
         }
     }
 }
