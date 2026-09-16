@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0400000000000000000000000000013, type: 3}
   m_Name: data_map_kitezh_2
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Lobby.LobbyMapDefinition
-  _id: 1
+  _id: 4
   _displayName: Kitezh 2
   _preview: {fileID: 713174195881514070, guid: f9ccdd58f306c2f4482789ba5c244914, type: 3}
   _sceneName: Kitezh 2
