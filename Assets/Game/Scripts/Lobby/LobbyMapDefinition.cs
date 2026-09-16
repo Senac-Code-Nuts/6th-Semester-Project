@@ -5,7 +5,7 @@ namespace PiGame.Lobby
     [CreateAssetMenu(fileName = "data_map_", menuName = "Pi Game/Lobby/Map")]
     public class LobbyMapDefinition : ScriptableObject
     {
-        [SerializeField] private LobbyMapId _id = LobbyMapId.PrototypeArena;
+        [SerializeField] private LobbyMapId _id = LobbyMapId.CidadeSemNome1;
         [SerializeField] private string _displayName = "MAPA 01";
         [SerializeField] private Sprite _preview;
         [SerializeField] private string _sceneName;
