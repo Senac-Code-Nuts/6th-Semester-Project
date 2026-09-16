@@ -192,7 +192,7 @@ Rigidbody2D:
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 1343ed8ec04c4b642a9785dd9ce7da51, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -223,7 +223,7 @@ MonoBehaviour:
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 72
   _groundCheck: {fileID: 4552120826369004425}
   _wallCheck: {fileID: 5445607828228128791}
   _wallCheckDistance: 0.15
@@ -316,6 +316,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerIndicator
   _localPosition: {x: 0, y: 1.45, z: 0}
+  _labelLocalPosition: {x: 0, y: 2, z: 0}
 --- !u!114 &750885784796070611
 MonoBehaviour:
   m_ObjectHideFlags: 0
