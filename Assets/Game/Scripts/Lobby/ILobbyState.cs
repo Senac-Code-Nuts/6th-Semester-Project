@@ -20,6 +20,7 @@ namespace PiGame.Lobby
         int MatchDurationMinutes { get; }
         LobbyMatchMode MatchMode { get; }
         int MinimumPlayers { get; }
+        int SelectableCharacterCount { get; }
         bool RequireUniqueCharacters { get; }
         bool LocalClientIsHost { get; }
         bool AllPlayersReady { get; }
@@ -28,6 +29,7 @@ namespace PiGame.Lobby
 
         LobbyPlayerData GetPlayer(int index);
         LobbyMapVoteData GetMapVote(int index);
+        LobbyCharacterId GetSelectableCharacter(int index);
         bool TryGetPlayer(ulong clientId, out LobbyPlayerData player);
         bool TryGetMapVote(ulong clientId, out LobbyMapVoteData vote);
         bool TryGetCharacterLock(
