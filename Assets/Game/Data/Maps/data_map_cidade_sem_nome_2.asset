@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0400000000000000000000000000013, type: 3}
-  m_Name: data_map_prototype
-  m_EditorClassIdentifier: 
+  m_Name: data_map_cidade_sem_nome_2
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Lobby.LobbyMapDefinition
   _id: 1
-  _displayName: MAPA 01
-  _preview: {fileID: 0}
-  _sceneName: MatchScene
+  _displayName: Cidade Sem Nome 2
+  _preview: {fileID: -2222040665984364744, guid: 7c4498b67bb3ba6429408961942b6af2, type: 3}
+  _sceneName: Cidade Sem Nome 2

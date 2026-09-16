@@ -41,5 +41,20 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Back VFX
+    uniqueID: 2750690941
+    locked: 0
+  - name: Background
+    uniqueID: 3416620517
+    locked: 0
+  - name: VFX
+    uniqueID: 4168872145
+    locked: 0
+  - name: Wall
+    uniqueID: 3680460111
+    locked: 0
+  - name: Platform
+    uniqueID: 3925736001
+    locked: 0
   m_RenderingLayers:
   - Default
