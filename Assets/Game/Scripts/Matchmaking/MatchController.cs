@@ -226,6 +226,18 @@ namespace PiGame.Gameplay
             {
                 _scores.RemoveAt(scoreIndex);
             }
+
+            TryFinishWhenOnePlayerRemains();
+        }
+
+        private void TryFinishWhenOnePlayerRemains()
+        {
+            if (_phase.Value != MatchPhase.Playing || _scores.Count != 1)
+            {
+                return;
+            }
+
+            StartCoroutine(FinishMatch(_scores[0].PlayerSlot));
         }
 
         private int FindScoreIndex(ulong clientId)
