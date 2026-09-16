@@ -87,8 +87,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 1797102589
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1097947750561491309, guid: 599655a52533b24469c5967af3579db7, type: 3}
@@ -218,6 +218,21 @@ MonoBehaviour:
   _jumpForce: 12
   _moveAction: {fileID: -1680190386980627800, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _groundCheckDistance: 0.1
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  _groundCheck: {fileID: 0}
+  _wallCheck: {fileID: 0}
+  _wallCheckDistance: 0.15
+  _wallLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  _wallStickTime: 0.5
+  _wallSlideSpeed: 3
+  _wallJumpHorizontalForce: 10
+  _wallJumpVerticalForce: 12
+  _wallJumpControlLockTime: 0.2
 --- !u!70 &2790756857240774717
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
