@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 namespace PiGame.Gameplay
 {
     [RequireComponent(typeof(Rigidbody2D))]
-    public class PlayerMove : NetworkBehaviour
+    public class PlayerMove : NetworkBehaviour, IGameplayInputBlocker
     {
         [SerializeField] private float _moveSpeed = 7f;
         [SerializeField] private float _jumpForce = 12f;
@@ -42,6 +42,7 @@ namespace PiGame.Gameplay
 
         private int _wallDirection;
         private float _wallJumpControlTimer ;
+        private bool _isGameplayInputBlocked;
 
         private void Awake()
         {
@@ -62,6 +63,7 @@ namespace PiGame.Gameplay
         {
             if(!IsOwner)
                 return;
+            _isGameplayInputBlocked = false;
             _moveAction.action.Disable();
             _jumpAction.action.Disable();
         }
@@ -70,6 +72,12 @@ namespace PiGame.Gameplay
         {
             if(!IsOwner)
                 return;
+
+            if (_isGameplayInputBlocked)
+            {
+                _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
+                return;
+            }
 
             if(_playerState != null && !_playerState.CanAct)
             {
@@ -87,6 +95,20 @@ namespace PiGame.Gameplay
             if (_wallJumpControlTimer  > 0f)
             {
                 _wallJumpControlTimer  -= Time.deltaTime;
+            }
+        }
+
+        public void SetGameplayInputBlocked(bool isBlocked)
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+
+            _isGameplayInputBlocked = isBlocked;
+            if (isBlocked && _rigidbody != null)
+            {
+                _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
             }
         }
 
