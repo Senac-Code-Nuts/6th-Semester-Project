@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace PiGame.Gameplay
 {
     [RequireComponent(typeof(NetworkPlayerState))]
-    public class NetworkPlayerCombat : NetworkBehaviour
+    public class NetworkPlayerCombat : NetworkBehaviour, IGameplayInputBlocker
     {
         [SerializeField] private NetworkProjectile _projectilePrefab;
         [SerializeField] private float _shotCooldownSeconds = 0.35f;
@@ -27,6 +27,7 @@ namespace PiGame.Gameplay
         private NetworkPlayerState _playerState;
         private LineRenderer _aimLine;
         private bool _localAimHeld;
+        private bool _isGameplayInputBlocked;
         private float _nextServerShotTime;
 
         private void Awake()
@@ -44,6 +45,7 @@ namespace PiGame.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            _isGameplayInputBlocked = false;
             _aimDirection.OnValueChanged -= HandleAimChanged;
             _isAiming.OnValueChanged -= HandleAimingChanged;
         }
@@ -52,6 +54,12 @@ namespace PiGame.Gameplay
         {
             if (!IsOwner)
             {
+                return;
+            }
+
+            if (_isGameplayInputBlocked)
+            {
+                CancelLocalAim();
                 return;
             }
 
@@ -93,6 +101,29 @@ namespace PiGame.Gameplay
             _localAimHeld = false;
             _isAiming.Value = false;
             FireRpc(_aimDirection.Value);
+        }
+
+        public void SetGameplayInputBlocked(bool isBlocked)
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+
+            _isGameplayInputBlocked = isBlocked;
+            if (isBlocked)
+            {
+                CancelLocalAim();
+            }
+        }
+
+        private void CancelLocalAim()
+        {
+            _localAimHeld = false;
+            if (IsSpawned && _isAiming.Value)
+            {
+                _isAiming.Value = false;
+            }
         }
 
         [Rpc(SendTo.Server)]

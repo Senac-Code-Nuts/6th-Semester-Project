@@ -453,7 +453,7 @@ GameObject:
   - component: {fileID: 1008857265}
   - component: {fileID: 1008857264}
   - component: {fileID: 1008857266}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -751,7 +751,7 @@ GameObject:
   - component: {fileID: 1411641490}
   - component: {fileID: 1411641491}
   - component: {fileID: 1411641492}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Square (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1027,7 +1027,7 @@ GameObject:
   - component: {fileID: 1478537874}
   - component: {fileID: 1478537875}
   - component: {fileID: 1478537876}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Square (5)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1043,8 +1043,8 @@ Transform:
   m_GameObject: {fileID: 1478537873}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 6.49, y: 0.52, z: 0}
-  m_LocalScale: {x: 4.87, y: 1, z: 1}
+  m_LocalPosition: {x: 7.03, y: 0.52, z: 0}
+  m_LocalScale: {x: 4.2, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1213392914}
@@ -1244,7 +1244,7 @@ GameObject:
   - component: {fileID: 1662423788}
   - component: {fileID: 1662423789}
   - component: {fileID: 1662423790}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Square (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1413,7 +1413,7 @@ GameObject:
   - component: {fileID: 1726329226}
   - component: {fileID: 1726329227}
   - component: {fileID: 1726329228}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Square (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1429,8 +1429,8 @@ Transform:
   m_GameObject: {fileID: 1726329225}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -6.49, y: 0.52, z: 0}
-  m_LocalScale: {x: 4.87, y: 1, z: 1}
+  m_LocalPosition: {x: -7.03, y: 0.52, z: 0}
+  m_LocalScale: {x: 4.2, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1213392914}
@@ -1761,6 +1761,98 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c0400000000000000000000000000002, type: 2}
   - {fileID: 11400000, guid: c0400000000000000000000000000004, type: 2}
   _matchController: {fileID: 518004282}
+--- !u!1 &2100000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2100000001}
+  - component: {fileID: 2100000002}
+  - component: {fileID: 2100000003}
+  - component: {fileID: 2100000004}
+  - component: {fileID: 2100000005}
+  m_Layer: 0
+  m_Name: GameplayPause
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2100000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2100000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 411349cd13f8478a934a61878e8859c6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.UI.PauseMenuUI
+  _targetCanvas: {fileID: 379799873}
+  _font: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
+--- !u!114 &2100000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cdc601e00f14f469f6e6a18728fb34d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.UI.PauseMenuController
+  _view: {fileID: 2100000002}
+  _contextSource: {fileID: 2100000004}
+  _definition: {fileID: 11400000, guid: 64fd9e65d9044ea8aba47c04556d3e0e, type: 2}
+--- !u!114 &2100000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75aea47759f143e99784d7166c94ddff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.GameplayPauseContext
+  _matchController: {fileID: 518004282}
+  _disconnectServiceSource: {fileID: 2100000005}
+--- !u!114 &2100000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 795efa2f93e94324b72f56f29e53919e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetcodeMatchDisconnectService
+  _lobbySceneName: scene_lobby
+  _shutdownWaitSeconds: 2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1773,3 +1865,4 @@ SceneRoots:
   - {fileID: 1587363659}
   - {fileID: 612732900}
   - {fileID: 518004280}
+  - {fileID: 2100000001}
