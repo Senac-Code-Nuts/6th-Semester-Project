@@ -11,38 +11,65 @@ namespace PiGame.Gameplay
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _resultText;
 
+        private MatchController _subscribedMatchController;
+
         private void Awake()
         {
             CreateMissingTexts();
             ConfigureHudLayout();
+            EnsureHudVisible();
         }
 
         private void OnEnable()
         {
-            if (_matchController == null)
-            {
-                return;
-            }
-
-            _matchController.ScoresChanged += RefreshScores;
-            _matchController.PhaseChanged += RefreshResult;
-            RefreshScores();
-            RefreshResult();
+            BindMatchController();
+            EnsureHudVisible();
         }
 
         private void OnDisable()
         {
+            UnbindMatchController();
+        }
+
+        private void BindMatchController()
+        {
             if (_matchController == null)
+            {
+                _matchController = FindFirstObjectByType<MatchController>();
+            }
+
+            if (_matchController == null || _subscribedMatchController == _matchController)
             {
                 return;
             }
 
-            _matchController.ScoresChanged -= RefreshScores;
-            _matchController.PhaseChanged -= RefreshResult;
+            UnbindMatchController();
+            _subscribedMatchController = _matchController;
+            _subscribedMatchController.ScoresChanged += RefreshScores;
+            _subscribedMatchController.PhaseChanged += RefreshResult;
+            RefreshScores();
+            RefreshResult();
+        }
+
+        private void UnbindMatchController()
+        {
+            if (_subscribedMatchController == null)
+            {
+                return;
+            }
+
+            _subscribedMatchController.ScoresChanged -= RefreshScores;
+            _subscribedMatchController.PhaseChanged -= RefreshResult;
+            _subscribedMatchController = null;
         }
 
         private void Update()
         {
+            if (_subscribedMatchController == null)
+            {
+                BindMatchController();
+            }
+
             if (_matchController == null || _timerText == null)
             {
                 return;
@@ -77,6 +104,28 @@ namespace PiGame.Gameplay
             }
 
             _scoreText.text = scoreBuilder.ToString();
+        }
+
+        private void EnsureHudVisible()
+        {
+            if (_timerText == null)
+            {
+                return;
+            }
+
+            Canvas hudCanvas = _timerText.canvas;
+            if (hudCanvas != null)
+            {
+                hudCanvas.gameObject.SetActive(true);
+                hudCanvas.enabled = true;
+                hudCanvas.transform.localScale = Vector3.one;
+            }
+
+            _timerText.gameObject.SetActive(true);
+            if (_scoreText != null)
+            {
+                _scoreText.gameObject.SetActive(true);
+            }
         }
 
         private void RefreshResult()
