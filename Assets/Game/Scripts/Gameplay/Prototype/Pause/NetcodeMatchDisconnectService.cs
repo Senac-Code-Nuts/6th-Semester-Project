@@ -42,7 +42,7 @@ namespace PiGame.Gameplay
             NetworkManager networkManager = NetworkManager.Singleton;
             if (_connectionService != null)
             {
-                _connectionService.Shutdown();
+                await _connectionService.ShutdownAsync();
             }
             else if (networkManager != null && networkManager.IsListening)
             {
