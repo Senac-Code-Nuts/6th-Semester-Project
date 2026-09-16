@@ -257,10 +257,10 @@ namespace PiGame.UI
             }
 
             string modeName = _confirmedSettings.Mode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
-            string repeatedCharacters = _requireUniqueCharacters ? "NAO" : "SIM";
+            string repeatedCharacters = _requireUniqueCharacters ? "NÃO" : "SIM";
             _summaryText.text =
                 $"PARTIDA: {_confirmedSettings.DurationMinutes} MIN  |  MODO: {modeName}\n"
-                + $"MINIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
+                + $"MÍNIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
         }
 
         private void LoadDraftFromConfirmedSettings()

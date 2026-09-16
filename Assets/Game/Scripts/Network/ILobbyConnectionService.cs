@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace PiGame.Networking
 {
@@ -8,9 +9,12 @@ namespace PiGame.Networking
         AlreadyRunning,
         StartFailed,
         HostUnavailable,
-        TimedOut,
         TransportFailure,
-        InvalidAddress
+        ServicesUnavailable,
+        AuthenticationFailed,
+        InvalidJoinCode,
+        SessionNotFound,
+        SessionConflict
     }
 
     public interface ILobbyConnectionService
@@ -21,10 +25,10 @@ namespace PiGame.Networking
 
         bool IsConnected { get; }
         bool IsHost { get; }
-        string LocalAddress { get; }
+        string JoinCode { get; }
 
-        void StartHost();
-        void StartClient(string address);
-        void Shutdown();
+        Task StartHostAsync();
+        Task StartClientAsync(string joinCode);
+        Task ShutdownAsync();
     }
 }

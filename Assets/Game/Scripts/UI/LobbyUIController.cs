@@ -1,6 +1,7 @@
 using PiGame.Lobby;
 using PiGame.Networking;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace PiGame.UI
@@ -21,7 +22,8 @@ namespace PiGame.UI
         [SerializeField] private LobbyMapVotingController _mapVotingController;
         [SerializeField] private ConfirmationPanelUI _confirmationPanel;
         [SerializeField] private MatchSettingsPanelUI _matchSettingsPanel;
-        [SerializeField] private Text _localNetworkAddressText;
+        [FormerlySerializedAs("_localNetworkAddressText")]
+        [SerializeField] private Text _sessionCodeText;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
@@ -56,7 +58,7 @@ namespace PiGame.UI
 
             if (_connectionServiceContract == null)
             {
-                ShowConnectionError("SERVICO DE REDE NAO CONFIGURADO");
+                ShowConnectionError("SERVIÇO DE REDE NÃO CONFIGURADO");
                 Debug.LogError("LobbyUIController requires a connection service reference.", this);
                 return;
             }
@@ -99,33 +101,37 @@ namespace PiGame.UI
             _connectionServiceContract.ConnectionFailed -= HandleConnectionFailed;
         }
 
-        private void HandleHostRequested()
+        private async void HandleHostRequested()
         {
             if (_connectionServiceContract == null)
             {
-                ShowConnectionError("SERVICO DE REDE NAO CONFIGURADO");
+                ShowConnectionError("SERVIÇO DE REDE NÃO CONFIGURADO");
                 return;
             }
 
-            _connectionPanel.ShowConnecting("INICIANDO HOST...");
-            _connectionServiceContract.StartHost();
+            _connectionPanel.ShowConnecting("CRIANDO SALA...");
+            await _connectionServiceContract.StartHostAsync();
         }
 
-        private void HandleClientRequested(string address)
+        private async void HandleClientRequested(string joinCode)
         {
             if (_connectionServiceContract == null)
             {
-                ShowConnectionError("SERVICO DE REDE NAO CONFIGURADO");
+                ShowConnectionError("SERVIÇO DE REDE NÃO CONFIGURADO");
                 return;
             }
 
-            _connectionPanel.ShowConnecting("CONECTANDO AO HOST...");
-            _connectionServiceContract.StartClient(address);
+            _connectionPanel.ShowConnecting("ENTRANDO NA SALA...");
+            await _connectionServiceContract.StartClientAsync(joinCode);
         }
 
-        private void HandleCancelConnectionRequested()
+        private async void HandleCancelConnectionRequested()
         {
-            _connectionServiceContract?.Shutdown();
+            if (_connectionServiceContract != null)
+            {
+                await _connectionServiceContract.ShutdownAsync();
+            }
+
             _connectionPanel.ShowIdle();
         }
 
@@ -142,7 +148,7 @@ namespace PiGame.UI
             OpenConfirmation(ConfirmationAction.Disconnect, message);
         }
 
-        private void HandleConfirmationConfirmed()
+        private async void HandleConfirmationConfirmed()
         {
             ConfirmationAction confirmedAction = _pendingConfirmation;
             _pendingConfirmation = ConfirmationAction.None;
@@ -159,8 +165,13 @@ namespace PiGame.UI
             }
 
             _confirmationPanel.Hide();
-            _connectionServiceContract?.Shutdown();
             ShowConnectionPanel();
+            _connectionPanel.ShowConnecting("ENCERRANDO SALA...");
+            if (_connectionServiceContract != null)
+            {
+                await _connectionServiceContract.ShutdownAsync();
+            }
+
             _connectionPanel.ShowIdle();
         }
 
@@ -196,20 +207,23 @@ namespace PiGame.UI
 
         private void HandleDisconnected()
         {
-            ShowConnectionError("CONEXAO ENCERRADA");
+            ShowConnectionError("CONEXÃO ENCERRADA");
         }
 
         private void HandleConnectionFailed(LobbyConnectionFailure failure)
         {
             string message = failure switch
             {
-                LobbyConnectionFailure.NetworkManagerUnavailable => "NETWORK MANAGER NAO CONFIGURADO",
-                LobbyConnectionFailure.AlreadyRunning => "UMA CONEXAO JA ESTA ATIVA",
-                LobbyConnectionFailure.HostUnavailable => "HOST NAO ENCONTRADO",
-                LobbyConnectionFailure.TimedOut => "TEMPO DE CONEXAO ESGOTADO",
+                LobbyConnectionFailure.NetworkManagerUnavailable => "NETWORK MANAGER NÃO CONFIGURADO",
+                LobbyConnectionFailure.AlreadyRunning => "UMA CONEXÃO JÁ ESTÁ ATIVA",
+                LobbyConnectionFailure.HostUnavailable => "HOST NÃO ENCONTRADO",
                 LobbyConnectionFailure.TransportFailure => "FALHA NO TRANSPORTE DE REDE",
-                LobbyConnectionFailure.InvalidAddress => "IP INVALIDO",
-                _ => "NAO FOI POSSIVEL INICIAR A CONEXAO"
+                LobbyConnectionFailure.ServicesUnavailable => "SERVIÇOS UNITY INDISPONÍVEIS",
+                LobbyConnectionFailure.AuthenticationFailed => "FALHA NA AUTENTICAÇÃO",
+                LobbyConnectionFailure.InvalidJoinCode => "CÓDIGO INVÁLIDO",
+                LobbyConnectionFailure.SessionNotFound => "SALA NÃO ENCONTRADA",
+                LobbyConnectionFailure.SessionConflict => "SESSÃO ANTERIOR AINDA ATIVA",
+                _ => "NÃO FOI POSSÍVEL INICIAR A CONEXÃO"
             };
 
             ShowConnectionError(message);
@@ -234,23 +248,25 @@ namespace PiGame.UI
             _matchSettingsPanel.ResetView();
             _matchSettingsPanel.SetMenuVisible(
                 _connectionServiceContract.IsHost && !_mapVotingController.IsVisible);
-            RefreshLocalNetworkAddress();
+            RefreshSessionCode();
             SetLobbyInteractionEnabled(true);
         }
 
-        private void RefreshLocalNetworkAddress()
+        private void RefreshSessionCode()
         {
-            if (_localNetworkAddressText == null || _connectionServiceContract == null)
+            if (_sessionCodeText == null || _connectionServiceContract == null)
             {
                 return;
             }
 
-            bool showAddress = _connectionServiceContract.IsHost;
-            _localNetworkAddressText.gameObject.SetActive(showAddress);
-            if (showAddress)
+            bool showCode = _connectionServiceContract.IsHost
+                && !string.IsNullOrWhiteSpace(_connectionServiceContract.JoinCode);
+            _sessionCodeText.gameObject.SetActive(showCode);
+            if (showCode)
             {
-                _localNetworkAddressText.text =
-                    $"IP DA REDE LOCAL: {_connectionServiceContract.LocalAddress}";
+                _sessionCodeText.text =
+                    $"CÓDIGO DA SALA: <size=26>"
+                    + $"{_connectionServiceContract.JoinCode}</size>";
             }
         }
 
