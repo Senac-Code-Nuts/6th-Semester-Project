@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using PiGame.Gameplay;
 using PiGame.Lobby;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -49,7 +50,6 @@ namespace PiGame.UI
         public event Action<LobbyInputDeviceKind> SubmitRequested;
         public event Action BackRequested;
 
-        private readonly Color[] _slotColors = new Color[4];
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
         private bool _interactionEnabled = true;
         private int _localPlayerSlot = -1;
@@ -65,11 +65,6 @@ namespace PiGame.UI
         {
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
-
-            for (int i = 0; i < _slotColors.Length && i < _slotBackgrounds.Length; i++)
-            {
-                _slotColors[i] = _slotBackgrounds[i].color;
-            }
 
             RefreshLegend();
         }
@@ -280,7 +275,7 @@ namespace PiGame.UI
                 ? Vector3.one * 1.08f
                 : Vector3.one;
 
-            Color slotColor = character != null ? character.Color : _slotColors[slot];
+            Color slotColor = PlayerSlotColors.Get(slot);
             slotColor.a = isCharacterLocked ? 0.38f : isLocalPlayer ? 1f : 0.88f;
             _slotBackgrounds[slot].color = slotColor;
 
@@ -307,7 +302,7 @@ namespace PiGame.UI
             Text statusText = _statusTexts[slot];
             if (player.IsReady)
             {
-                statusText.text = $"<size=15>P{slot + 1}</size>\nPRONTO";
+                statusText.text = $"<size=15>{GetColoredPlayerLabel(slot)}</size>\nPRONTO";
                 statusText.fontSize = 28;
                 statusText.color = new Color(0.42f, 1f, 0.58f, 1f);
             }
@@ -325,14 +320,15 @@ namespace PiGame.UI
         private void RenderEmptySlot(int slot)
         {
             _slotRoots[slot].localScale = Vector3.one;
-            Color emptyColor = _slotColors[slot];
+            Color emptyColor = PlayerSlotColors.Get(slot);
             emptyColor.a = 0.28f;
             _slotBackgrounds[slot].color = emptyColor;
             _characterPortraits[slot].gameObject.SetActive(false);
             _deviceIcons[slot].gameObject.SetActive(false);
             _slotLabels[slot].text = "AGUARDANDO";
             _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
-            _statusTexts[slot].text = $"<size=14>P{slot + 1}</size>\nAGUARDANDO";
+            _statusTexts[slot].text =
+                $"<size=14>{GetColoredPlayerLabel(slot)}</size>\nAGUARDANDO";
             _statusTexts[slot].fontSize = 16;
             _statusTexts[slot].color = new Color(0.58f, 0.58f, 0.64f, 1f);
         }
@@ -340,7 +336,8 @@ namespace PiGame.UI
         private void RenderChoosingStatus(int slot, bool isLocalPlayer)
         {
             Text statusText = _statusTexts[slot];
-            statusText.text = $"<size=14>P{slot + 1}</size>\nESCOLHENDO...";
+            statusText.text =
+                $"<size=14>{GetColoredPlayerLabel(slot)}</size>\nESCOLHENDO...";
             statusText.fontSize = isLocalPlayer ? 18 : 16;
             statusText.color = isLocalPlayer
                 ? Color.white
@@ -350,9 +347,16 @@ namespace PiGame.UI
         private void RenderBlockedStatus(int slot, int lockingPlayerSlot)
         {
             Text statusText = _statusTexts[slot];
-            statusText.text = $"<size=14>P{slot + 1}</size>\nBLOQUEADO - P{lockingPlayerSlot + 1}";
+            statusText.text =
+                $"<size=14>{GetColoredPlayerLabel(slot)}</size>\n"
+                + $"BLOQUEADO - {GetColoredPlayerLabel(lockingPlayerSlot)}";
             statusText.fontSize = 18;
             statusText.color = new Color(1f, 0.42f, 0.38f, 1f);
+        }
+
+        private static string GetColoredPlayerLabel(int playerSlot)
+        {
+            return $"<color=#{PlayerSlotColors.GetHtml(playerSlot)}>P{playerSlot + 1}</color>";
         }
 
         private IEnumerator PlayBlockedFeedback()

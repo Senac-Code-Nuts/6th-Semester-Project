@@ -15,5 +15,8 @@ MonoBehaviour:
   _minimumPlayers: 2
   _maximumPlayers: 4
   _requireUniqueCharacters: 0
+  _availableCharacters:
+  - 0
+  - 1
   _defaultDurationMinutes: 3
   _defaultMatchMode: 1

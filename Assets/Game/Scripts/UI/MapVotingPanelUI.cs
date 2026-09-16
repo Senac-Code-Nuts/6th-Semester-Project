@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace PiGame.UI
@@ -37,7 +38,9 @@ namespace PiGame.UI
         [SerializeField] private Sprite _keyboardBackSprite;
         [SerializeField] private Sprite _gamepadConfirmSprite;
         [SerializeField] private Sprite _gamepadBackSprite;
-        [SerializeField] private Text _instructionText;
+        [FormerlySerializedAs("_instructionText")]
+        [SerializeField] private Text _confirmLegendText;
+        [SerializeField] private Text _backLegendText;
 
         [Header("Selection visual")]
         [SerializeField] private Color _normalColor = new(0.32f, 0.27f, 0.38f, 1f);
@@ -183,7 +186,7 @@ namespace PiGame.UI
         {
             if (_optionLabels.Length > 0)
             {
-                _optionLabels[0].text = "ALEATORIO";
+                _optionLabels[0].text = "ALEATÓRIO";
             }
 
             for (int i = 0; i < _maps.Length && i + 1 < _optionLabels.Length; i++)
@@ -365,7 +368,8 @@ namespace PiGame.UI
             bool usesGamepad = _lastInputDevice == LobbyInputDeviceKind.Gamepad;
             _confirmLegendIcon.sprite = usesGamepad ? _gamepadConfirmSprite : _keyboardConfirmSprite;
             _backLegendIcon.sprite = usesGamepad ? _gamepadBackSprite : _keyboardBackSprite;
-            _instructionText.text = "CONFIRMAR VOTO                         VOLTAR";
+            _confirmLegendText.text = "CONFIRMAR VOTO";
+            _backLegendText.text = "VOLTAR";
         }
 
         private void Focus()

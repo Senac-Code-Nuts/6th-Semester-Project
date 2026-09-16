@@ -1,15 +1,24 @@
 using System;
-using System.Collections;
-using System.Net;
-using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using PiGame.Lobby;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
+using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace PiGame.Networking
 {
     public class NetcodeLobbyConnectionService : MonoBehaviour, ILobbyConnectionService
     {
+        private const string ServicesProfileArgument = "-ugs-profile";
+        private const string ServicesProfileMutexPrefix =
+            "PiGame-6thSemesterProject-UGS-";
+        private const int MaximumLocalProfiles = 4;
+        private const string LobbySceneName = "scene_lobby";
+
         private enum SessionRole
         {
             None,
@@ -18,16 +27,20 @@ namespace PiGame.Networking
         }
 
         [SerializeField] private NetworkManager _networkManager;
-        [SerializeField, Min(1f)] private float _clientConnectionTimeoutSeconds = 8f;
+        [SerializeField, Range(2, 4)] private int _maxPlayers = 4;
 
         private bool _isDuplicate;
-        private UnityTransport _transport;
         private SessionRole _sessionRole;
-        private Coroutine _connectionTimeoutRoutine;
+        private ISession _session;
+        private int _operationVersion;
         private bool _isStarting;
         private bool _wasConnected;
         private bool _terminationReported;
         private bool _callbacksRegistered;
+        private bool _isRecoveringSession;
+        private static bool _authenticationIdentityLogged;
+        private static string _selectedServicesProfile;
+        private static Mutex _servicesProfileMutex;
 
         public event Action Connected;
         public event Action Disconnected;
@@ -35,8 +48,8 @@ namespace PiGame.Networking
 
         public static NetcodeLobbyConnectionService Instance { get; private set; }
         public bool IsConnected => _networkManager != null && _networkManager.IsConnectedClient;
-        public bool IsHost => _networkManager != null && _networkManager.IsHost;
-        public string LocalAddress => FindLocalIpv4Address();
+        public bool IsHost => _session?.IsHost ?? (_networkManager != null && _networkManager.IsHost);
+        public string JoinCode => _session?.Code ?? string.Empty;
 
         private void Awake()
         {
@@ -49,9 +62,6 @@ namespace PiGame.Networking
 
             Instance = this;
             _networkManager ??= GetComponent<NetworkManager>();
-            _transport = _networkManager != null
-                ? _networkManager.GetComponent<UnityTransport>()
-                : null;
         }
 
         private void OnEnable()
@@ -67,72 +77,163 @@ namespace PiGame.Networking
         private void OnDisable()
         {
             UnregisterCallbacks();
-            StopConnectionTimeout();
         }
 
         private void OnDestroy()
         {
+            DetachSession();
+
             if (Instance == this)
             {
                 Instance = null;
             }
         }
 
-        public void StartHost()
+        public async Task StartHostAsync()
         {
-            if (!TryBeginSession(SessionRole.Host))
+            if (!TryBeginSession(SessionRole.Host, out int operationVersion))
             {
                 return;
             }
 
-            if (_transport == null)
+            try
             {
-                ReportFailure(LobbyConnectionFailure.NetworkManagerUnavailable, false);
-                return;
+                await EnsureServicesReadyAsync();
+                if (!IsOperationCurrent(operationVersion))
+                {
+                    return;
+                }
+
+                SessionOptions options = new SessionOptions
+                {
+                    MaxPlayers = _maxPlayers,
+                    IsPrivate = true,
+                    Name = "PI6 Lobby"
+                }.WithRelayNetwork();
+
+                ISession createdSession = await MultiplayerService.Instance.CreateSessionAsync(options);
+                await CompleteOrDiscardSessionAsync(createdSession, operationVersion);
             }
-
-            ushort port = _transport.ConnectionData.Port;
-            _transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
-
-            if (!_networkManager.StartHost())
+            catch (SessionException exception)
             {
-                ReportFailure(LobbyConnectionFailure.StartFailed, false);
+                HandleSessionException(exception, operationVersion);
+            }
+            catch (AuthenticationException exception)
+            {
+                HandleServiceException(
+                    exception,
+                    LobbyConnectionFailure.AuthenticationFailed,
+                    operationVersion);
+            }
+            catch (RequestFailedException exception)
+            {
+                HandleServiceException(
+                    exception,
+                    LobbyConnectionFailure.ServicesUnavailable,
+                    operationVersion);
+            }
+            catch (Exception exception)
+            {
+                HandleServiceException(
+                    exception,
+                    LobbyConnectionFailure.ServicesUnavailable,
+                    operationVersion);
             }
         }
 
-        public void StartClient(string address)
+        public async Task StartClientAsync(string joinCode)
         {
-            if (!TryBeginSession(SessionRole.Client))
+            if (!TryNormalizeJoinCode(joinCode, out string normalizedJoinCode))
+            {
+                ConnectionFailed?.Invoke(LobbyConnectionFailure.InvalidJoinCode);
+                return;
+            }
+
+            if (!TryBeginSession(SessionRole.Client, out int operationVersion))
             {
                 return;
             }
 
-            if (_transport == null || !TryNormalizeIpv4(address, out string normalizedAddress))
+            try
             {
-                ReportFailure(LobbyConnectionFailure.InvalidAddress, false);
-                return;
+                await EnsureServicesReadyAsync();
+                if (!IsOperationCurrent(operationVersion))
+                {
+                    return;
+                }
+
+                ISession joinedSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(
+                    normalizedJoinCode);
+                await CompleteOrDiscardSessionAsync(joinedSession, operationVersion);
             }
-
-            _transport.SetConnectionData(
-                normalizedAddress,
-                _transport.ConnectionData.Port);
-
-            if (!_networkManager.StartClient())
+            catch (SessionException exception)
             {
-                ReportFailure(LobbyConnectionFailure.StartFailed, false);
-                return;
-            }
+                if (exception.Error == SessionError.SessionConflict
+                    && IsOperationCurrent(operationVersion))
+                {
+                    ISession recoveredSession = await TryRecoverJoinedSessionAsync(
+                        normalizedJoinCode,
+                        operationVersion);
+                    if (recoveredSession != null)
+                    {
+                        await CompleteOrDiscardSessionAsync(
+                            recoveredSession,
+                            operationVersion);
+                        return;
+                    }
+                }
 
-            _connectionTimeoutRoutine = StartCoroutine(ConnectionTimeoutRoutine());
+                HandleSessionException(exception, operationVersion);
+            }
+            catch (AuthenticationException exception)
+            {
+                HandleServiceException(
+                    exception,
+                    LobbyConnectionFailure.AuthenticationFailed,
+                    operationVersion);
+            }
+            catch (RequestFailedException exception)
+            {
+                HandleServiceException(
+                    exception,
+                    LobbyConnectionFailure.ServicesUnavailable,
+                    operationVersion);
+            }
+            catch (Exception exception)
+            {
+                HandleServiceException(
+                    exception,
+                    LobbyConnectionFailure.ServicesUnavailable,
+                    operationVersion);
+            }
         }
 
-        public void Shutdown()
+        public async Task ShutdownAsync()
         {
+            _operationVersion++;
             _terminationReported = true;
             _isStarting = false;
             _wasConnected = false;
             _sessionRole = SessionRole.None;
-            StopConnectionTimeout();
+
+            ISession sessionToLeave = _session;
+            bool wasHost = sessionToLeave?.IsHost
+                ?? (_networkManager != null && _networkManager.IsHost);
+            DetachSession();
+
+            if (_networkManager != null && _networkManager.IsListening)
+            {
+                if (wasHost)
+                {
+                    NetworkLobbyState lobbyState = FindFirstObjectByType<NetworkLobbyState>();
+                    lobbyState?.ResetSession();
+                }
+            }
+
+            if (sessionToLeave != null)
+            {
+                await LeaveSessionQuietlyAsync(sessionToLeave);
+            }
 
             if (_networkManager != null && _networkManager.IsListening)
             {
@@ -140,8 +241,9 @@ namespace PiGame.Networking
             }
         }
 
-        private bool TryBeginSession(SessionRole role)
+        private bool TryBeginSession(SessionRole role, out int operationVersion)
         {
+            operationVersion = _operationVersion;
             if (_networkManager == null)
             {
                 ConnectionFailed?.Invoke(LobbyConnectionFailure.NetworkManagerUnavailable);
@@ -156,12 +258,360 @@ namespace PiGame.Networking
                 return false;
             }
 
-            StopConnectionTimeout();
+            operationVersion = ++_operationVersion;
             _sessionRole = role;
             _isStarting = true;
             _wasConnected = false;
             _terminationReported = false;
             return true;
+        }
+
+        private static async Task EnsureServicesReadyAsync()
+        {
+            string requestedProfile = FindServicesProfileArgument();
+
+            if (UnityServices.State != ServicesInitializationState.Initialized)
+            {
+                string selectedProfile = SelectServicesProfile(requestedProfile);
+                InitializationOptions options = new InitializationOptions();
+                options.SetProfile(selectedProfile);
+
+                await UnityServices.InitializeAsync(options);
+            }
+            else
+            {
+                string activeProfile = AuthenticationService.Instance.Profile;
+                if (!string.IsNullOrWhiteSpace(requestedProfile)
+                    && !string.Equals(
+                        activeProfile,
+                        requestedProfile,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Unity Services is already using profile "
+                        + $"'{activeProfile}', but profile "
+                        + $"'{requestedProfile}' was requested.");
+                }
+
+                EnsureActiveProfileLease(activeProfile);
+            }
+
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+
+            if (!_authenticationIdentityLogged)
+            {
+                _authenticationIdentityLogged = true;
+                Debug.Log(
+                    $"Unity Services authenticated with profile "
+                    + $"'{AuthenticationService.Instance.Profile}' and player "
+                    + $"'{AuthenticationService.Instance.PlayerId}'.");
+            }
+        }
+
+        private static string SelectServicesProfile(string requestedProfile)
+        {
+            if (!string.IsNullOrWhiteSpace(_selectedServicesProfile))
+            {
+                if (!string.IsNullOrWhiteSpace(requestedProfile)
+                    && !string.Equals(
+                        _selectedServicesProfile,
+                        requestedProfile,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Unity Services profile '{_selectedServicesProfile}' "
+                        + $"is already selected for this process.");
+                }
+
+                return _selectedServicesProfile;
+            }
+
+            if (!string.IsNullOrWhiteSpace(requestedProfile))
+            {
+                ValidateServicesProfile(requestedProfile);
+                if (!TryAcquireServicesProfile(requestedProfile))
+                {
+                    throw new InvalidOperationException(
+                        $"Unity Services profile '{requestedProfile}' is already "
+                        + "being used by another local game instance.");
+                }
+
+                return requestedProfile;
+            }
+
+            if (!UsesLocalProfileLeases())
+            {
+                _selectedServicesProfile = "default";
+                return _selectedServicesProfile;
+            }
+
+            for (int profileIndex = 0; profileIndex < MaximumLocalProfiles; profileIndex++)
+            {
+                string candidate = profileIndex == 0
+                    ? "default"
+                    : $"local{profileIndex + 1}";
+                if (TryAcquireServicesProfile(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"All {MaximumLocalProfiles} local Unity Services profiles are in use.");
+        }
+
+        private static void EnsureActiveProfileLease(string activeProfile)
+        {
+            if (!string.IsNullOrWhiteSpace(_selectedServicesProfile))
+            {
+                return;
+            }
+
+            string profile = string.IsNullOrWhiteSpace(activeProfile)
+                ? "default"
+                : activeProfile;
+            if (!UsesLocalProfileLeases())
+            {
+                _selectedServicesProfile = profile;
+                return;
+            }
+
+            if (!TryAcquireServicesProfile(profile))
+            {
+                throw new InvalidOperationException(
+                    $"Unity Services was initialized with profile '{profile}', "
+                    + "which is already being used by another local game instance.");
+            }
+        }
+
+        private static bool TryAcquireServicesProfile(string profile)
+        {
+            Mutex profileMutex = new Mutex(
+                false,
+                ServicesProfileMutexPrefix + profile);
+            bool acquired;
+
+            try
+            {
+                acquired = profileMutex.WaitOne(0);
+            }
+            catch (AbandonedMutexException)
+            {
+                acquired = true;
+            }
+
+            if (!acquired)
+            {
+                profileMutex.Dispose();
+                return false;
+            }
+
+            _servicesProfileMutex = profileMutex;
+            _selectedServicesProfile = profile;
+            Application.quitting -= ReleaseServicesProfileLease;
+            Application.quitting += ReleaseServicesProfileLease;
+            return true;
+        }
+
+        private static void ReleaseServicesProfileLease()
+        {
+            Application.quitting -= ReleaseServicesProfileLease;
+            if (_servicesProfileMutex == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _servicesProfileMutex.ReleaseMutex();
+            }
+            catch (ApplicationException)
+            {
+                // The operating system already released the profile lease.
+            }
+
+            _servicesProfileMutex.Dispose();
+            _servicesProfileMutex = null;
+        }
+
+        private static bool UsesLocalProfileLeases()
+        {
+            return Application.platform == RuntimePlatform.WindowsPlayer
+                || Application.platform == RuntimePlatform.WindowsEditor;
+        }
+
+        private static void ValidateServicesProfile(string profile)
+        {
+            if (profile.Length > 30)
+            {
+                throw new ArgumentException(
+                    "Unity Services profile names cannot exceed 30 characters.",
+                    nameof(profile));
+            }
+
+            foreach (char character in profile)
+            {
+                bool isAsciiLetter = character >= 'A' && character <= 'Z'
+                    || character >= 'a' && character <= 'z';
+                bool isDigit = character >= '0' && character <= '9';
+                if (!isAsciiLetter && !isDigit && character != '-' && character != '_')
+                {
+                    throw new ArgumentException(
+                        "Unity Services profile names only support letters, numbers, "
+                        + "hyphens, and underscores.",
+                        nameof(profile));
+                }
+            }
+        }
+
+        private static string FindServicesProfileArgument()
+        {
+            string[] arguments = Environment.GetCommandLineArgs();
+            string inlinePrefix = ServicesProfileArgument + "=";
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                string argument = arguments[i];
+                if (string.Equals(
+                        argument,
+                        ServicesProfileArgument,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return i + 1 < arguments.Length
+                        ? arguments[i + 1]
+                        : string.Empty;
+                }
+
+                if (argument.StartsWith(inlinePrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return argument.Substring(inlinePrefix.Length);
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private async Task<ISession> TryRecoverJoinedSessionAsync(
+            string joinCode,
+            int operationVersion)
+        {
+            _isRecoveringSession = true;
+
+            try
+            {
+                var joinedSessionIds =
+                    await MultiplayerService.Instance.GetJoinedSessionIdsAsync();
+
+                foreach (string sessionId in joinedSessionIds)
+                {
+                    if (!IsOperationCurrent(operationVersion))
+                    {
+                        return null;
+                    }
+
+                    ISession recoveredSession = null;
+                    try
+                    {
+                        recoveredSession = await MultiplayerService.Instance
+                            .ReconnectToSessionAsync(sessionId);
+
+                        if (string.Equals(
+                            recoveredSession.Code,
+                            joinCode,
+                            StringComparison.OrdinalIgnoreCase))
+                        {
+                            return recoveredSession;
+                        }
+
+                        await LeaveSessionQuietlyAsync(recoveredSession);
+                    }
+                    catch (Exception recoveryException)
+                    {
+                        Debug.LogWarning(
+                            $"Could not recover session {sessionId}: "
+                            + recoveryException.Message,
+                            this);
+
+                        if (recoveredSession != null)
+                        {
+                            await LeaveSessionQuietlyAsync(recoveredSession);
+                        }
+                    }
+                }
+            }
+            catch (SessionException exception)
+            {
+                Debug.LogWarning(
+                    $"Could not list joined sessions: "
+                    + $"{exception.Error} - {exception.Message}",
+                    this);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning(
+                    $"Could not list joined sessions: {exception.Message}",
+                    this);
+            }
+            finally
+            {
+                _isRecoveringSession = false;
+            }
+
+            return null;
+        }
+
+        private async Task CompleteOrDiscardSessionAsync(
+            ISession session,
+            int operationVersion)
+        {
+            if (!IsOperationCurrent(operationVersion))
+            {
+                await LeaveSessionQuietlyAsync(session);
+                return;
+            }
+
+            _session = session;
+            AttachSession();
+            _isStarting = false;
+            _wasConnected = true;
+            Connected?.Invoke();
+        }
+
+        private bool IsOperationCurrent(int operationVersion)
+        {
+            return operationVersion == _operationVersion && !_terminationReported;
+        }
+
+        private void AttachSession()
+        {
+            if (_session == null)
+            {
+                return;
+            }
+
+            _session.StateChanged += HandleSessionStateChanged;
+            _session.RemovedFromSession += HandleRemovedFromSession;
+            _session.Deleted += HandleSessionDeleted;
+            _session.Network.StateChanged += HandleNetworkStateChanged;
+            _session.Network.StartFailed += HandleNetworkStartFailed;
+        }
+
+        private void DetachSession()
+        {
+            if (_session == null)
+            {
+                return;
+            }
+
+            _session.StateChanged -= HandleSessionStateChanged;
+            _session.RemovedFromSession -= HandleRemovedFromSession;
+            _session.Deleted -= HandleSessionDeleted;
+            _session.Network.StateChanged -= HandleNetworkStateChanged;
+            _session.Network.StartFailed -= HandleNetworkStartFailed;
+            _session = null;
         }
 
         private void RegisterCallbacks()
@@ -171,7 +621,6 @@ namespace PiGame.Networking
                 return;
             }
 
-            _networkManager.OnClientConnectedCallback += HandleClientConnected;
             _networkManager.OnClientDisconnectCallback += HandleClientDisconnected;
             _networkManager.OnTransportFailure += HandleTransportFailure;
             _networkManager.OnServerStopped += HandleSessionStopped;
@@ -186,7 +635,6 @@ namespace PiGame.Networking
                 return;
             }
 
-            _networkManager.OnClientConnectedCallback -= HandleClientConnected;
             _networkManager.OnClientDisconnectCallback -= HandleClientDisconnected;
             _networkManager.OnTransportFailure -= HandleTransportFailure;
             _networkManager.OnServerStopped -= HandleSessionStopped;
@@ -194,46 +642,11 @@ namespace PiGame.Networking
             _callbacksRegistered = false;
         }
 
-        private void HandleClientConnected(ulong clientId)
-        {
-            if (_terminationReported || clientId != _networkManager.LocalClientId)
-            {
-                return;
-            }
-
-            StopConnectionTimeout();
-            _isStarting = false;
-            _wasConnected = true;
-            Connected?.Invoke();
-        }
-
         private void HandleClientDisconnected(ulong clientId)
         {
-            if (_terminationReported || clientId != _networkManager.LocalClientId)
-            {
-                return;
-            }
-
-            if (_wasConnected)
-            {
-                ReportDisconnection();
-                return;
-            }
-
-            LobbyConnectionFailure failure = _sessionRole == SessionRole.Client
-                ? LobbyConnectionFailure.HostUnavailable
-                : LobbyConnectionFailure.StartFailed;
-            ReportFailure(failure, false);
-        }
-
-        private void HandleTransportFailure()
-        {
-            ReportFailure(LobbyConnectionFailure.TransportFailure, false);
-        }
-
-        private void HandleSessionStopped(bool isHost)
-        {
-            if (_terminationReported)
+            if (_terminationReported
+                || _isRecoveringSession
+                || clientId != _networkManager.LocalClientId)
             {
                 return;
             }
@@ -249,18 +662,79 @@ namespace PiGame.Networking
                 LobbyConnectionFailure failure = _sessionRole == SessionRole.Client
                     ? LobbyConnectionFailure.HostUnavailable
                     : LobbyConnectionFailure.StartFailed;
-                ReportFailure(failure, false);
+                ReportFailure(failure);
             }
         }
 
-        private IEnumerator ConnectionTimeoutRoutine()
+        private void HandleTransportFailure()
         {
-            yield return new WaitForSecondsRealtime(_clientConnectionTimeoutSeconds);
-            _connectionTimeoutRoutine = null;
-
-            if (_isStarting && _sessionRole == SessionRole.Client)
+            if (_isRecoveringSession)
             {
-                ReportFailure(LobbyConnectionFailure.TimedOut, true);
+                return;
+            }
+
+            if (_wasConnected)
+            {
+                ReportDisconnection();
+                return;
+            }
+
+            ReportFailure(LobbyConnectionFailure.TransportFailure);
+        }
+
+        private void HandleSessionStopped(bool isHost)
+        {
+            if (_terminationReported || _isRecoveringSession)
+            {
+                return;
+            }
+
+            if (_wasConnected)
+            {
+                ReportDisconnection();
+                return;
+            }
+
+            if (_isStarting)
+            {
+                LobbyConnectionFailure failure = _sessionRole == SessionRole.Client
+                    ? LobbyConnectionFailure.HostUnavailable
+                    : LobbyConnectionFailure.StartFailed;
+                ReportFailure(failure);
+            }
+        }
+
+        private void HandleSessionStateChanged(SessionState state)
+        {
+            if (state == SessionState.Disconnected || state == SessionState.Deleted)
+            {
+                ReportDisconnection();
+            }
+        }
+
+        private void HandleRemovedFromSession()
+        {
+            ReportDisconnection();
+        }
+
+        private void HandleSessionDeleted()
+        {
+            ReportDisconnection();
+        }
+
+        private void HandleNetworkStateChanged(NetworkState state)
+        {
+            if (state == NetworkState.Stopped && _wasConnected)
+            {
+                ReportDisconnection();
+            }
+        }
+
+        private void HandleNetworkStartFailed(SessionError error)
+        {
+            if (_isStarting)
+            {
+                ReportFailure(MapSessionError(error));
             }
         }
 
@@ -275,11 +749,36 @@ namespace PiGame.Networking
             _isStarting = false;
             _wasConnected = false;
             _sessionRole = SessionRole.None;
-            StopConnectionTimeout();
+            ISession disconnectedSession = _session;
+            DetachSession();
+            if (disconnectedSession != null)
+            {
+                _ = LeaveSessionQuietlyAsync(disconnectedSession);
+            }
+
             Disconnected?.Invoke();
+            ReturnToLobbySceneAfterUnexpectedDisconnect();
         }
 
-        private void ReportFailure(LobbyConnectionFailure failure, bool shutdownNetwork)
+        private void ReturnToLobbySceneAfterUnexpectedDisconnect()
+        {
+            if (!isActiveAndEnabled
+                || SceneManager.GetActiveScene().name == LobbySceneName)
+            {
+                return;
+            }
+
+            MatchSession.Instance?.Clear();
+            StartCoroutine(LoadLobbySceneNextFrame());
+        }
+
+        private static System.Collections.IEnumerator LoadLobbySceneNextFrame()
+        {
+            yield return null;
+            SceneManager.LoadScene(LobbySceneName, LoadSceneMode.Single);
+        }
+
+        private void ReportFailure(LobbyConnectionFailure failure)
         {
             if (_terminationReported)
             {
@@ -290,9 +789,8 @@ namespace PiGame.Networking
             _isStarting = false;
             _wasConnected = false;
             _sessionRole = SessionRole.None;
-            StopConnectionTimeout();
 
-            if (shutdownNetwork && _networkManager != null && _networkManager.IsListening)
+            if (_networkManager != null && _networkManager.IsListening)
             {
                 _networkManager.Shutdown();
             }
@@ -300,85 +798,104 @@ namespace PiGame.Networking
             ConnectionFailed?.Invoke(failure);
         }
 
-        private void StopConnectionTimeout()
+        private void HandleSessionException(
+            SessionException exception,
+            int operationVersion)
         {
-            if (_connectionTimeoutRoutine == null)
+            if (!IsOperationCurrent(operationVersion))
             {
                 return;
             }
 
-            StopCoroutine(_connectionTimeoutRoutine);
-            _connectionTimeoutRoutine = null;
+            Debug.LogWarning(
+                $"Multiplayer session failed: {exception.Error} - {exception.Message}",
+                this);
+            LobbyConnectionFailure failure = exception.Error == SessionError.Unknown
+                && _sessionRole == SessionRole.Client
+                    ? LobbyConnectionFailure.SessionNotFound
+                    : MapSessionError(exception.Error);
+            ReportFailure(failure);
         }
 
-        private static bool TryNormalizeIpv4(string address, out string normalizedAddress)
+        private void HandleServiceException(
+            Exception exception,
+            LobbyConnectionFailure failure,
+            int operationVersion)
         {
-            normalizedAddress = string.Empty;
-            if (string.IsNullOrWhiteSpace(address))
+            if (!IsOperationCurrent(operationVersion))
+            {
+                return;
+            }
+
+            Debug.LogWarning(
+                $"Unity Multiplayer Services failed: {exception.Message}",
+                this);
+            ReportFailure(failure);
+        }
+
+        private static LobbyConnectionFailure MapSessionError(SessionError error)
+        {
+            return error switch
+            {
+                SessionError.InvalidParameter => LobbyConnectionFailure.InvalidJoinCode,
+                SessionError.InvalidSessionIdentifier => LobbyConnectionFailure.InvalidJoinCode,
+                SessionError.SessionNotFound => LobbyConnectionFailure.SessionNotFound,
+                SessionError.SessionDeleted => LobbyConnectionFailure.SessionNotFound,
+                SessionError.AllocationNotFound => LobbyConnectionFailure.SessionNotFound,
+                SessionError.SessionConflict => LobbyConnectionFailure.SessionConflict,
+                SessionError.NotAuthorized => LobbyConnectionFailure.AuthenticationFailed,
+                SessionError.Forbidden => LobbyConnectionFailure.AuthenticationFailed,
+                SessionError.NetworkManagerNotInitialized =>
+                    LobbyConnectionFailure.NetworkManagerUnavailable,
+                SessionError.NetworkManagerStartFailed => LobbyConnectionFailure.TransportFailure,
+                SessionError.NetworkSetupFailed => LobbyConnectionFailure.TransportFailure,
+                SessionError.TransportComponentMissing => LobbyConnectionFailure.TransportFailure,
+                SessionError.TransportInvalid => LobbyConnectionFailure.TransportFailure,
+                SessionError.QoSMeasurementFailed => LobbyConnectionFailure.TransportFailure,
+                _ => LobbyConnectionFailure.ServicesUnavailable
+            };
+        }
+
+        private static bool TryNormalizeJoinCode(string joinCode, out string normalizedJoinCode)
+        {
+            normalizedJoinCode = string.Empty;
+            if (string.IsNullOrWhiteSpace(joinCode))
             {
                 return false;
             }
 
-            string[] parts = address.Trim().Split('.');
-            if (parts.Length != 4)
+            string trimmedCode = joinCode.Trim();
+            foreach (char character in trimmedCode)
             {
-                return false;
-            }
-
-            int[] octets = new int[4];
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (!byte.TryParse(parts[i], out byte octet))
+                if (!char.IsLetterOrDigit(character))
                 {
                     return false;
                 }
-
-                octets[i] = octet;
             }
 
-            normalizedAddress =
-                $"{octets[0]}.{octets[1]}.{octets[2]}.{octets[3]}";
+            normalizedJoinCode = trimmedCode.ToUpperInvariant();
             return true;
         }
 
-        private static string FindLocalIpv4Address()
+        private static async Task LeaveSessionQuietlyAsync(ISession session)
         {
             try
             {
-                IPAddress fallbackAddress = null;
-                foreach (IPAddress address in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+                if (session.IsMember)
                 {
-                    if (address.AddressFamily != AddressFamily.InterNetwork
-                        || IPAddress.IsLoopback(address))
-                    {
-                        continue;
-                    }
-
-                    fallbackAddress ??= address;
-                    byte[] bytes = address.GetAddressBytes();
-                    bool isPrivate = bytes[0] == 10
-                        || (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31)
-                        || (bytes[0] == 192 && bytes[1] == 168);
-                    if (isPrivate)
-                    {
-                        return address.ToString();
-                    }
+                    await session.LeaveAsync();
                 }
-
-                return fallbackAddress != null
-                    ? fallbackAddress.ToString()
-                    : "NAO ENCONTRADO";
             }
-            catch (SocketException)
+            catch (Exception exception)
             {
-                return "NAO ENCONTRADO";
+                Debug.LogWarning($"Could not leave multiplayer session cleanly: {exception.Message}");
             }
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            _clientConnectionTimeoutSeconds = Mathf.Max(1f, _clientConnectionTimeoutSeconds);
+            _maxPlayers = Mathf.Clamp(_maxPlayers, 2, 4);
         }
 #endif
     }

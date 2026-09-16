@@ -113,15 +113,36 @@ namespace PiGame.Lobby
             DisconnectRequested?.Invoke();
         }
 
-        private static LobbyCharacterId FindNextCharacter(LobbyPlayerData player, int direction)
+        private LobbyCharacterId FindNextCharacter(LobbyPlayerData player, int direction)
         {
-            const int characterCount = 4;
+            int characterCount = _lobbyStateContract.SelectableCharacterCount;
+            if (characterCount <= 0)
+            {
+                return LobbyCharacterId.None;
+            }
+
             int step = direction >= 0 ? 1 : -1;
-            int currentIndex = player.CharacterId == LobbyCharacterId.None
-                ? (step > 0 ? -1 : 0)
-                : (int)player.CharacterId;
+            int currentIndex = FindSelectableCharacterIndex(player.CharacterId);
+            if (currentIndex < 0)
+            {
+                currentIndex = step > 0 ? -1 : 0;
+            }
+
             int candidateIndex = (currentIndex + step + characterCount) % characterCount;
-            return (LobbyCharacterId)candidateIndex;
+            return _lobbyStateContract.GetSelectableCharacter(candidateIndex);
+        }
+
+        private int FindSelectableCharacterIndex(LobbyCharacterId characterId)
+        {
+            for (int i = 0; i < _lobbyStateContract.SelectableCharacterCount; i++)
+            {
+                if (_lobbyStateContract.GetSelectableCharacter(i) == characterId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private void HandleCharacterReadyRejected(int lockingPlayerSlot)

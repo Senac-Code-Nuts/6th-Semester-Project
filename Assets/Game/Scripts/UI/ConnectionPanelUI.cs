@@ -14,15 +14,17 @@ namespace PiGame.UI
         [SerializeField] private Text _secondaryButtonLabel;
         [SerializeField] private Text _statusText;
 
-        private InputField _addressInput;
+        private InputField _joinCodeInput;
         private Text _clientButtonLabel;
         private Coroutine _selectionRoutine;
         private GameObject _selectionTarget;
         private Navigation _hostNavigation;
         private Navigation _clientNavigation;
         private Navigation _secondaryNavigation;
+        private bool _navigationCached;
+        private bool _initializationErrorReported;
         private bool _isConnecting;
-        private bool _isEnteringAddress;
+        private bool _isEnteringJoinCode;
 
         public event Action HostRequested;
         public event Action<string> ClientRequested;
@@ -31,40 +33,70 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            _clientButtonLabel = _clientButton.GetComponentInChildren<Text>();
-            CreateAddressInput();
-            _hostNavigation = _hostButton.navigation;
-            _clientNavigation = _clientButton.navigation;
-            _secondaryNavigation = _secondaryButton.navigation;
+            EnsureInitialized();
         }
 
         private void OnEnable()
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
+            _hostButton.onClick.RemoveListener(HandleHostClicked);
+            _clientButton.onClick.RemoveListener(HandleClientClicked);
+            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
+            _joinCodeInput.onValueChanged.RemoveListener(HandleJoinCodeChanged);
             _hostButton.onClick.AddListener(HandleHostClicked);
             _clientButton.onClick.AddListener(HandleClientClicked);
             _secondaryButton.onClick.AddListener(HandleSecondaryClicked);
-            _addressInput.onValueChanged.AddListener(HandleAddressChanged);
+            _joinCodeInput.onValueChanged.AddListener(HandleJoinCodeChanged);
             FocusDefaultButton();
         }
 
         private void OnDisable()
         {
-            _hostButton.onClick.RemoveListener(HandleHostClicked);
-            _clientButton.onClick.RemoveListener(HandleClientClicked);
-            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
-            _addressInput.onValueChanged.RemoveListener(HandleAddressChanged);
+            if (_hostButton != null)
+            {
+                _hostButton.onClick.RemoveListener(HandleHostClicked);
+            }
+
+            if (_clientButton != null)
+            {
+                _clientButton.onClick.RemoveListener(HandleClientClicked);
+            }
+
+            if (_secondaryButton != null)
+            {
+                _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
+            }
+
+            if (_joinCodeInput != null)
+            {
+                _joinCodeInput.onValueChanged.RemoveListener(HandleJoinCodeChanged);
+            }
+
             StopSelectionRoutine();
-            RestoreNavigation();
+            if (_navigationCached)
+            {
+                RestoreNavigation();
+            }
         }
 
         public void ShowIdle()
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             _isConnecting = false;
-            _isEnteringAddress = false;
+            _isEnteringJoinCode = false;
             _hostButton.gameObject.SetActive(true);
             _clientButton.gameObject.SetActive(true);
-            _addressInput.gameObject.SetActive(false);
-            _addressInput.interactable = true;
+            _joinCodeInput.gameObject.SetActive(false);
+            _joinCodeInput.interactable = true;
+            _joinCodeInput.SetTextWithoutNotify(string.Empty);
             SetButtonsInteractable(true);
             RestoreNavigation();
             SetClientButtonLabel("CLIENT");
@@ -75,9 +107,14 @@ namespace PiGame.UI
 
         public void ShowConnecting(string message)
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             _isConnecting = true;
             SetButtonsInteractable(false);
-            _addressInput.interactable = false;
+            _joinCodeInput.interactable = false;
             DisableNavigation();
             _secondaryButtonLabel.text = "CANCELAR";
             SetStatus(message);
@@ -86,20 +123,25 @@ namespace PiGame.UI
 
         public void ShowError(string message)
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             _isConnecting = false;
-            if (_isEnteringAddress)
+            if (_isEnteringJoinCode)
             {
                 _hostButton.gameObject.SetActive(false);
                 _clientButton.gameObject.SetActive(true);
-                _addressInput.gameObject.SetActive(true);
-                _addressInput.interactable = true;
+                _joinCodeInput.gameObject.SetActive(true);
+                _joinCodeInput.interactable = true;
                 _clientButton.interactable = true;
                 _secondaryButton.interactable = true;
                 SetClientButtonLabel("CONECTAR");
                 _secondaryButtonLabel.text = "CANCELAR";
-                ConfigureAddressNavigation();
+                ConfigureJoinCodeNavigation();
                 SetStatus(message);
-                FocusAddressInput();
+                FocusJoinCodeInput();
                 return;
             }
 
@@ -112,11 +154,21 @@ namespace PiGame.UI
 
         public void FocusDefaultButton()
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             SelectButtonNextFrame(_hostButton.gameObject);
         }
 
         public void SetInteractionEnabled(bool enabled)
         {
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
             if (!enabled)
             {
                 _hostButton.interactable = false;
@@ -127,7 +179,7 @@ namespace PiGame.UI
 
             _hostButton.interactable = !_isConnecting;
             _clientButton.interactable = !_isConnecting;
-            _addressInput.interactable = _isEnteringAddress && !_isConnecting;
+            _joinCodeInput.interactable = _isEnteringJoinCode && !_isConnecting;
             _secondaryButton.interactable = true;
         }
 
@@ -143,21 +195,21 @@ namespace PiGame.UI
 
         private void HandleClientClicked()
         {
-            if (!_isEnteringAddress)
+            if (!_isEnteringJoinCode)
             {
-                ShowAddressEntry();
+                ShowJoinCodeEntry();
                 return;
             }
 
-            if (!TryNormalizeIpv4(_addressInput.text, out string normalizedAddress))
+            if (!TryNormalizeJoinCode(_joinCodeInput.text, out string normalizedJoinCode))
             {
-                SetStatus("IP INVALIDO");
-                FocusAddressInput();
+                SetStatus("CÓDIGO INVÁLIDO");
+                FocusJoinCodeInput();
                 return;
             }
 
-            _addressInput.SetTextWithoutNotify(normalizedAddress);
-            ClientRequested?.Invoke(normalizedAddress);
+            _joinCodeInput.SetTextWithoutNotify(normalizedJoinCode);
+            ClientRequested?.Invoke(normalizedJoinCode);
         }
 
         private void HandleSecondaryClicked()
@@ -168,7 +220,7 @@ namespace PiGame.UI
                 return;
             }
 
-            if (_isEnteringAddress)
+            if (_isEnteringJoinCode)
             {
                 ShowIdle();
                 return;
@@ -177,18 +229,18 @@ namespace PiGame.UI
             QuitRequested?.Invoke();
         }
 
-        private void ShowAddressEntry()
+        private void ShowJoinCodeEntry()
         {
-            _isEnteringAddress = true;
+            _isEnteringJoinCode = true;
             _hostButton.gameObject.SetActive(false);
             _clientButton.gameObject.SetActive(true);
-            _addressInput.gameObject.SetActive(true);
-            _addressInput.interactable = true;
+            _joinCodeInput.gameObject.SetActive(true);
+            _joinCodeInput.interactable = true;
             SetClientButtonLabel("CONECTAR");
             _secondaryButtonLabel.text = "CANCELAR";
-            SetStatus("DIGITE O IP DO HOST");
-            ConfigureAddressNavigation();
-            FocusAddressInput();
+            SetStatus("DIGITE O CÓDIGO DA SALA");
+            ConfigureJoinCodeNavigation();
+            FocusJoinCodeInput();
         }
 
         private void SetButtonsInteractable(bool interactable)
@@ -213,24 +265,24 @@ namespace PiGame.UI
             _secondaryButton.navigation = _secondaryNavigation;
         }
 
-        private void ConfigureAddressNavigation()
+        private void ConfigureJoinCodeNavigation()
         {
             Navigation inputNavigation = Navigation.defaultNavigation;
             inputNavigation.mode = Navigation.Mode.Explicit;
             inputNavigation.selectOnUp = _secondaryButton;
             inputNavigation.selectOnDown = _clientButton;
-            _addressInput.navigation = inputNavigation;
+            _joinCodeInput.navigation = inputNavigation;
 
             Navigation clientNavigation = Navigation.defaultNavigation;
             clientNavigation.mode = Navigation.Mode.Explicit;
-            clientNavigation.selectOnUp = _addressInput;
+            clientNavigation.selectOnUp = _joinCodeInput;
             clientNavigation.selectOnDown = _secondaryButton;
             _clientButton.navigation = clientNavigation;
 
             Navigation secondaryNavigation = Navigation.defaultNavigation;
             secondaryNavigation.mode = Navigation.Mode.Explicit;
             secondaryNavigation.selectOnUp = _clientButton;
-            secondaryNavigation.selectOnDown = _addressInput;
+            secondaryNavigation.selectOnDown = _joinCodeInput;
             _secondaryButton.navigation = secondaryNavigation;
         }
 
@@ -253,9 +305,9 @@ namespace PiGame.UI
             if (_selectionTarget != null && _selectionTarget.activeInHierarchy)
             {
                 EventSystem.current?.SetSelectedGameObject(_selectionTarget);
-                if (_selectionTarget == _addressInput.gameObject)
+                if (_selectionTarget == _joinCodeInput.gameObject)
                 {
-                    _addressInput.ActivateInputField();
+                    _joinCodeInput.ActivateInputField();
                 }
             }
 
@@ -275,9 +327,9 @@ namespace PiGame.UI
             _selectionTarget = null;
         }
 
-        private void FocusAddressInput()
+        private void FocusJoinCodeInput()
         {
-            SelectButtonNextFrame(_addressInput.gameObject);
+            SelectButtonNextFrame(_joinCodeInput.gameObject);
         }
 
         private void SetClientButtonLabel(string label)
@@ -288,66 +340,100 @@ namespace PiGame.UI
             }
         }
 
-        private void HandleAddressChanged(string value)
+        private void HandleJoinCodeChanged(string value)
         {
             char[] filteredCharacters = new char[value.Length];
             int filteredLength = 0;
-            int dotCount = 0;
 
             foreach (char character in value)
             {
-                if (char.IsDigit(character))
+                if (char.IsLetterOrDigit(character))
                 {
-                    filteredCharacters[filteredLength++] = character;
-                }
-                else if (character == '.' && dotCount < 3)
-                {
-                    filteredCharacters[filteredLength++] = character;
-                    dotCount++;
+                    filteredCharacters[filteredLength++] = char.ToUpperInvariant(character);
                 }
             }
 
             string filteredValue = new string(filteredCharacters, 0, filteredLength);
             if (filteredValue != value)
             {
-                _addressInput.SetTextWithoutNotify(filteredValue);
+                _joinCodeInput.SetTextWithoutNotify(filteredValue);
             }
         }
 
-        private static bool TryNormalizeIpv4(string address, out string normalizedAddress)
+        private static bool TryNormalizeJoinCode(
+            string joinCode,
+            out string normalizedJoinCode)
         {
-            normalizedAddress = string.Empty;
-            if (string.IsNullOrWhiteSpace(address))
+            normalizedJoinCode = string.Empty;
+            if (string.IsNullOrWhiteSpace(joinCode))
             {
                 return false;
             }
 
-            string[] parts = address.Trim().Split('.');
-            if (parts.Length != 4)
+            string trimmedCode = joinCode.Trim();
+            foreach (char character in trimmedCode)
             {
-                return false;
-            }
-
-            int[] octets = new int[4];
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (!byte.TryParse(parts[i], out byte octet))
+                if (!char.IsLetterOrDigit(character))
                 {
                     return false;
                 }
-
-                octets[i] = octet;
             }
 
-            normalizedAddress =
-                $"{octets[0]}.{octets[1]}.{octets[2]}.{octets[3]}";
+            normalizedJoinCode = trimmedCode.ToUpperInvariant();
             return true;
         }
 
-        private void CreateAddressInput()
+        private bool EnsureInitialized()
+        {
+            if (_hostButton == null
+                || _clientButton == null
+                || _secondaryButton == null
+                || _secondaryButtonLabel == null
+                || _statusText == null)
+            {
+                if (!_initializationErrorReported)
+                {
+                    Debug.LogError(
+                        "ConnectionPanelUI possui referências obrigatórias ausentes.",
+                        this);
+                    _initializationErrorReported = true;
+                }
+
+                return false;
+            }
+
+            _clientButtonLabel ??= _clientButton.GetComponentInChildren<Text>();
+
+            if (_joinCodeInput == null)
+            {
+                Transform inputParent = _hostButton.transform.parent;
+                Transform existingInput = inputParent.Find("SessionCodeInput");
+                if (existingInput != null)
+                {
+                    _joinCodeInput = existingInput.GetComponent<InputField>();
+                }
+
+                if (_joinCodeInput == null)
+                {
+                    CreateJoinCodeInput();
+                }
+            }
+
+            if (!_navigationCached)
+            {
+                _hostNavigation = _hostButton.navigation;
+                _clientNavigation = _clientButton.navigation;
+                _secondaryNavigation = _secondaryButton.navigation;
+                _navigationCached = true;
+            }
+
+            return _joinCodeInput != null;
+        }
+
+        private void CreateJoinCodeInput()
         {
             GameObject inputObject = new GameObject(
-                "ClientAddressInput",
+                "SessionCodeInput",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
                 typeof(Image),
@@ -369,17 +455,17 @@ namespace PiGame.UI
                 inputObject.transform,
                 "Placeholder",
                 new Color(1f, 1f, 1f, 0.35f));
-            placeholderText.text = "192.168.0.10";
+            placeholderText.text = "CÓDIGO";
 
-            _addressInput = inputObject.GetComponent<InputField>();
-            _addressInput.targetGraphic = inputBackground;
-            _addressInput.textComponent = inputText;
-            _addressInput.placeholder = placeholderText;
-            _addressInput.characterLimit = 15;
-            _addressInput.lineType = InputField.LineType.SingleLine;
-            _addressInput.contentType = InputField.ContentType.Standard;
-            _addressInput.caretColor = Color.white;
-            _addressInput.selectionColor = new Color(0.32f, 0.86f, 0.78f, 0.45f);
+            _joinCodeInput = inputObject.GetComponent<InputField>();
+            _joinCodeInput.targetGraphic = inputBackground;
+            _joinCodeInput.textComponent = inputText;
+            _joinCodeInput.placeholder = placeholderText;
+            _joinCodeInput.characterLimit = 12;
+            _joinCodeInput.lineType = InputField.LineType.SingleLine;
+            _joinCodeInput.contentType = InputField.ContentType.Alphanumeric;
+            _joinCodeInput.caretColor = Color.white;
+            _joinCodeInput.selectionColor = new Color(0.32f, 0.86f, 0.78f, 0.45f);
             inputObject.SetActive(false);
         }
 

@@ -13,6 +13,11 @@ namespace PiGame.Lobby
             LobbyMatchMode.Solo,
             2,
             false);
+        private static readonly LobbyCharacterId[] FallbackCharacters =
+        {
+            LobbyCharacterId.Cowboy,
+            LobbyCharacterId.Irrigator
+        };
 
         [SerializeField] private LobbyRulesDefinition _rules;
         [SerializeField] private LobbyMapDefinition[] _maps;
@@ -46,6 +51,9 @@ namespace PiGame.Lobby
         public int MatchDurationMinutes => MatchSettings.DurationMinutes;
         public LobbyMatchMode MatchMode => MatchSettings.Mode;
         public int MinimumPlayers => Mathf.Max(1, MatchSettings.MinimumPlayers);
+        public int SelectableCharacterCount => _rules != null
+            ? _rules.AvailableCharacterCount
+            : FallbackCharacters.Length;
         public bool RequireUniqueCharacters => MatchSettings.RequireUniqueCharacters;
         public bool LocalClientIsHost => NetworkManager != null && NetworkManager.IsHost;
         public bool CanStartMatch => _players.Count >= MinimumPlayers && AllPlayersReady;
@@ -108,6 +116,7 @@ namespace PiGame.Lobby
                     ? MatchSession.Instance.Snapshot
                     : null;
 
+                ResetReplicatedSessionStateServer();
                 _matchSettings.Value = previousMatch != null
                     ? previousMatch.MatchSettings
                     : CreateInitialMatchSettings();
@@ -129,6 +138,18 @@ namespace PiGame.Lobby
             MapVotesChanged?.Invoke();
             StageChanged?.Invoke();
             MatchSettingsChanged?.Invoke();
+        }
+
+        public void ResetSession()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            ResetReplicatedSessionStateServer();
+            _matchSettings.Value = CreateInitialMatchSettings();
+            MatchSession.Instance?.Clear();
         }
 
         public override void OnNetworkDespawn()
@@ -171,6 +192,18 @@ namespace PiGame.Lobby
             }
 
             return _mapVotes[index];
+        }
+
+        public LobbyCharacterId GetSelectableCharacter(int index)
+        {
+            if (_rules != null)
+            {
+                return _rules.GetAvailableCharacter(index);
+            }
+
+            return index >= 0 && index < FallbackCharacters.Length
+                ? FallbackCharacters[index]
+                : LobbyCharacterId.None;
         }
 
         public bool TryGetPlayer(ulong clientId, out LobbyPlayerData player)
@@ -714,10 +747,17 @@ namespace PiGame.Lobby
             return -1;
         }
 
-        private static bool IsValidCharacter(LobbyCharacterId characterId)
+        private bool IsValidCharacter(LobbyCharacterId characterId)
         {
-            return characterId >= LobbyCharacterId.Cowboy
-                && characterId <= LobbyCharacterId.Rebel;
+            if (characterId < LobbyCharacterId.Cowboy
+                || characterId > LobbyCharacterId.Rebel)
+            {
+                return false;
+            }
+
+            return _rules != null
+                ? _rules.IsCharacterAvailable(characterId)
+                : Array.IndexOf(FallbackCharacters, characterId) >= 0;
         }
 
         private bool IsValidMapVoteOption(LobbyMapId mapId)
@@ -872,6 +912,15 @@ namespace PiGame.Lobby
             _stage.Value = LobbyStage.CharacterSelection;
         }
 
+        private void ResetReplicatedSessionStateServer()
+        {
+            StopMatchStartRoutine();
+            _players.Clear();
+            _mapVotes.Clear();
+            _winningMap.Value = LobbyMapId.None;
+            _stage.Value = LobbyStage.CharacterSelection;
+        }
+
         private void StopMatchStartRoutine()
         {
             if (_matchStartRoutine == null)
@@ -885,9 +934,14 @@ namespace PiGame.Lobby
 
         private LobbyCharacterId FindInitialCharacter()
         {
-            for (int characterIndex = 0; characterIndex < 4; characterIndex++)
+            for (int characterIndex = 0; characterIndex < SelectableCharacterCount; characterIndex++)
             {
-                LobbyCharacterId characterId = (LobbyCharacterId)characterIndex;
+                LobbyCharacterId characterId = GetSelectableCharacter(characterIndex);
+                if (!IsValidCharacter(characterId))
+                {
+                    continue;
+                }
+
                 bool isAlreadySelected = false;
                 for (int playerIndex = 0; playerIndex < _players.Count; playerIndex++)
                 {
@@ -904,7 +958,10 @@ namespace PiGame.Lobby
                 }
             }
 
-            return LobbyCharacterId.Cowboy;
+            LobbyCharacterId fallbackCharacter = GetSelectableCharacter(0);
+            return IsValidCharacter(fallbackCharacter)
+                ? fallbackCharacter
+                : LobbyCharacterId.Cowboy;
         }
 
 #if UNITY_EDITOR
