@@ -7,4 +7,8 @@ public class TesteBotãoNovo : MonoBehaviour
     {
         NetworkSoundManager.PlaySFX(SFXList.SFX1);
     }
+    public void AoClicarNoBotao2()
+    {
+        NetworkSoundManager.PlayOST(OSTList.OST1);
+    }
 }

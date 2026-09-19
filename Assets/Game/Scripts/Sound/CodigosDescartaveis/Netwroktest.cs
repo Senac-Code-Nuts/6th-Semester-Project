@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport.Relay; // Adicionado para usar RelayServerData
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
@@ -16,6 +17,9 @@ public class NetworkTest : MonoBehaviour
     [SerializeField] private GameObject menuUI;
     [SerializeField] private GameObject roomUI;
 
+    [Header("Prefabs de Rede")]
+    [SerializeField] private GameObject soundManagerPrefab;
+
     private async void Start()
     {
         await UnityServices.InitializeAsync();
@@ -24,9 +28,6 @@ public class NetworkTest : MonoBehaviour
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
     }
-
-    [Header("Prefabs de Rede")]
-    [SerializeField] private GameObject soundManagerPrefab; // Arraste o Prefab do som aqui no Inspector
 
     public async void CreateRelay()
     {
@@ -37,13 +38,9 @@ public class NetworkTest : MonoBehaviour
 
             if (joinCodeText != null) joinCodeText.text = joinCode;
 
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetHostRelayData(
-                allocation.RelayServer.IpV4,
-                (ushort)allocation.RelayServer.Port,
-                allocation.AllocationIdBytes,
-                allocation.Key,
-                allocation.ConnectionData
-            );
+            // Cria os dados do servidor automaticamente sem precisar ordenar byte por byte
+            var relayServerData = AllocationUtils.ToRelayServerData(allocation, "dtls");
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
 
             NetworkManager.Singleton.StartHost();
 
@@ -68,14 +65,9 @@ public class NetworkTest : MonoBehaviour
             string joinCode = joinCodeInput.text.Trim();
             JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
 
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetClientRelayData(
-                joinAllocation.RelayServer.IpV4,
-                (ushort)joinAllocation.RelayServer.Port,
-                joinAllocation.AllocationIdBytes,
-                joinAllocation.ConnectionData,
-                joinAllocation.HostConnectionData,
-                joinAllocation.Key
-            );
+            // Converte a alocação do participante com a ordem correta automaticamente
+            var relayServerData = AllocationUtils.ToRelayServerData(joinAllocation, "dtls");
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
 
             NetworkManager.Singleton.StartClient();
             SwitchUI();

@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+
 namespace PiGame.Sound
 {
     public enum SFXList { SFX1, SFX2, SFX3 }
     public enum OSTList { OST1, OST2, OST3 }
-    public class NetworkSoundManager: NetworkBehaviour
+
+    public class NetworkSoundManager : NetworkBehaviour
     {
         public static NetworkSoundManager Instance { get; private set; }
 
@@ -63,60 +65,45 @@ namespace PiGame.Sound
 
         public static void PlaySFX(SFXList sfx)
         {
-            if (Instance == null)
-            {
-                Debug.LogError("SoundManager não encontrado na cena!");
-                return;
-            }
-
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                Instance.PlaySFXServerRpc(sfx);
-            }
-            else
-            {
-                Instance.PlaySFXLocal(sfx);
-            }
+            if (Instance == null) return;
+            Instance.SendSFXServerRpc(sfx);
         }
 
         public static void PlayOST(OSTList ost)
         {
             if (Instance == null) return;
-
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                Instance.PlayOSTServerRpc(ost);
-            }
-            else
-            {
-                Instance.PlayOSTLocal(ost);
-            }
+            Instance.SendOSTServerRpc(ost);
         }
 
-        [Rpc(SendTo.Server)]
-        private void PlaySFXServerRpc(SFXList sfx)
+        #region RPC do SFX
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void SendSFXServerRpc(SFXList sfx)
         {
-            PlaySFXClientRpc(sfx);
+            SendSFXClientRpc(sfx);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void PlaySFXClientRpc(SFXList sfx)
+        private void SendSFXClientRpc(SFXList sfx)
         {
             PlaySFXLocal(sfx);
         }
+        #endregion
 
-        [Rpc(SendTo.Server)]
-        private void PlayOSTServerRpc(OSTList ost)
+        #region Rpc do OST
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void SendOSTServerRpc(OSTList ost)
         {
-            PlayOSTClientRpc(ost);
+            SendOSTClientRpc(ost);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void PlayOSTClientRpc(OSTList ost)
+        private void SendOSTClientRpc(OSTList ost)
         {
             PlayOSTLocal(ost);
         }
+        #endregion
 
+        #region Execução Local
         private void PlaySFXLocal(SFXList sfx)
         {
             if (_sfxDict.TryGetValue(sfx, out AudioClip clip))
@@ -142,5 +129,7 @@ namespace PiGame.Sound
                 Debug.LogWarning($"A OST '{ost}' não foi configurada nas listas do SoundManager!");
             }
         }
+
+        #endregion
     }
 }

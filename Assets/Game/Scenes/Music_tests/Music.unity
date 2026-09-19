@@ -414,8 +414,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2055436964}
-        m_TargetAssemblyTypeName: "TesteBot\xE3o, Assembly-CSharp"
-        m_MethodName: TesteDOIS
+        m_TargetAssemblyTypeName: "TesteBot\xE3oNovo, Assembly-CSharp"
+        m_MethodName: AoClicarNoBotao2
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1565,7 +1565,8 @@ MonoBehaviour:
     NetworkTransport: {fileID: 1459806115}
     PlayerPrefab: {fileID: 0}
     Prefabs:
-      NetworkPrefabsLists: []
+      NetworkPrefabsLists:
+      - {fileID: 11400000, guid: 98bb620c20ef3264dbe051091bae1304, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
