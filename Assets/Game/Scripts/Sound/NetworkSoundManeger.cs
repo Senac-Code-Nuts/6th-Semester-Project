@@ -1,48 +1,38 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-
 namespace PiGame.Sound
 {
-    public enum OSTList
+    public enum SFXList { SFX1, SFX2, SFX3 }
+    public enum OSTList { OST1, OST2, OST3 }
+    public class NetworkSoundManager: NetworkBehaviour
     {
-        OST1,
-        OST2,
-        OST3,
-    }
-    public enum SFXList
-    {
-        SFX1,
-        SFX2,
-        SFX3,
-    }
-    public class NetworkSoundManeger : NetworkBehaviour
-    {
-        public static NetworkSoundManeger Instance { get; set; }
+        public static NetworkSoundManager Instance { get; private set; }
 
         [System.Serializable]
-        public struct OSTtype
+        public struct SoundData
         {
-            public OSTList _OST;
-            public AudioClip OSTAudio;
+            public SFXList sfxType;
+            public AudioClip clip;
         }
 
         [System.Serializable]
-        public struct SFXtype
+        public struct MusicData
         {
-            public SFXList SFX;
-            public AudioClip SFXAudio;
+            public OSTList ostType;
+            public AudioClip clip;
         }
 
-        [Header("Audio Sources")]
-        [SerializeField] private AudioSource _sfxSource;
-        [SerializeField] private AudioSource _ostSource;
-        
-        [Header("Audio lists")]
-        [SerializeField] private List<SFXtype> _sfxList = new();
-        [SerializeField] private List<OSTtype> _ostList = new();
-        private Dictionary<SFXList, AudioClip> _sfxDictionary = new();
-        private Dictionary<OSTList, AudioClip> _osfDictionary = new();
+        [Header("Componentes de Áudio")]
+        [SerializeField] private AudioSource sfxSource;
+        [SerializeField] private AudioSource ostSource;
+
+        [Header("Listas de Áudio (Configure no Inspector)")]
+        [SerializeField] private List<SoundData> sfxList = new();
+        [SerializeField] private List<MusicData> ostList = new();
+
+        private Dictionary<SFXList, AudioClip> _sfxDict = new();
+        private Dictionary<OSTList, AudioClip> _ostDict = new();
 
         private void Awake()
         {
@@ -51,71 +41,106 @@ namespace PiGame.Sound
                 Destroy(gameObject);
                 return;
             }
+            Instance = this;
+
+            foreach (var item in sfxList)
+            {
+                if (!_sfxDict.ContainsKey(item.sfxType))
+                    _sfxDict.Add(item.sfxType, item.clip);
+            }
+
+            foreach (var item in ostList)
+            {
+                if (!_ostDict.ContainsKey(item.ostType))
+                    _ostDict.Add(item.ostType, item.clip);
+            }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            Instance = this;
+        }
+
+        public static void PlaySFX(SFXList sfx)
+        {
+            if (Instance == null)
+            {
+                Debug.LogError("SoundManager não encontrado na cena!");
+                return;
+            }
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                Instance.PlaySFXServerRpc(sfx);
+            }
             else
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            
-            foreach (var sfx in _sfxList) 
-            {
-                if (!_sfxDictionary.ContainsKey(sfx.SFX))
-                {
-                    _sfxDictionary.Add(sfx.SFX, sfx.SFXAudio);
-                }
-                
-            }
-
-            foreach (var ost in _ostList)
-            {
-                if (!_osfDictionary.ContainsKey(ost._OST))
-                {
-                    _osfDictionary.Add(ost._OST, ost.OSTAudio);
-                }
+                Instance.PlaySFXLocal(sfx);
             }
         }
 
-        private void PlaySFX(SFXList sfxType) 
+        public static void PlayOST(OSTList ost)
         {
-            if(_sfxDictionary.TryGetValue(sfxType,out AudioClip clip))
+            if (Instance == null) return;
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                _sfxSource.PlayOneShot(clip);
+                Instance.PlayOSTServerRpc(ost);
             }
-        }
-        private void PlayOST(OSTList ostType)
-        {
-            if (_osfDictionary.TryGetValue(ostType, out AudioClip clip))
+            else
             {
-                _ostSource.clip = clip;
-                _ostSource.loop = true;
-                _ostSource.Play();
+                Instance.PlayOSTLocal(ost);
             }
         }
 
-        #region OST 
         [Rpc(SendTo.Server)]
-        public void PlaySFXServerRPC(SFXList sfxList) => PlaySfxAllClientRPC(sfxList);
+        private void PlaySFXServerRpc(SFXList sfx)
+        {
+            PlaySFXClientRpc(sfx);
+        }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void PlaySfxAllClientRPC(SFXList sfxList) 
+        private void PlaySFXClientRpc(SFXList sfx)
         {
-            PlaySFX(sfxList);
+            PlaySFXLocal(sfx);
         }
-        #endregion
 
-        #region SFX 
-        /// <summary>
-        ///  A ideia é que o desenvolvedor apenas chame o PlayOstServerRPC em uma unica linha, assim o codigo faz o resto
-        /// </summary>
-        /// <param name="oSTList"></param>
         [Rpc(SendTo.Server)]
-        public void PlayOSTServerRPC(OSTList oSTList) => PlayOstAllClientRPC(oSTList);
+        private void PlayOSTServerRpc(OSTList ost)
+        {
+            PlayOSTClientRpc(ost);
+        }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void PlayOstAllClientRPC(OSTList oSTList)
+        private void PlayOSTClientRpc(OSTList ost)
         {
-            PlayOST(oSTList);
+            PlayOSTLocal(ost);
         }
-        #endregion
+
+        private void PlaySFXLocal(SFXList sfx)
+        {
+            if (_sfxDict.TryGetValue(sfx, out AudioClip clip))
+            {
+                sfxSource.PlayOneShot(clip);
+            }
+            else
+            {
+                Debug.LogWarning($"O SFX '{sfx}' não foi configurado nas listas do SoundManager!");
+            }
+        }
+
+        private void PlayOSTLocal(OSTList ost)
+        {
+            if (_ostDict.TryGetValue(ost, out AudioClip clip))
+            {
+                ostSource.clip = clip;
+                ostSource.loop = true;
+                ostSource.Play();
+            }
+            else
+            {
+                Debug.LogWarning($"A OST '{ost}' não foi configurada nas listas do SoundManager!");
+            }
+        }
     }
 }
