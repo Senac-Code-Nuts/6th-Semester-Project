@@ -575,14 +575,21 @@ namespace PiGame.Lobby
         {
             return durationMinutes >= 2
                 && durationMinutes <= 5
-                && (mode == LobbyMatchMode.Team || mode == LobbyMatchMode.Solo);
+                && mode == LobbyMatchMode.Solo;
         }
 
         private LobbyMatchSettingsData CreateInitialMatchSettings()
         {
+            LobbyMatchMode initialMode = _rules.DefaultMatchMode;
+            if (initialMode == LobbyMatchMode.Team)
+            {
+                Debug.LogWarning("Modo Equipe indisponível por enquanto. Iniciando em Solo.", this);
+                initialMode = LobbyMatchMode.Solo;
+            }
+
             return new LobbyMatchSettingsData(
                 Mathf.Clamp(_rules.DefaultDurationMinutes, 2, 5),
-                _rules.DefaultMatchMode,
+                initialMode,
                 Mathf.Clamp(_rules.MinimumPlayers, 1, _rules.MaximumPlayers),
                 _rules.RequireUniqueCharacters);
         }
