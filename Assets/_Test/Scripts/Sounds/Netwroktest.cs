@@ -1,86 +1,87 @@
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
-using Unity.Networking.Transport.Relay; // Adicionado para usar RelayServerData
+using Unity.Networking.Transport.Relay; 
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using UnityEngine;
 using TMPro;
-
-public class NetworkTest : MonoBehaviour
+namespace PiGame.Sound.Tests
 {
-    [SerializeField] private TMP_InputField joinCodeInput;
-    [SerializeField] private TMP_Text joinCodeText;
-
-    [SerializeField] private GameObject menuUI;
-    [SerializeField] private GameObject roomUI;
-
-    [Header("Prefabs de Rede")]
-    [SerializeField] private GameObject soundManagerPrefab;
-
-    private async void Start()
+    public class NetworkTest : MonoBehaviour
     {
-        await UnityServices.InitializeAsync();
-        if (!AuthenticationService.Instance.IsSignedIn)
+        [SerializeField] private TMP_InputField joinCodeInput;
+        [SerializeField] private TMP_Text joinCodeText;
+
+        [SerializeField] private GameObject menuUI;
+        [SerializeField] private GameObject roomUI;
+
+        [Header("Prefabs de Rede")]
+        [SerializeField] private GameObject soundManagerPrefab;
+
+        private async void Start()
         {
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        }
-    }
-
-    public async void CreateRelay()
-    {
-        try
-        {
-            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
-            string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
-
-            if (joinCodeText != null) joinCodeText.text = joinCode;
-
-            // Cria os dados do servidor automaticamente sem precisar ordenar byte por byte
-            var relayServerData = AllocationUtils.ToRelayServerData(allocation, "dtls");
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
-
-            NetworkManager.Singleton.StartHost();
-
-            if (soundManagerPrefab != null)
+            await UnityServices.InitializeAsync();
+            if (!AuthenticationService.Instance.IsSignedIn)
             {
-                GameObject soundInstance = Instantiate(soundManagerPrefab);
-                soundInstance.GetComponent<NetworkObject>().Spawn();
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
             }
-
-            SwitchUI();
         }
-        catch (RelayServiceException e)
+
+        public async void CreateRelay()
         {
-            Debug.LogException(e);
-        }
-    }
+            try
+            {
+                Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
+                string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
 
-    public async void JoinRelay()
-    {
-        try
+                if (joinCodeText != null) joinCodeText.text = joinCode;
+
+                var relayServerData = AllocationUtils.ToRelayServerData(allocation, "dtls");
+                NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+
+                NetworkManager.Singleton.StartHost();
+
+                if (soundManagerPrefab != null)
+                {
+                    GameObject soundInstance = Instantiate(soundManagerPrefab);
+                    soundInstance.GetComponent<NetworkObject>().Spawn();
+                }
+
+                SwitchUI();
+            }
+            catch (RelayServiceException e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        public async void JoinRelay()
         {
-            string joinCode = joinCodeInput.text.Trim();
-            JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+            try
+            {
+                string joinCode = joinCodeInput.text.Trim();
+                JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
 
-            // Converte a alocação do participante com a ordem correta automaticamente
-            var relayServerData = AllocationUtils.ToRelayServerData(joinAllocation, "dtls");
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+                var relayServerData = AllocationUtils.ToRelayServerData(joinAllocation, "dtls");
+                NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
 
-            NetworkManager.Singleton.StartClient();
-            SwitchUI();
+                NetworkManager.Singleton.StartClient();
+                SwitchUI();
+            }
+            catch (RelayServiceException e)
+            {
+                Debug.LogException(e);
+            }
         }
-        catch (RelayServiceException e)
+
+        private void SwitchUI()
         {
-            Debug.LogException(e);
+            if (menuUI != null) menuUI.SetActive(false);
+            if (roomUI != null) roomUI.SetActive(true);
         }
-    }
 
-    private void SwitchUI()
-    {
-        if (menuUI != null) menuUI.SetActive(false);
-        if (roomUI != null) roomUI.SetActive(true);
     }
 }

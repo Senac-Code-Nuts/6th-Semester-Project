@@ -1,14 +1,16 @@
-using PiGame.Sound;
 using UnityEngine;
-
-public class TesteBotãoNovo : MonoBehaviour
+namespace PiGame.Sound.Tests 
 {
-    public void AoClicarNoBotao()
+    public class TesteBotãoNovo : MonoBehaviour
     {
-        NetworkSoundManager.Instance.PlaySFX(SFXList.SFX1);
-    }
-    public void AoClicarNoBotao2()
-    {
-        NetworkSoundManager.Instance.PlayOST(OSTList.OST1);
+        public void AoClicarNoBotao()
+        {
+            NetworkSoundManager.Instance.PlaySFX(SFXList.SFX1);
+        }
+        public void AoClicarNoBotao2()
+        {
+            NetworkSoundManager.Instance.PlayOST(OSTList.OST1);
+        }
     }
 }
+
