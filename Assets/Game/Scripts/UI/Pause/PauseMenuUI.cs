@@ -120,11 +120,6 @@ namespace PiGame.UI
             QueueSelection(_resumeButton);
         }
 
-        public void SetInputDevice(PauseInputDevice device)
-        {
-            // Mantido por compatibilidade. O pause não exibe mais legendas fixas.
-        }
-
         public void ShowControls()
         {
             if (_controlsView == null)
@@ -135,19 +130,6 @@ namespace PiGame.UI
             _actionsRoot.SetActive(false);
             _controlsView.Show();
             _root.SetActive(false);
-        }
-
-        public void HideControls()
-        {
-            if (_controlsView == null || !_controlsView.IsVisible)
-            {
-                return;
-            }
-
-            _controlsView.Hide(false);
-            _root.SetActive(true);
-            _actionsRoot.SetActive(true);
-            QueueSelection(_controlsButton);
         }
 
         public bool HandleControlsBack()
