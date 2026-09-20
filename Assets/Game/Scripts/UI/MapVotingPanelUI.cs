@@ -418,26 +418,47 @@ namespace PiGame.UI
                 }
             }
 
-            if (availableMaps.Count > 1)
+            int winningIndex = availableMaps.IndexOf(_winningMap);
+            if (winningIndex < 0)
             {
-                float elapsed = 0f;
-                int index = 0;
-                while (elapsed < NetworkLobbyState.RandomMapDrawSeconds)
+                Debug.LogError($"O mapa sorteado {_winningMap} não está nos cards da votação.", this);
+                yield return null;
+            }
+            else if (availableMaps.Count > 1)
+            {
+                int currentIndex = 0;
+                int steps = availableMaps.Count * 2 + winningIndex;
+                float totalWeight = 0f;
+                for (int step = 1; step <= steps; step++)
                 {
-                    _displayedResultMap = availableMaps[index];
-                    RefreshSelectionVisuals();
-                    index = (index + 1) % availableMaps.Count;
+                    float progress = (float)(step - 1) / (steps - 1);
+                    totalWeight += 1f + 2f * progress * progress;
+                }
 
-                    float interval = Mathf.Lerp(
-                        0.07f,
-                        0.22f,
-                        elapsed / NetworkLobbyState.RandomMapDrawSeconds);
-                    yield return new WaitForSecondsRealtime(interval);
-                    elapsed += interval;
+                _displayedResultMap = availableMaps[currentIndex];
+                RefreshSelectionVisuals();
+
+                float drawDuration = NetworkLobbyState.RandomMapDrawSeconds * 0.8f;
+                float nextStepTime = Time.realtimeSinceStartup;
+                for (int step = 1; step <= steps; step++)
+                {
+                    float progress = (float)(step - 1) / (steps - 1);
+                    float weight = 1f + 2f * progress * progress;
+                    nextStepTime += drawDuration * weight / totalWeight;
+                    while (Time.realtimeSinceStartup < nextStepTime)
+                    {
+                        yield return null;
+                    }
+
+                    currentIndex = (currentIndex + 1) % availableMaps.Count;
+                    _displayedResultMap = availableMaps[currentIndex];
+                    RefreshSelectionVisuals();
                 }
             }
             else
             {
+                _displayedResultMap = _winningMap;
+                RefreshSelectionVisuals();
                 yield return null;
             }
 
