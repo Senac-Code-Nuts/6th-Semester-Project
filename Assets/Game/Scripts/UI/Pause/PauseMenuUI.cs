@@ -10,8 +10,6 @@ namespace PiGame.UI
     public class PauseMenuUI : MonoBehaviour
     {
         [Header("Configuração")]
-        [SerializeField] private Canvas _targetCanvas;
-        [SerializeField] private TMP_FontAsset _font;
         [SerializeField] private InputActionAsset _inputActions;
 
         [Header("Hierarquia")]
@@ -37,9 +35,8 @@ namespace PiGame.UI
         public event Action ExitCanceled;
         public event Action ControlsClosed;
 
-        public bool IsVisible => _root != null && _root.activeSelf;
-        public bool IsConfirmationVisible =>
-            _confirmationRoot != null && _confirmationRoot.activeSelf;
+        public bool IsVisible => enabled && _root.activeSelf;
+        public bool IsConfirmationVisible => enabled && _confirmationRoot.activeSelf;
         public bool IsControlsVisible => _controlsView != null && _controlsView.IsVisible;
 
         private void Awake()
@@ -63,33 +60,33 @@ namespace PiGame.UI
             StopSelectionRoutine();
         }
 
-        public void Initialize(PauseMenuDefinition definition)
+        public bool Initialize(PauseMenuDefinition definition)
         {
             _definition = definition;
-            if (!ValidateReferences())
+            if (_definition == null || !ValidateReferences())
             {
-                return;
+                Debug.LogError("PauseMenuUI precisa de uma definição e das referências da cena.", this);
+                enabled = false;
+                return false;
             }
 
             RefreshStaticTexts();
             ConfigureControlsView(_inputActions);
+            return true;
         }
 
-        public void Initialize(
-            Canvas canvas,
-            TMP_FontAsset font,
+        public bool Initialize(
             InputActionAsset actions,
             string title,
             string resumeLabel,
             string exitLabel,
             string confirmationMessage)
         {
-            _targetCanvas = canvas;
-            _font = font;
             _inputActions = actions;
             if (!ValidateReferences())
             {
-                return;
+                enabled = false;
+                return false;
             }
 
             _titleText.text = title;
@@ -99,19 +96,18 @@ namespace PiGame.UI
             SetButtonLabel(_exitButton, exitLabel);
             ConfigureActions(true);
             ConfigureControlsView(actions);
+            return true;
         }
 
         public void SetVisible(bool isVisible)
         {
-            if (_root == null)
-            {
-                return;
-            }
-
             _root.SetActive(isVisible);
             if (!isVisible)
             {
-                _controlsView?.Hide(false);
+                if (_controlsView != null && _controlsView.IsVisible)
+                {
+                    _controlsView.Hide(false);
+                }
                 StopSelectionRoutine();
                 return;
             }
@@ -122,11 +118,6 @@ namespace PiGame.UI
 
         public void ShowControls()
         {
-            if (_controlsView == null)
-            {
-                return;
-            }
-
             _actionsRoot.SetActive(false);
             _controlsView.Show();
             _root.SetActive(false);
@@ -141,22 +132,12 @@ namespace PiGame.UI
 
         public void ShowConfirmation()
         {
-            if (_confirmationRoot == null)
-            {
-                return;
-            }
-
             _confirmationRoot.SetActive(true);
             QueueSelection(_cancelExitButton);
         }
 
         public void HideConfirmation()
         {
-            if (_confirmationRoot == null)
-            {
-                return;
-            }
-
             _confirmationRoot.SetActive(false);
             if (IsVisible)
             {
@@ -175,7 +156,7 @@ namespace PiGame.UI
 
         private void BindButtons()
         {
-            if (_buttonsBound || !ValidateReferences())
+            if (_buttonsBound)
             {
                 return;
             }
@@ -215,11 +196,6 @@ namespace PiGame.UI
 
         private void RefreshStaticTexts()
         {
-            if (_definition == null)
-            {
-                return;
-            }
-
             _titleText.text = _definition.Title;
             _confirmationText.text = _definition.ExitConfirmationMessage;
             SetButtonLabel(_resumeButton, _definition.ResumeLabel);
@@ -235,18 +211,24 @@ namespace PiGame.UI
 
         private void ConfigureControlsView(InputActionAsset actions)
         {
-            if (_controlsView == null || !_controlsButton.gameObject.activeSelf)
+            if (!_controlsButton.gameObject.activeSelf)
             {
                 return;
             }
 
-            if (actions == null)
+            if (_controlsView == null || actions == null)
+            {
+                Debug.LogError("O botão CONTROLES precisa de ControlsSettingsUI e InputActionAsset.", this);
+                _controlsButton.interactable = false;
+                return;
+            }
+
+            if (!_controlsView.Initialize(actions))
             {
                 _controlsButton.interactable = false;
                 return;
             }
 
-            _controlsView.Initialize(_targetCanvas, _font, actions);
             _controlsView.Closed -= HandleControlsClosed;
             _controlsView.Closed += HandleControlsClosed;
         }
@@ -261,8 +243,7 @@ namespace PiGame.UI
 
         private bool ValidateReferences()
         {
-            bool valid = _targetCanvas != null
-                && _root != null
+            bool valid = _root != null
                 && _titleText != null
                 && _confirmationText != null
                 && _actionsRoot != null
@@ -285,7 +266,7 @@ namespace PiGame.UI
         private void QueueSelection(Button button)
         {
             StopSelectionRoutine();
-            if (button != null && gameObject.activeInHierarchy)
+            if (gameObject.activeInHierarchy)
             {
                 _selectionRoutine = StartCoroutine(SelectNextFrame(button));
             }
@@ -296,7 +277,6 @@ namespace PiGame.UI
             yield return null;
             _selectionRoutine = null;
             if (UnityEngine.EventSystems.EventSystem.current != null
-                && button != null
                 && button.interactable)
             {
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(button.gameObject);
@@ -316,19 +296,19 @@ namespace PiGame.UI
 
         private static void SetButtonLabel(Button button, string label)
         {
-            TMP_Text text = button != null ? button.GetComponentInChildren<TMP_Text>() : null;
-            if (text != null)
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            if (text == null)
             {
-                text.text = label;
+                Debug.LogError($"O botão {button.name} precisa de um TMP_Text filho.", button);
+                return;
             }
+
+            text.text = label;
         }
 
         private static void SetButtonInteractable(Button button, bool interactable)
         {
-            if (button != null)
-            {
-                button.interactable = interactable;
-            }
+            button.interactable = interactable;
         }
     }
 }

@@ -19,7 +19,6 @@ namespace PiGame.UI
             public string PartName;
             public string Group;
             public Button Button;
-            public bool IsEditable;
         }
 
         private readonly List<BindingButton> _bindingButtons = new List<BindingButton>();
@@ -30,7 +29,6 @@ namespace PiGame.UI
         [SerializeField] private GameObject _root;
         [SerializeField] private GameObject _conflictRoot;
         [SerializeField] private TMP_Text _conflictText;
-        [SerializeField] private Button _firstButton;
         [SerializeField] private Button _conflictConfirmButton;
         [SerializeField] private Button _conflictCancelButton;
         [SerializeField] private Button _resetKeyboardButton;
@@ -64,36 +62,34 @@ namespace PiGame.UI
         private Coroutine _rebindStartRoutine;
         private bool _staticButtonsBound;
 
-        public bool IsVisible => _root != null && _root.activeSelf;
+        public bool IsVisible => enabled && _root != null && _root.activeSelf;
         public bool IsCapturingBinding => _rebindOperation != null || _rebindStartRoutine != null;
 
         public event Action Closed;
 
-        public void Initialize(
-            Canvas canvas,
-            TMP_FontAsset font,
-            InputActionAsset actions)
+        public bool Initialize(InputActionAsset actions)
         {
             _actions = actions;
-            if (canvas == null || _actions == null)
+            if (_actions == null)
             {
-                Debug.LogError("ControlsSettingsUI precisa de Canvas e InputActionAsset.", this);
+                Debug.LogError("ControlsSettingsUI precisa de um InputActionAsset.", this);
                 enabled = false;
-                return;
+                return false;
+            }
+
+            if (!ValidateSceneReferences())
+            {
+                enabled = false;
+                return false;
             }
 
             _bindingService = new InputBindingService(_actions);
             _bindingService.Load();
-            if (!ValidateSceneReferences())
-            {
-                enabled = false;
-                return;
-            }
-
             ConfigureSceneBindings();
             BindStaticButtons();
             RefreshBindings();
             Hide(false);
+            return true;
         }
 
         private void OnDisable()
@@ -117,24 +113,16 @@ namespace PiGame.UI
 
         public void Show()
         {
-            if (_root == null)
-            {
-                return;
-            }
-
             _root.SetActive(true);
             _conflictRoot.SetActive(false);
             RefreshBindings();
-            QueueSelection(_firstButton);
+            QueueSelection(_moveLeftKeyboardButton);
         }
 
         public void Hide(bool notify = true)
         {
             CancelRebind();
-            if (_root != null)
-            {
-                _root.SetActive(false);
-            }
+            _root.SetActive(false);
 
             if (notify)
             {
@@ -184,7 +172,6 @@ namespace PiGame.UI
             RegisterBindingButton(_aimFireGamepadButton, "AimFire", null, InputBindingService.GamepadGroup);
             RegisterBindingButton(_cancelAimGamepadButton, "CancelAim", null, InputBindingService.GamepadGroup);
             RegisterBindingButton(_abilityGamepadButton, "Ability", null, InputBindingService.GamepadGroup);
-            _firstButton = _moveLeftKeyboardButton;
         }
 
         private void RegisterBindingButton(
@@ -198,8 +185,7 @@ namespace PiGame.UI
                 ActionName = actionName,
                 PartName = partName,
                 Group = group,
-                Button = button,
-                IsEditable = true
+                Button = button
             };
             button.onClick.AddListener(() => BeginRebind(bindingButton));
             _bindingButtons.Add(bindingButton);
@@ -273,7 +259,7 @@ namespace PiGame.UI
 
         private void BeginRebind(BindingButton target)
         {
-            if (!target.IsEditable || IsCapturingBinding)
+            if (IsCapturingBinding)
             {
                 return;
             }
@@ -283,6 +269,9 @@ namespace PiGame.UI
             int bindingIndex = FindBindingIndex(action, target.Group, target.PartName);
             if (bindingIndex < 0)
             {
+                Debug.LogError(
+                    $"Binding de {target.ActionName} ({target.Group}) não encontrado no InputActionAsset.",
+                    this);
                 return;
             }
 
@@ -408,7 +397,7 @@ namespace PiGame.UI
 
         private void FinishRebind()
         {
-            Button selection = _pendingTarget?.Button ?? _firstButton;
+            Button selection = _pendingTarget?.Button ?? _moveLeftKeyboardButton;
             _pendingTarget = null;
             _pendingConflictAction = null;
             _pendingConflictBindingIndex = -1;
@@ -519,16 +508,11 @@ namespace PiGame.UI
             CancelRebind();
             _bindingService.ResetBindingGroup(group);
             RefreshBindings();
-            QueueSelection(_firstButton);
+            QueueSelection(_moveLeftKeyboardButton);
         }
 
         private void RefreshBindings()
         {
-            if (_actions == null)
-            {
-                return;
-            }
-
             InputActionMap map = _actions.FindActionMap(InputBindingService.ActionMapName, true);
             foreach (BindingButton item in _bindingButtons)
             {
@@ -596,7 +580,7 @@ namespace PiGame.UI
         {
             foreach (BindingButton bindingButton in _bindingButtons)
             {
-                bindingButton.Button.interactable = interactable && bindingButton.IsEditable;
+                bindingButton.Button.interactable = interactable;
             }
         }
 
@@ -646,11 +630,14 @@ namespace PiGame.UI
 
         private static void SetButtonLabel(Button button, string label)
         {
-            TMP_Text text = button != null ? button.GetComponentInChildren<TMP_Text>() : null;
-            if (text != null)
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            if (text == null)
             {
-                text.text = label;
+                Debug.LogError($"O botão {button.name} precisa de um TMP_Text filho.", button);
+                return;
             }
+
+            text.text = label;
         }
 
     }

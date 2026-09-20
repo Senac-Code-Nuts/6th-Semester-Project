@@ -16,24 +16,13 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            _view ??= GetComponent<PauseMenuUI>();
-            _contextSource ??= GetComponent<MonoBehaviour>();
             _context = _contextSource as IPauseContext;
 
-            if (_context == null)
+            if (_view == null || _context == null || _definition == null)
             {
-                foreach (MonoBehaviour behaviour in GetComponents<MonoBehaviour>())
-                {
-                    if (behaviour is IPauseContext pauseContext)
-                    {
-                        _context = pauseContext;
-                        _contextSource = behaviour;
-                        break;
-                    }
-                }
+                Debug.LogError("PauseMenuController precisa de View, Context e Definition no Inspector.", this);
+                enabled = false;
             }
-
-            _view?.Initialize(_definition);
         }
 
         private void OnEnable()
@@ -51,14 +40,12 @@ namespace PiGame.UI
 
         private void Start()
         {
-            if (_view == null || _context == null || _definition == null)
+            if (!_view.Initialize(_definition))
             {
-                Debug.LogError("PauseMenuController não está configurado corretamente.", this);
                 enabled = false;
                 return;
             }
 
-            _view.Initialize(_definition);
             _view.SetVisible(false);
         }
 
@@ -74,7 +61,7 @@ namespace PiGame.UI
 
             if (_isOpen && !_isExiting)
             {
-                _context?.ExitPause();
+                _context.ExitPause();
             }
 
             _isOpen = false;
@@ -146,7 +133,7 @@ namespace PiGame.UI
 
         private void OpenPause()
         {
-            if (_isOpen || _context == null || !_context.CanOpenPause)
+            if (_isOpen || !_context.CanOpenPause)
             {
                 return;
             }
@@ -186,7 +173,7 @@ namespace PiGame.UI
 
         private async void HandleExitConfirmed()
         {
-            if (!_isOpen || _isExiting || _context == null)
+            if (!_isOpen || _isExiting)
             {
                 return;
             }

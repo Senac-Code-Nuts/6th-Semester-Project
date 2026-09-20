@@ -22,8 +22,6 @@ namespace PiGame.Input
                 : throw new ArgumentNullException(nameof(actions));
         }
 
-        public bool HasSavedBindings => PlayerPrefs.HasKey(PlayerPrefsKey);
-
         public void Load()
         {
             if (PlayerPrefs.HasKey(LegacyPlayerPrefsKey))
@@ -32,7 +30,7 @@ namespace PiGame.Input
                 PlayerPrefs.Save();
             }
 
-            if (!HasSavedBindings)
+            if (!PlayerPrefs.HasKey(PlayerPrefsKey))
             {
                 return;
             }
@@ -63,7 +61,7 @@ namespace PiGame.Input
             PlayerPrefs.Save();
         }
 
-        public void ResetAll()
+        private void ResetAll()
         {
             _actions.RemoveAllBindingOverrides();
             PlayerPrefs.DeleteKey(PlayerPrefsKey);

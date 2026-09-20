@@ -1,6 +1,5 @@
 using PiGame.Lobby;
 using PiGame.Networking;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
@@ -418,17 +417,18 @@ namespace PiGame.UI
                 return;
             }
 
-            Canvas canvas = FindFirstObjectByType<Canvas>();
             InputActionAsset actions = FindFirstObjectByType<InputSystemUIInputModule>()?.actionsAsset;
-            TMP_FontAsset font = FindFirstObjectByType<TMP_Text>()?.font;
-            _lobbyPause.Initialize(
-                canvas,
-                font,
+            if (!_lobbyPause.Initialize(
                 actions,
                 "PAUSE",
                 "VOLTAR",
                 "DESCONECTAR",
-                "DESCONECTAR DO LOBBY?");
+                "DESCONECTAR DO LOBBY?"))
+            {
+                enabled = false;
+                return;
+            }
+
             _lobbyPause.SetVisible(false);
         }
 
