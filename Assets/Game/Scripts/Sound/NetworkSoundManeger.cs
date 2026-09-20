@@ -63,13 +63,13 @@ namespace PiGame.Sound
             Instance = this;
         }
 
-        public static void PlaySFX(SFXList sfx)
+        public void PlaySFX(SFXList sfx)
         {
             if (Instance == null) return;
             Instance.SendSFXServerRpc(sfx);
         }
 
-        public static void PlayOST(OSTList ost)
+        public void PlayOST(OSTList ost)
         {
             if (Instance == null) return;
             Instance.SendOSTServerRpc(ost);
