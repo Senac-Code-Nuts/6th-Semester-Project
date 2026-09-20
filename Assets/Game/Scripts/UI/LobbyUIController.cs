@@ -1,6 +1,9 @@
 using PiGame.Lobby;
 using PiGame.Networking;
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -24,12 +27,14 @@ namespace PiGame.UI
         [SerializeField] private MatchSettingsPanelUI _matchSettingsPanel;
         [FormerlySerializedAs("_localNetworkAddressText")]
         [SerializeField] private Text _sessionCodeText;
+        [SerializeField] private PauseMenuUI _lobbyPause;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
 
         private ILobbyConnectionService _connectionServiceContract;
         private ConfirmationAction _pendingConfirmation;
+        private bool _matchSettingsOpen;
 
         private void Awake()
         {
@@ -39,6 +44,7 @@ namespace PiGame.UI
             }
 
             _connectionServiceContract = _connectionService;
+            CreateLobbyPause();
         }
 
         private void OnEnable()
@@ -47,13 +53,18 @@ namespace PiGame.UI
             _connectionPanel.ClientRequested += HandleClientRequested;
             _connectionPanel.CancelConnectionRequested += HandleCancelConnectionRequested;
             _connectionPanel.QuitRequested += HandleQuitRequested;
-            _characterSelectionController.DisconnectRequested += HandleDisconnectRequested;
+            _connectionPanel.OptionsRequested += HandleOptionsRequested;
             _mapVotingController.DisconnectRequested += HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged += HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed += HandleConfirmationConfirmed;
             _confirmationPanel.Canceled += HandleConfirmationCanceled;
             _matchSettingsPanel.Opened += HandleMatchSettingsOpened;
             _matchSettingsPanel.Closed += HandleMatchSettingsClosed;
+            _lobbyPause.ResumeRequested += CloseLobbyPause;
+            _lobbyPause.ExitRequested += _lobbyPause.ShowConfirmation;
+            _lobbyPause.ExitConfirmed += HandleLobbyPauseExitConfirmed;
+            _lobbyPause.ExitCanceled += _lobbyPause.HideConfirmation;
+            _lobbyPause.ControlsClosed += HandleControlsClosed;
             _confirmationPanel.Hide();
 
             if (_connectionServiceContract == null)
@@ -83,13 +94,21 @@ namespace PiGame.UI
             _connectionPanel.ClientRequested -= HandleClientRequested;
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
             _connectionPanel.QuitRequested -= HandleQuitRequested;
-            _characterSelectionController.DisconnectRequested -= HandleDisconnectRequested;
+            _connectionPanel.OptionsRequested -= HandleOptionsRequested;
             _mapVotingController.DisconnectRequested -= HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged -= HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed -= HandleConfirmationConfirmed;
             _confirmationPanel.Canceled -= HandleConfirmationCanceled;
             _matchSettingsPanel.Opened -= HandleMatchSettingsOpened;
             _matchSettingsPanel.Closed -= HandleMatchSettingsClosed;
+            if (_lobbyPause != null)
+            {
+                _lobbyPause.ResumeRequested -= CloseLobbyPause;
+                _lobbyPause.ExitRequested -= _lobbyPause.ShowConfirmation;
+                _lobbyPause.ExitConfirmed -= HandleLobbyPauseExitConfirmed;
+                _lobbyPause.ExitCanceled -= _lobbyPause.HideConfirmation;
+                _lobbyPause.ControlsClosed -= HandleControlsClosed;
+            }
 
             if (_connectionServiceContract == null)
             {
@@ -99,6 +118,68 @@ namespace PiGame.UI
             _connectionServiceContract.Connected -= HandleConnected;
             _connectionServiceContract.Disconnected -= HandleDisconnected;
             _connectionServiceContract.ConnectionFailed -= HandleConnectionFailed;
+        }
+
+        private void Update()
+        {
+            if (_lobbyPause == null)
+            {
+                return;
+            }
+
+            bool keyboardBack = Keyboard.current != null
+                && Keyboard.current.escapeKey.wasPressedThisFrame;
+            bool gamepadMenu = Gamepad.current != null
+                && Gamepad.current.startButton.wasPressedThisFrame;
+            bool gamepadBack = Gamepad.current != null
+                && Gamepad.current.buttonEast.wasPressedThisFrame;
+
+            if (_lobbyPause.IsControlsVisible)
+            {
+                if (keyboardBack || gamepadMenu || gamepadBack)
+                {
+                    _lobbyPause.HandleControlsBack();
+                }
+
+                return;
+            }
+
+            if (_lobbyPause.IsVisible)
+            {
+                if (keyboardBack || gamepadMenu)
+                {
+                    if (_lobbyPause.IsConfirmationVisible)
+                    {
+                        _lobbyPause.HideConfirmation();
+                    }
+                    else
+                    {
+                        CloseLobbyPause();
+                    }
+                }
+                else if (gamepadBack)
+                {
+                    if (_lobbyPause.IsConfirmationVisible)
+                    {
+                        _lobbyPause.HideConfirmation();
+                    }
+                    else
+                    {
+                        CloseLobbyPause();
+                    }
+                }
+
+                return;
+            }
+
+            if ((keyboardBack || gamepadMenu)
+                && _connectionServiceContract != null
+                && _connectionServiceContract.IsConnected
+                && _pendingConfirmation == ConfirmationAction.None
+                && !_matchSettingsOpen)
+            {
+                OpenLobbyPause();
+            }
         }
 
         private async void HandleHostRequested()
@@ -138,6 +219,12 @@ namespace PiGame.UI
         private void HandleQuitRequested()
         {
             OpenConfirmation(ConfirmationAction.Quit, "DESEJA REALMENTE SAIR?");
+        }
+
+        private void HandleOptionsRequested()
+        {
+            _connectionPanel.SetInteractionEnabled(false);
+            _lobbyPause.ShowControls();
         }
 
         private void HandleDisconnectRequested()
@@ -272,11 +359,13 @@ namespace PiGame.UI
 
         private void HandleMatchSettingsOpened()
         {
+            _matchSettingsOpen = true;
             SetLobbyInteractionEnabled(false);
         }
 
         private void HandleMatchSettingsClosed()
         {
+            _matchSettingsOpen = false;
             SetLobbyInteractionEnabled(true);
         }
 
@@ -316,6 +405,80 @@ namespace PiGame.UI
             bool mapVotingIsVisible = _mapVotingController.IsVisible;
             _characterSelectionController.SetInteractionEnabled(isEnabled && !mapVotingIsVisible);
             _mapVotingController.SetInteractionEnabled(isEnabled && mapVotingIsVisible);
+        }
+
+        private void CreateLobbyPause()
+        {
+            if (_lobbyPause == null)
+            {
+                Debug.LogError(
+                    "LobbyUIController precisa de uma referência para o pause do lobby.",
+                    this);
+                enabled = false;
+                return;
+            }
+
+            Canvas canvas = FindFirstObjectByType<Canvas>();
+            InputActionAsset actions = FindFirstObjectByType<InputSystemUIInputModule>()?.actionsAsset;
+            TMP_FontAsset font = FindFirstObjectByType<TMP_Text>()?.font;
+            _lobbyPause.Initialize(
+                canvas,
+                font,
+                actions,
+                "PAUSE",
+                "VOLTAR",
+                "DESCONECTAR",
+                "DESCONECTAR DO LOBBY?");
+            _lobbyPause.SetVisible(false);
+        }
+
+        private void OpenLobbyPause()
+        {
+            SetLobbyInteractionEnabled(false);
+            _lobbyPause.SetVisible(true);
+        }
+
+        private void CloseLobbyPause()
+        {
+            if (_lobbyPause == null
+                || (!_lobbyPause.IsVisible && !_lobbyPause.IsControlsVisible))
+            {
+                return;
+            }
+
+            _lobbyPause.SetVisible(false);
+            SetLobbyInteractionEnabled(true);
+        }
+
+        private async void HandleLobbyPauseExitConfirmed()
+        {
+            _lobbyPause.SetBusy(true);
+            _lobbyPause.SetVisible(false);
+            ShowConnectionPanel();
+            _connectionPanel.ShowConnecting("ENCERRANDO SALA...");
+            if (_connectionServiceContract != null)
+            {
+                await _connectionServiceContract.ShutdownAsync();
+            }
+
+            _lobbyPause.SetBusy(false);
+            _connectionPanel.ShowIdle();
+        }
+
+        private void HandleControlsClosed()
+        {
+            if (_connectionServiceContract != null && _connectionServiceContract.IsConnected)
+            {
+                if (_lobbyPause.IsVisible)
+                {
+                    SetLobbyInteractionEnabled(false);
+                }
+
+                return;
+            }
+
+            _connectionPanel.SetInteractionEnabled(true);
+            _connectionPanel.FocusDefaultButton();
         }
     }
 }

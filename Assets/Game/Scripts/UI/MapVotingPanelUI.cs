@@ -47,6 +47,8 @@ namespace PiGame.UI
         [SerializeField] private Color _selectedColor = new(0.98f, 0.72f, 0.18f, 1f);
         [SerializeField] private Color _winnerColor = new(0.3f, 0.9f, 0.5f, 1f);
         [SerializeField, Min(1f)] private float _selectedScale = 1.12f;
+        [SerializeField, Range(0f, 0.05f)] private float _selectedPulseAmount = 0.015f;
+        [SerializeField, Min(0.1f)] private float _selectedPulseSpeed = 2f;
 
         public event Action<LobbyMapId, LobbyInputDeviceKind> VoteRequested;
         public event Action<LobbyInputDeviceKind> ConfirmRequested;
@@ -110,6 +112,7 @@ namespace PiGame.UI
             }
 
             ProcessNavigationInput();
+            AnimateSelectedCard();
         }
 
         public void OnSubmit(BaseEventData eventData)
@@ -128,6 +131,11 @@ namespace PiGame.UI
         public void OnCancel(BaseEventData eventData)
         {
             if (!_interactionEnabled || _stage != LobbyStage.MapVoting)
+            {
+                return;
+            }
+
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 return;
             }
@@ -349,6 +357,25 @@ namespace PiGame.UI
                 button.targetGraphic.color = isWinner
                     ? _winnerColor
                     : isSelected ? _selectedColor : _normalColor;
+            }
+        }
+
+        private void AnimateSelectedCard()
+        {
+            float pulse = 1f
+                + Mathf.Sin(Time.unscaledTime * Mathf.PI * _selectedPulseSpeed)
+                    * _selectedPulseAmount;
+
+            for (int i = 0; i < _optionButtons.Length; i++)
+            {
+                LobbyMapId optionMapId = GetOptionMapId(i);
+                bool isWinner = _stage == LobbyStage.MatchStarting
+                    && optionMapId == _winningMap;
+                bool isSelected = _stage == LobbyStage.MapVoting
+                    && optionMapId == _selectedMapId;
+                _optionButtons[i].transform.localScale = isSelected || isWinner
+                    ? Vector3.one * (_selectedScale * pulse)
+                    : Vector3.one;
             }
         }
 
