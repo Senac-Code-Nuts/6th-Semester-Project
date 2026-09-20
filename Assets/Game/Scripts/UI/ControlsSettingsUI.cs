@@ -172,18 +172,18 @@ namespace PiGame.UI
                 return;
             }
 
-            RegisterBindingButton(_moveLeftKeyboardButton, "Move", "left", GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_moveRightKeyboardButton, "Move", "right", GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_jumpKeyboardButton, "Jump", null, GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_crouchKeyboardButton, "Crouch", null, GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_aimFireKeyboardButton, "AimFire", null, GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_cancelAimKeyboardButton, "CancelAim", null, GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_abilityKeyboardButton, "Ability", null, GameplayInputReader.KeyboardMouseGroup);
-            RegisterBindingButton(_jumpGamepadButton, "Jump", null, GameplayInputReader.GamepadGroup);
-            RegisterBindingButton(_crouchGamepadButton, "Crouch", null, GameplayInputReader.GamepadGroup);
-            RegisterBindingButton(_aimFireGamepadButton, "AimFire", null, GameplayInputReader.GamepadGroup);
-            RegisterBindingButton(_cancelAimGamepadButton, "CancelAim", null, GameplayInputReader.GamepadGroup);
-            RegisterBindingButton(_abilityGamepadButton, "Ability", null, GameplayInputReader.GamepadGroup);
+            RegisterBindingButton(_moveLeftKeyboardButton, "Move", "left", InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_moveRightKeyboardButton, "Move", "right", InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_jumpKeyboardButton, "Jump", null, InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_crouchKeyboardButton, "Crouch", null, InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_aimFireKeyboardButton, "AimFire", null, InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_cancelAimKeyboardButton, "CancelAim", null, InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_abilityKeyboardButton, "Ability", null, InputBindingService.KeyboardMouseGroup);
+            RegisterBindingButton(_jumpGamepadButton, "Jump", null, InputBindingService.GamepadGroup);
+            RegisterBindingButton(_crouchGamepadButton, "Crouch", null, InputBindingService.GamepadGroup);
+            RegisterBindingButton(_aimFireGamepadButton, "AimFire", null, InputBindingService.GamepadGroup);
+            RegisterBindingButton(_cancelAimGamepadButton, "CancelAim", null, InputBindingService.GamepadGroup);
+            RegisterBindingButton(_abilityGamepadButton, "Ability", null, InputBindingService.GamepadGroup);
             _firstButton = _moveLeftKeyboardButton;
         }
 
@@ -235,8 +235,8 @@ namespace PiGame.UI
             _staticButtonsBound = false;
         }
 
-        private void ResetKeyboard() => ResetGroup(GameplayInputReader.KeyboardMouseGroup);
-        private void ResetGamepad() => ResetGroup(GameplayInputReader.GamepadGroup);
+        private void ResetKeyboard() => ResetGroup(InputBindingService.KeyboardMouseGroup);
+        private void ResetGamepad() => ResetGroup(InputBindingService.GamepadGroup);
         private void HandleBackClicked() => Hide();
 
         private bool ValidateSceneReferences()
@@ -278,7 +278,7 @@ namespace PiGame.UI
                 return;
             }
 
-            InputAction action = _actions.FindActionMap(GameplayInputReader.ActionMapName, true)
+            InputAction action = _actions.FindActionMap(InputBindingService.ActionMapName, true)
                 .FindAction(target.ActionName, true);
             int bindingIndex = FindBindingIndex(action, target.Group, target.PartName);
             if (bindingIndex < 0)
@@ -322,7 +322,7 @@ namespace PiGame.UI
                     .OnCancel(HandleRebindCanceled)
                     .OnComplete(HandleRebindCompleted);
 
-            if (_pendingTarget.Group == GameplayInputReader.GamepadGroup)
+            if (_pendingTarget.Group == InputBindingService.GamepadGroup)
             {
                 operation.WithControlsHavingToMatchPath("<Gamepad>")
                     .WithCancelingThrough("<Keyboard>/escape");
@@ -390,7 +390,7 @@ namespace PiGame.UI
                 return;
             }
 
-            InputAction targetAction = _actions.FindActionMap(GameplayInputReader.ActionMapName, true)
+            InputAction targetAction = _actions.FindActionMap(InputBindingService.ActionMapName, true)
                 .FindAction(_pendingTarget.ActionName, true);
             int targetIndex = FindBindingIndex(targetAction, _pendingTarget.Group, _pendingTarget.PartName);
             targetAction.ApplyBindingOverride(targetIndex, _pendingCandidatePath);
@@ -446,7 +446,7 @@ namespace PiGame.UI
                 return false;
             }
 
-            if (_pendingTarget.Group == GameplayInputReader.KeyboardMouseGroup)
+            if (_pendingTarget.Group == InputBindingService.KeyboardMouseGroup)
             {
                 return WasAnyGamepadButtonPressed();
             }
@@ -489,7 +489,7 @@ namespace PiGame.UI
             out InputAction conflictAction,
             out int conflictIndex)
         {
-            InputActionMap playerMap = _actions.FindActionMap(GameplayInputReader.ActionMapName, true);
+            InputActionMap playerMap = _actions.FindActionMap(InputBindingService.ActionMapName, true);
             foreach (InputAction action in playerMap.actions)
             {
                 for (int i = 0; i < action.bindings.Count; i++)
@@ -529,7 +529,7 @@ namespace PiGame.UI
                 return;
             }
 
-            InputActionMap map = _actions.FindActionMap(GameplayInputReader.ActionMapName, true);
+            InputActionMap map = _actions.FindActionMap(InputBindingService.ActionMapName, true);
             foreach (BindingButton item in _bindingButtons)
             {
                 InputAction action = map.FindAction(item.ActionName, true);

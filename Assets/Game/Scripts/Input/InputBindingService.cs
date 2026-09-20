@@ -6,6 +6,10 @@ namespace PiGame.Input
 {
     public class InputBindingService
     {
+        public const string ActionMapName = "Player";
+        public const string KeyboardMouseGroup = "Keyboard&Mouse";
+        public const string GamepadGroup = "Gamepad";
+
         private const string PlayerPrefsKey = "PiGame.InputBindings.v2";
         private const string LegacyPlayerPrefsKey = "PiGame.InputBindings.v1";
 

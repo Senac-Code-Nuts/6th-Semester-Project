@@ -260,6 +260,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerCombat
   ShowTopMostFoldoutHeaderGroup: 1
+  _inputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _projectilePrefab: {fileID: 900000000000000008, guid: e0400000000000000000000000000001, type: 3}
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.85

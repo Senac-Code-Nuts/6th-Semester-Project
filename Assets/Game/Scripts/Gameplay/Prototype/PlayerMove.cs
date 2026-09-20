@@ -50,19 +50,10 @@ namespace PiGame.Gameplay
         private int _wallDirection;
         private float _wallJumpControlTimer ;
         private bool _isGameplayInputBlocked;
-        private GameplayInputReader _input;
-        private bool _inputConfigurationErrorLogged;
+        private InputActionMap _playerActions;
+        private InputAction _crouchAction;
 
         public bool IsCrouching => _isCrouching;
-
-        public IGameplayInputSource InputSource
-        {
-            get
-            {
-                TryInitializeInput();
-                return _input;
-            }
-        }
 
         private void Awake()
         {
@@ -78,13 +69,13 @@ namespace PiGame.Gameplay
             if(!IsOwner)
                 return;
 
-            if (!TryInitializeInput())
+            if (!ConfigureInput())
             {
                 enabled = false;
                 return;
             }
 
-            _input.Enable();
+            _playerActions.Enable();
         }
 
         public override void OnNetworkDespawn()
@@ -93,7 +84,7 @@ namespace PiGame.Gameplay
                 return;
             _isGameplayInputBlocked = false;
             ResetCrouch();
-            _input?.Disable();
+            _playerActions?.Disable();
         }
 
         private void Update()
@@ -148,7 +139,7 @@ namespace PiGame.Gameplay
         {
             if (_wallJumpControlTimer  > 0f)
                 return;
-            Vector2 input = _input.Move;
+            Vector2 input = _moveAction.action.ReadValue<Vector2>();
             if (_isCrouching)
             {
                 input.x = 0f;
@@ -169,7 +160,7 @@ namespace PiGame.Gameplay
 
         private void HandleJump()
         {
-            if(_isCrouching || !_input.WasJumpPressedThisFrame())
+            if(_isCrouching || !_jumpAction.action.WasPressedThisFrame())
                 return;
 
             if(_isWallSliding)
@@ -255,7 +246,7 @@ namespace PiGame.Gameplay
 
         private bool IsPressingAgainstWall()
         {
-            Vector2 input = _input.Move;
+            Vector2 input = _moveAction.action.ReadValue<Vector2>();
 
             if(_wallDirection == 1)
             {
@@ -270,48 +261,31 @@ namespace PiGame.Gameplay
             return false;
         }
 
-        private bool TryInitializeInput()
+        private bool ConfigureInput()
         {
-            if (_input != null)
+            InputAction move = _moveAction != null ? _moveAction.action : null;
+            InputAction jump = _jumpAction != null ? _jumpAction.action : null;
+            if (move == null || jump == null || move.actionMap != jump.actionMap)
             {
-                return true;
-            }
-
-            InputActionAsset actions = _moveAction?.action?.actionMap?.asset
-                ?? _jumpAction?.action?.actionMap?.asset;
-            if (actions == null)
-            {
-                if (!_inputConfigurationErrorLogged)
-                {
-                    Debug.LogError(
-                        "PlayerMove precisa de uma referência para o asset de Input Actions.",
-                        this);
-                    _inputConfigurationErrorLogged = true;
-                }
-
+                Debug.LogError("Configure Move e Jump do mesmo Action Map no PlayerMove.", this);
                 return false;
             }
 
-            try
+            _playerActions = move.actionMap;
+            _crouchAction = _playerActions.FindAction("Crouch");
+            if (_crouchAction == null)
             {
-                _input = new GameplayInputReader(actions);
-                return true;
-            }
-            catch (Exception exception)
-            {
-                if (!_inputConfigurationErrorLogged)
-                {
-                    Debug.LogException(exception, this);
-                    _inputConfigurationErrorLogged = true;
-                }
-
+                Debug.LogError("A ação Crouch não foi encontrada no Action Map do jogador.", this);
                 return false;
             }
+
+            new InputBindingService(_playerActions.asset).Load();
+            return true;
         }
 
         private void UpdateCrouch()
         {
-            bool wantsToCrouch = _input.IsCrouchPressed;
+            bool wantsToCrouch = _crouchAction.IsPressed();
             _isCrouching = wantsToCrouch && _isGrounded;
 
             if (wantsToCrouch && !_isGrounded && _isTouchingWall)

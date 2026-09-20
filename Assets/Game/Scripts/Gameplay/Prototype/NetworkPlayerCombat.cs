@@ -2,12 +2,14 @@ using PiGame.Input;
 using PiGame.Lobby;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace PiGame.Gameplay
 {
     [RequireComponent(typeof(NetworkPlayerState), typeof(PlayerMove))]
     public class NetworkPlayerCombat : NetworkBehaviour, IGameplayInputBlocker
     {
+        [SerializeField] private InputActionAsset _inputActions;
         [SerializeField] private NetworkProjectile _projectilePrefab;
         [SerializeField] private float _shotCooldownSeconds = 0.35f;
         [SerializeField] private float _projectileSpawnDistance = 0.85f;
@@ -26,7 +28,10 @@ namespace PiGame.Gameplay
 
         private NetworkPlayerState _playerState;
         private PlayerMove _playerMove;
-        private IGameplayInputSource _input;
+        private InputAction _aimDirectionAction;
+        private InputAction _aimPointerAction;
+        private InputAction _aimFireAction;
+        private InputAction _cancelAimAction;
         private LineRenderer _aimLine;
         private bool _localAimHeld;
         private bool _waitForAimRelease;
@@ -44,7 +49,10 @@ namespace PiGame.Gameplay
         {
             if (IsOwner)
             {
-                _input = _playerMove.InputSource;
+                if (!ConfigureInput())
+                {
+                    enabled = false;
+                }
             }
 
             _aimDirection.OnValueChanged += HandleAimChanged;
@@ -185,19 +193,15 @@ namespace PiGame.Gameplay
 
         private Vector2 ReadAimDirection()
         {
-            if (_input == null)
-            {
-                return _aimDirection.Value;
-            }
-
             if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad)
             {
-                return _input.AimDirection;
+                return _aimDirectionAction.ReadValue<Vector2>();
             }
 
             if (Camera.main != null)
             {
-                Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(_input.PointerPosition);
+                Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(
+                    _aimPointerAction.ReadValue<Vector2>());
                 return mouseWorld - transform.position;
             }
 
@@ -206,12 +210,37 @@ namespace PiGame.Gameplay
 
         private bool ReadAimPressed()
         {
-            return _input != null && _input.IsAimFirePressed;
+            return _aimFireAction.IsPressed();
         }
 
         private bool ReadCancelPressed()
         {
-            return _input != null && _input.WasCancelAimPressedThisFrame();
+            return _cancelAimAction.WasPressedThisFrame();
+        }
+
+        private bool ConfigureInput()
+        {
+            InputActionMap playerActions = _inputActions != null
+                ? _inputActions.FindActionMap(InputBindingService.ActionMapName)
+                : null;
+            if (playerActions == null)
+            {
+                Debug.LogError("Configure o Action Map Player no NetworkPlayerCombat.", this);
+                return false;
+            }
+
+            _aimDirectionAction = playerActions.FindAction("AimDirection");
+            _aimPointerAction = playerActions.FindAction("AimPointer");
+            _aimFireAction = playerActions.FindAction("AimFire");
+            _cancelAimAction = playerActions.FindAction("CancelAim");
+            if (_aimDirectionAction == null || _aimPointerAction == null
+                || _aimFireAction == null || _cancelAimAction == null)
+            {
+                Debug.LogError("Faltam ações de mira no Action Map Player.", this);
+                return false;
+            }
+
+            return true;
         }
 
         private void CreateAimLine()
