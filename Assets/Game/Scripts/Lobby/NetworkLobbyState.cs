@@ -8,6 +8,8 @@ namespace PiGame.Lobby
 {
     public class NetworkLobbyState : NetworkBehaviour, ILobbyState
     {
+        public const float RandomMapDrawSeconds = 1.5f;
+
         private static readonly LobbyMatchSettingsData FallbackMatchSettings = new(
             3,
             LobbyMatchMode.Solo,
@@ -28,6 +30,7 @@ namespace PiGame.Lobby
         private readonly NetworkList<LobbyMapVoteData> _mapVotes = new();
         private readonly NetworkVariable<LobbyStage> _stage = new(LobbyStage.CharacterSelection);
         private readonly NetworkVariable<LobbyMapId> _winningMap = new(LobbyMapId.None);
+        private readonly NetworkVariable<bool> _isRandomMapResult = new(false);
         private readonly NetworkVariable<LobbyMatchSettingsData> _matchSettings =
             new(FallbackMatchSettings);
 
@@ -47,6 +50,7 @@ namespace PiGame.Lobby
             : ulong.MaxValue;
         public LobbyStage Stage => _stage.Value;
         public LobbyMapId WinningMap => _winningMap.Value;
+        public bool IsRandomMapResult => _isRandomMapResult.Value;
         public LobbyMatchSettingsData MatchSettings => _matchSettings.Value;
         public int MatchDurationMinutes => MatchSettings.DurationMinutes;
         public LobbyMatchMode MatchMode => MatchSettings.Mode;
@@ -108,6 +112,7 @@ namespace PiGame.Lobby
             _mapVotes.OnListChanged += HandleMapVotesChanged;
             _stage.OnValueChanged += HandleStageChanged;
             _winningMap.OnValueChanged += HandleWinningMapChanged;
+            _isRandomMapResult.OnValueChanged += HandleRandomMapResultChanged;
             _matchSettings.OnValueChanged += HandleMatchSettingsChanged;
 
             if (IsServer)
@@ -115,6 +120,11 @@ namespace PiGame.Lobby
                 MatchSnapshot previousMatch = MatchSession.Instance != null
                     ? MatchSession.Instance.Snapshot
                     : null;
+
+                if (previousMatch == null)
+                {
+                    MatchSession.Instance?.ResetMapHistory();
+                }
 
                 ResetReplicatedSessionStateServer();
                 _matchSettings.Value = previousMatch != null
@@ -150,6 +160,7 @@ namespace PiGame.Lobby
             ResetReplicatedSessionStateServer();
             _matchSettings.Value = CreateInitialMatchSettings();
             MatchSession.Instance?.Clear();
+            MatchSession.Instance?.ResetMapHistory();
         }
 
         public override void OnNetworkDespawn()
@@ -158,6 +169,7 @@ namespace PiGame.Lobby
             _mapVotes.OnListChanged -= HandleMapVotesChanged;
             _stage.OnValueChanged -= HandleStageChanged;
             _winningMap.OnValueChanged -= HandleWinningMapChanged;
+            _isRandomMapResult.OnValueChanged -= HandleRandomMapResultChanged;
             _matchSettings.OnValueChanged -= HandleMatchSettingsChanged;
 
             StopMatchStartRoutine();
@@ -544,6 +556,11 @@ namespace PiGame.Lobby
             StageChanged?.Invoke();
         }
 
+        private void HandleRandomMapResultChanged(bool previousValue, bool currentValue)
+        {
+            StageChanged?.Invoke();
+        }
+
         private void HandleMatchSettingsChanged(
             LobbyMatchSettingsData previousSettings,
             LobbyMatchSettingsData currentSettings)
@@ -807,6 +824,7 @@ namespace PiGame.Lobby
             }
 
             _winningMap.Value = LobbyMapId.None;
+            _isRandomMapResult.Value = false;
             _stage.Value = LobbyStage.MapVoting;
         }
 
@@ -828,10 +846,13 @@ namespace PiGame.Lobby
                 return;
             }
 
+            _isRandomMapResult.Value = winningOption == LobbyMapId.Random;
             _winningMap.Value = concreteMap;
             _stage.Value = LobbyStage.MatchStarting;
             StopMatchStartRoutine();
-            _matchStartRoutine = StartCoroutine(RequestMatchStartAfterResult(concreteMap));
+            _matchStartRoutine = StartCoroutine(RequestMatchStartAfterResult(
+                concreteMap,
+                _isRandomMapResult.Value));
         }
 
         private LobbyMapId ResolveWinningVoteOption()
@@ -868,11 +889,20 @@ namespace PiGame.Lobby
                 for (int i = 0; i < _maps.Length; i++)
                 {
                     LobbyMapDefinition map = _maps[i];
-                    if (map != null && map.Id != LobbyMapId.None && map.Id != LobbyMapId.Random)
+                    if (map != null
+                        && map.Id != LobbyMapId.None
+                        && map.Id != LobbyMapId.Random
+                        && !validMaps.Contains(map.Id))
                     {
                         validMaps.Add(map.Id);
                     }
                 }
+            }
+
+            MatchSession session = MatchSession.Instance;
+            if (validMaps.Count > 1 && session != null && session.ConsecutiveMapCount >= 2)
+            {
+                validMaps.Remove(session.LastMapId);
             }
 
             return validMaps.Count > 0
@@ -880,8 +910,13 @@ namespace PiGame.Lobby
                 : LobbyMapId.None;
         }
 
-        private IEnumerator RequestMatchStartAfterResult(LobbyMapId mapId)
+        private IEnumerator RequestMatchStartAfterResult(LobbyMapId mapId, bool isRandomResult)
         {
+            if (isRandomResult)
+            {
+                yield return new WaitForSecondsRealtime(RandomMapDrawSeconds);
+            }
+
             yield return new WaitForSecondsRealtime(_mapResultDisplaySeconds);
 
             _matchStartRoutine = null;
@@ -901,6 +936,7 @@ namespace PiGame.Lobby
             StopMatchStartRoutine();
             _mapVotes.Clear();
             _winningMap.Value = LobbyMapId.None;
+            _isRandomMapResult.Value = false;
 
             for (int i = 0; i < _players.Count; i++)
             {
@@ -918,6 +954,7 @@ namespace PiGame.Lobby
             _players.Clear();
             _mapVotes.Clear();
             _winningMap.Value = LobbyMapId.None;
+            _isRandomMapResult.Value = false;
             _stage.Value = LobbyStage.CharacterSelection;
         }
 

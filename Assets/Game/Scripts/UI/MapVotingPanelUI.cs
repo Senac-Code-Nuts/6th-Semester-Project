@@ -58,6 +58,10 @@ namespace PiGame.UI
         private LobbyMapId _selectedMapId = LobbyMapId.Random;
         private LobbyStage _stage;
         private LobbyMapId _winningMap = LobbyMapId.None;
+        private LobbyMapId _displayedResultMap = LobbyMapId.None;
+        private bool _isRandomMapResult;
+        private bool _isDrawingRandomMap;
+        private Coroutine _randomDrawRoutine;
         private bool _interactionEnabled = true;
         private bool _localVoteConfirmed;
         private int _heldNavigationDirection;
@@ -91,6 +95,7 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
+            StopRandomDraw();
             for (int i = 0; i < _optionButtons.Length; i++)
             {
                 if (_optionButtonActions != null && i < _optionButtonActions.Length)
@@ -162,11 +167,30 @@ namespace PiGame.UI
             IReadOnlyList<LobbyMapVoteData> votes,
             ulong localClientId,
             LobbyStage stage,
-            LobbyMapId winningMap)
+            LobbyMapId winningMap,
+            bool isRandomMapResult)
         {
+            bool startRandomDraw = stage == LobbyStage.MatchStarting
+                && isRandomMapResult
+                && (_stage != LobbyStage.MatchStarting
+                    || !_isRandomMapResult
+                    || _winningMap != winningMap);
+
             _stage = stage;
             _winningMap = winningMap;
+            _isRandomMapResult = isRandomMapResult;
             _localVoteConfirmed = false;
+
+            if (stage != LobbyStage.MatchStarting || !isRandomMapResult)
+            {
+                StopRandomDraw();
+            }
+            else if (startRandomDraw)
+            {
+                StopRandomDraw();
+                _isDrawingRandomMap = true;
+                _randomDrawRoutine = StartCoroutine(AnimateRandomDraw());
+            }
 
             if (TryFindVote(votes, localClientId, out LobbyMapVoteData localVote))
             {
@@ -323,7 +347,9 @@ namespace PiGame.UI
         {
             if (_stage == LobbyStage.MatchStarting)
             {
-                _statusText.text = $"MAPA ESCOLHIDO: {GetMapDisplayName(_winningMap)}\nINICIANDO PARTIDA...";
+                _statusText.text = _isDrawingRandomMap
+                    ? "SORTEANDO MAPA..."
+                    : $"MAPA ESCOLHIDO: {GetMapDisplayName(_winningMap)}\nINICIANDO PARTIDA...";
                 _statusText.color = _winnerColor;
                 return;
             }
@@ -344,7 +370,8 @@ namespace PiGame.UI
             for (int i = 0; i < _optionButtons.Length; i++)
             {
                 LobbyMapId optionMapId = GetOptionMapId(i);
-                bool isWinner = _stage == LobbyStage.MatchStarting && optionMapId == _winningMap;
+                bool isWinner = _stage == LobbyStage.MatchStarting
+                    && optionMapId == (_isDrawingRandomMap ? _displayedResultMap : _winningMap);
                 bool isSelected = _stage == LobbyStage.MapVoting && optionMapId == _selectedMapId;
                 Button button = _optionButtons[i];
 
@@ -370,13 +397,67 @@ namespace PiGame.UI
             {
                 LobbyMapId optionMapId = GetOptionMapId(i);
                 bool isWinner = _stage == LobbyStage.MatchStarting
-                    && optionMapId == _winningMap;
+                    && optionMapId == (_isDrawingRandomMap ? _displayedResultMap : _winningMap);
                 bool isSelected = _stage == LobbyStage.MapVoting
                     && optionMapId == _selectedMapId;
                 _optionButtons[i].transform.localScale = isSelected || isWinner
                     ? Vector3.one * (_selectedScale * pulse)
                     : Vector3.one;
             }
+        }
+
+        private IEnumerator AnimateRandomDraw()
+        {
+            List<LobbyMapId> availableMaps = new();
+            for (int i = 1; i < _optionButtons.Length; i++)
+            {
+                LobbyMapId mapId = GetOptionMapId(i);
+                if (mapId != LobbyMapId.None)
+                {
+                    availableMaps.Add(mapId);
+                }
+            }
+
+            if (availableMaps.Count > 1)
+            {
+                float elapsed = 0f;
+                int index = 0;
+                while (elapsed < NetworkLobbyState.RandomMapDrawSeconds)
+                {
+                    _displayedResultMap = availableMaps[index];
+                    RefreshSelectionVisuals();
+                    index = (index + 1) % availableMaps.Count;
+
+                    float interval = Mathf.Lerp(
+                        0.07f,
+                        0.22f,
+                        elapsed / NetworkLobbyState.RandomMapDrawSeconds);
+                    yield return new WaitForSecondsRealtime(interval);
+                    elapsed += interval;
+                }
+            }
+            else
+            {
+                yield return null;
+            }
+
+            _displayedResultMap = _winningMap;
+            _isDrawingRandomMap = false;
+            _randomDrawRoutine = null;
+            RefreshStatus();
+            RefreshSelectionVisuals();
+        }
+
+        private void StopRandomDraw()
+        {
+            if (_randomDrawRoutine != null)
+            {
+                StopCoroutine(_randomDrawRoutine);
+                _randomDrawRoutine = null;
+            }
+
+            _isDrawingRandomMap = false;
+            _displayedResultMap = LobbyMapId.None;
         }
 
         private void SetLastInputDevice(LobbyInputDeviceKind inputDevice)
