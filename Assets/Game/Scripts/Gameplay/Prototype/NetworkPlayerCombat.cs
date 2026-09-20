@@ -1,11 +1,11 @@
+using PiGame.Input;
 using PiGame.Lobby;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace PiGame.Gameplay
 {
-    [RequireComponent(typeof(NetworkPlayerState))]
+    [RequireComponent(typeof(NetworkPlayerState), typeof(PlayerMove))]
     public class NetworkPlayerCombat : NetworkBehaviour, IGameplayInputBlocker
     {
         [SerializeField] private NetworkProjectile _projectilePrefab;
@@ -25,19 +25,28 @@ namespace PiGame.Gameplay
                 NetworkVariableWritePermission.Owner);
 
         private NetworkPlayerState _playerState;
+        private PlayerMove _playerMove;
+        private IGameplayInputSource _input;
         private LineRenderer _aimLine;
         private bool _localAimHeld;
+        private bool _waitForAimRelease;
         private bool _isGameplayInputBlocked;
         private float _nextServerShotTime;
 
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
+            _playerMove = GetComponent<PlayerMove>();
             CreateAimLine();
         }
 
         public override void OnNetworkSpawn()
         {
+            if (IsOwner)
+            {
+                _input = _playerMove.InputSource;
+            }
+
             _aimDirection.OnValueChanged += HandleAimChanged;
             _isAiming.OnValueChanged += HandleAimingChanged;
             RefreshAimLine();
@@ -46,6 +55,7 @@ namespace PiGame.Gameplay
         public override void OnNetworkDespawn()
         {
             _isGameplayInputBlocked = false;
+            _waitForAimRelease = false;
             _aimDirection.OnValueChanged -= HandleAimChanged;
             _isAiming.OnValueChanged -= HandleAimingChanged;
         }
@@ -59,15 +69,34 @@ namespace PiGame.Gameplay
 
             if (_isGameplayInputBlocked)
             {
+                _waitForAimRelease = true;
                 CancelLocalAim();
                 return;
             }
 
             if (!_playerState.CanAct)
             {
-                _localAimHeld = false;
-                _isAiming.Value = false;
+                _waitForAimRelease = true;
+                CancelLocalAim();
                 return;
+            }
+
+            bool aimPressed = ReadAimPressed();
+            if (_playerMove.IsCrouching)
+            {
+                _waitForAimRelease = aimPressed;
+                CancelLocalAim();
+                return;
+            }
+
+            if (_waitForAimRelease)
+            {
+                if (aimPressed)
+                {
+                    return;
+                }
+
+                _waitForAimRelease = false;
             }
 
             Vector2 aim = ReadAimDirection();
@@ -76,13 +105,12 @@ namespace PiGame.Gameplay
                 _aimDirection.Value = aim.normalized;
             }
 
-            bool aimPressed = ReadAimPressed();
             bool cancelPressed = ReadCancelPressed();
 
             if (cancelPressed && _localAimHeld)
             {
-                _localAimHeld = false;
-                _isAiming.Value = false;
+                _waitForAimRelease = true;
+                CancelLocalAim();
                 return;
             }
 
@@ -113,6 +141,7 @@ namespace PiGame.Gameplay
             _isGameplayInputBlocked = isBlocked;
             if (isBlocked)
             {
+                _waitForAimRelease = true;
                 CancelLocalAim();
             }
         }
@@ -156,16 +185,19 @@ namespace PiGame.Gameplay
 
         private Vector2 ReadAimDirection()
         {
-            if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad
-                && Gamepad.current != null)
+            if (_input == null)
             {
-                return Gamepad.current.rightStick.ReadValue();
+                return _aimDirection.Value;
             }
 
-            if (Mouse.current != null && Camera.main != null)
+            if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad)
             {
-                Vector2 mousePosition = Mouse.current.position.ReadValue();
-                Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mousePosition);
+                return _input.AimDirection;
+            }
+
+            if (Camera.main != null)
+            {
+                Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(_input.PointerPosition);
                 return mouseWorld - transform.position;
             }
 
@@ -174,26 +206,12 @@ namespace PiGame.Gameplay
 
         private bool ReadAimPressed()
         {
-            if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad
-                && Gamepad.current != null)
-            {
-                return Gamepad.current.leftTrigger.isPressed;
-            }
-
-            return Mouse.current != null && Mouse.current.leftButton.isPressed;
+            return _input != null && _input.IsAimFirePressed;
         }
 
         private bool ReadCancelPressed()
         {
-            if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad
-                && Gamepad.current != null)
-            {
-                return Gamepad.current.leftShoulder.wasPressedThisFrame;
-            }
-
-            return Keyboard.current != null
-                && (Keyboard.current.leftShiftKey.wasPressedThisFrame
-                    || Keyboard.current.rightShiftKey.wasPressedThisFrame);
+            return _input != null && _input.WasCancelAimPressedThisFrame();
         }
 
         private void CreateAimLine()
