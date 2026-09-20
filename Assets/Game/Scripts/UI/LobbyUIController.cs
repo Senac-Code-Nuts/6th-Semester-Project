@@ -33,7 +33,6 @@ namespace PiGame.UI
 
         private ILobbyConnectionService _connectionServiceContract;
         private ConfirmationAction _pendingConfirmation;
-        private bool _matchSettingsOpen;
 
         private void Awake()
         {
@@ -43,7 +42,20 @@ namespace PiGame.UI
             }
 
             _connectionServiceContract = _connectionService;
-            CreateLobbyPause();
+            if (_connectionPanel == null)
+            {
+                Debug.LogError("LobbyUIController precisa do painel de conexão no Inspector.", this);
+                enabled = false;
+                return;
+            }
+
+            if (!_connectionPanel.Initialize())
+            {
+                enabled = false;
+                return;
+            }
+
+            InitializeLobbyPause();
         }
 
         private void OnEnable()
@@ -175,7 +187,7 @@ namespace PiGame.UI
                 && _connectionServiceContract != null
                 && _connectionServiceContract.IsConnected
                 && _pendingConfirmation == ConfirmationAction.None
-                && !_matchSettingsOpen)
+                && !_matchSettingsPanel.IsOpen)
             {
                 OpenLobbyPause();
             }
@@ -358,13 +370,11 @@ namespace PiGame.UI
 
         private void HandleMatchSettingsOpened()
         {
-            _matchSettingsOpen = true;
             SetLobbyInteractionEnabled(false);
         }
 
         private void HandleMatchSettingsClosed()
         {
-            _matchSettingsOpen = false;
             SetLobbyInteractionEnabled(true);
         }
 
@@ -406,7 +416,7 @@ namespace PiGame.UI
             _mapVotingController.SetInteractionEnabled(isEnabled && mapVotingIsVisible);
         }
 
-        private void CreateLobbyPause()
+        private void InitializeLobbyPause()
         {
             if (_lobbyPause == null)
             {

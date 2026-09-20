@@ -18,15 +18,9 @@ namespace PiGame.Lobby
         LobbyMapId WinningMap { get; }
         bool IsRandomMapResult { get; }
         LobbyMatchSettingsData MatchSettings { get; }
-        int MatchDurationMinutes { get; }
-        LobbyMatchMode MatchMode { get; }
-        int MinimumPlayers { get; }
         int SelectableCharacterCount { get; }
         bool RequireUniqueCharacters { get; }
         bool LocalClientIsHost { get; }
-        bool AllPlayersReady { get; }
-        bool CanStartMatch { get; }
-        bool AllMapVotesConfirmed { get; }
 
         LobbyPlayerData GetPlayer(int index);
         LobbyMapVoteData GetMapVote(int index);

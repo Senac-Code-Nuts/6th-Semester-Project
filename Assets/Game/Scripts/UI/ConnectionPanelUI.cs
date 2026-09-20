@@ -12,18 +12,17 @@ namespace PiGame.UI
         [SerializeField] private Button _clientButton;
         [SerializeField] private Button _secondaryButton;
         [SerializeField] private Button _optionsButton;
+        [SerializeField] private Text _clientButtonLabel;
         [SerializeField] private Text _secondaryButtonLabel;
         [SerializeField] private Text _statusText;
         [SerializeField] private InputField _joinCodeInput;
 
-        private Text _clientButtonLabel;
         private Coroutine _selectionRoutine;
         private GameObject _selectionTarget;
         private Navigation _hostNavigation;
         private Navigation _clientNavigation;
         private Navigation _secondaryNavigation;
-        private bool _navigationCached;
-        private bool _initializationErrorReported;
+        private bool _initialized;
         private bool _isConnecting;
         private bool _isEnteringJoinCode;
 
@@ -35,12 +34,12 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            EnsureInitialized();
+            Initialize();
         }
 
         private void OnEnable()
         {
-            if (!EnsureInitialized())
+            if (!Initialize())
             {
                 return;
             }
@@ -60,45 +59,22 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
-            if (_hostButton != null)
-            {
-                _hostButton.onClick.RemoveListener(HandleHostClicked);
-            }
-
-            if (_clientButton != null)
-            {
-                _clientButton.onClick.RemoveListener(HandleClientClicked);
-            }
-
-            if (_secondaryButton != null)
-            {
-                _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
-            }
-
-            if (_optionsButton != null)
-            {
-                _optionsButton.onClick.RemoveListener(HandleOptionsClicked);
-            }
-
-            if (_joinCodeInput != null)
-            {
-                _joinCodeInput.onValueChanged.RemoveListener(HandleJoinCodeChanged);
-            }
-
-            StopSelectionRoutine();
-            if (_navigationCached)
-            {
-                RestoreNavigation();
-            }
-        }
-
-        public void ShowIdle()
-        {
-            if (!EnsureInitialized())
+            if (!_initialized)
             {
                 return;
             }
 
+            _hostButton.onClick.RemoveListener(HandleHostClicked);
+            _clientButton.onClick.RemoveListener(HandleClientClicked);
+            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
+            _optionsButton.onClick.RemoveListener(HandleOptionsClicked);
+            _joinCodeInput.onValueChanged.RemoveListener(HandleJoinCodeChanged);
+            StopSelectionRoutine();
+            RestoreNavigation();
+        }
+
+        public void ShowIdle()
+        {
             _isConnecting = false;
             _isEnteringJoinCode = false;
             _hostButton.gameObject.SetActive(true);
@@ -117,11 +93,6 @@ namespace PiGame.UI
 
         public void ShowConnecting(string message)
         {
-            if (!EnsureInitialized())
-            {
-                return;
-            }
-
             _isConnecting = true;
             SetButtonsInteractable(false);
             _joinCodeInput.interactable = false;
@@ -133,11 +104,6 @@ namespace PiGame.UI
 
         public void ShowError(string message)
         {
-            if (!EnsureInitialized())
-            {
-                return;
-            }
-
             _isConnecting = false;
             if (_isEnteringJoinCode)
             {
@@ -164,21 +130,11 @@ namespace PiGame.UI
 
         public void FocusDefaultButton()
         {
-            if (!EnsureInitialized())
-            {
-                return;
-            }
-
             SelectButtonNextFrame(_hostButton.gameObject);
         }
 
         public void SetInteractionEnabled(bool enabled)
         {
-            if (!EnsureInitialized())
-            {
-                return;
-            }
-
             if (!enabled)
             {
                 _hostButton.interactable = false;
@@ -358,10 +314,7 @@ namespace PiGame.UI
 
         private void SetClientButtonLabel(string label)
         {
-            if (_clientButtonLabel != null)
-            {
-                _clientButtonLabel.text = label;
-            }
+            _clientButtonLabel.text = label;
         }
 
         private void HandleJoinCodeChanged(string value)
@@ -407,47 +360,39 @@ namespace PiGame.UI
             return true;
         }
 
-        private bool EnsureInitialized()
+        public bool Initialize()
         {
+            if (_initialized)
+            {
+                return true;
+            }
+
             if (_hostButton == null
                 || _clientButton == null
                 || _secondaryButton == null
                 || _optionsButton == null
+                || _clientButtonLabel == null
                 || _secondaryButtonLabel == null
                 || _statusText == null
                 || _joinCodeInput == null)
             {
-                if (!_initializationErrorReported)
-                {
-                    Debug.LogError(
-                        "ConnectionPanelUI possui referências obrigatórias ausentes.",
-                        this);
-                    _initializationErrorReported = true;
-                }
-
+                Debug.LogError(
+                    "ConnectionPanelUI possui referências obrigatórias ausentes no Inspector.",
+                    this);
+                enabled = false;
                 return false;
             }
 
-            _clientButtonLabel ??= _clientButton.GetComponentInChildren<Text>();
-
-            if (!_navigationCached)
-            {
-                _hostNavigation = _hostButton.navigation;
-                _clientNavigation = _clientButton.navigation;
-                _secondaryNavigation = _secondaryButton.navigation;
-                _navigationCached = true;
-            }
+            _hostNavigation = _hostButton.navigation;
+            _clientNavigation = _clientButton.navigation;
+            _secondaryNavigation = _secondaryButton.navigation;
+            _initialized = true;
 
             return true;
         }
 
         private void ConfigureIdleNavigation()
         {
-            if (_optionsButton == null)
-            {
-                return;
-            }
-
             Navigation hostNavigation = Navigation.defaultNavigation;
             hostNavigation.mode = Navigation.Mode.Explicit;
             hostNavigation.selectOnDown = _clientButton;

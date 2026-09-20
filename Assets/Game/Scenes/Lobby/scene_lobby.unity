@@ -8728,6 +8728,7 @@ MonoBehaviour:
   _clientButton: {fileID: 1175355755}
   _secondaryButton: {fileID: 1226996667}
   _optionsButton: {fileID: 1295971822}
+  _clientButtonLabel: {fileID: 1120062700}
   _secondaryButtonLabel: {fileID: 1095226293}
   _statusText: {fileID: 383927642}
   _joinCodeInput: {fileID: 1301371091}
