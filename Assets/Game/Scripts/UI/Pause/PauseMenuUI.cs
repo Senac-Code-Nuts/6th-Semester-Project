@@ -38,6 +38,7 @@ namespace PiGame.UI
         public bool IsVisible => enabled && _root.activeSelf;
         public bool IsConfirmationVisible => enabled && _confirmationRoot.activeSelf;
         public bool IsControlsVisible => _controlsView != null && _controlsView.IsVisible;
+        public bool BlocksControlsBackShortcut => IsControlsVisible && _controlsView.BlocksBackShortcut;
 
         private void Awake()
         {

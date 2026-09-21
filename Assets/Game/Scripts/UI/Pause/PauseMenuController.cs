@@ -95,7 +95,10 @@ namespace PiGame.UI
             {
                 if (_view.IsControlsVisible)
                 {
-                    _view.HandleControlsBack();
+                    if (!_view.BlocksControlsBackShortcut)
+                    {
+                        _view.HandleControlsBack();
+                    }
                 }
                 else if (_view.IsConfirmationVisible)
                 {
@@ -124,7 +127,10 @@ namespace PiGame.UI
 
             if (_view.IsControlsVisible)
             {
-                _view.HandleControlsBack();
+                if (!_view.BlocksControlsBackShortcut)
+                {
+                    _view.HandleControlsBack();
+                }
                 return;
             }
 
