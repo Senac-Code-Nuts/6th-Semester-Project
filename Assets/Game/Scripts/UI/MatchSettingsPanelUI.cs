@@ -28,6 +28,11 @@ namespace PiGame.UI
         [Header("Summary")]
         [SerializeField] private Text _summaryText;
 
+        [Header("Settings shortcut")]
+        [SerializeField] private Image _menuShortcutIcon;
+        [SerializeField] private Sprite _keyboardShortcutSprite;
+        [SerializeField] private Sprite _gamepadShortcutSprite;
+
         [Header("Selection visual")]
         [SerializeField] private Color _normalColor = new Color(0.82f, 0.76f, 0.88f, 1f);
         [SerializeField] private Color _selectedColor = new Color(0.45f, 0.22f, 0.63f, 1f);
@@ -41,10 +46,10 @@ namespace PiGame.UI
         public event Action Closed;
         public event Action<int, LobbyMatchMode> SettingsConfirmed;
 
-        public int SelectedDurationMinutes { get; private set; } = DefaultDurationMinutes;
-        public LobbyMatchMode SelectedMode { get; private set; } = DefaultMode;
         public bool IsOpen => _overlay != null && _overlay.activeSelf;
 
+        private int _selectedDurationMinutes = DefaultDurationMinutes;
+        private LobbyMatchMode _selectedMode = DefaultMode;
         private int _minimumPlayers = DefaultMinimumPlayers;
         private bool _requireUniqueCharacters;
         private LobbyMatchSettingsData _confirmedSettings;
@@ -57,6 +62,7 @@ namespace PiGame.UI
                 DefaultMode,
                 DefaultMinimumPlayers,
                 false);
+            _menuShortcutIcon.sprite = _keyboardShortcutSprite;
             RefreshSelectionVisuals();
             RefreshSummary();
         }
@@ -91,6 +97,24 @@ namespace PiGame.UI
 
         private void Update()
         {
+            if (_menuButton.gameObject.activeInHierarchy)
+            {
+                if (Gamepad.current != null
+                    && (Gamepad.current.buttonNorth.wasPressedThisFrame
+                        || Gamepad.current.buttonSouth.wasPressedThisFrame
+                        || Gamepad.current.buttonEast.wasPressedThisFrame
+                        || Gamepad.current.dpad.IsPressed()
+                        || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.36f))
+                {
+                    _menuShortcutIcon.sprite = _gamepadShortcutSprite;
+                }
+                else if ((Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
+                    || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame))
+                {
+                    _menuShortcutIcon.sprite = _keyboardShortcutSprite;
+                }
+            }
+
             if (!IsOpen)
             {
                 return;
@@ -196,19 +220,19 @@ namespace PiGame.UI
 
         private void SelectDuration(int durationMinutes)
         {
-            SelectedDurationMinutes = durationMinutes;
+            _selectedDurationMinutes = durationMinutes;
             RefreshSelectionVisuals();
         }
 
         private void SelectMode(LobbyMatchMode mode)
         {
-            SelectedMode = mode;
+            _selectedMode = mode;
             RefreshSelectionVisuals();
         }
 
         private void ConfirmSelection()
         {
-            SettingsConfirmed?.Invoke(SelectedDurationMinutes, SelectedMode);
+            SettingsConfirmed?.Invoke(_selectedDurationMinutes, _selectedMode);
             Hide();
         }
 
@@ -216,7 +240,7 @@ namespace PiGame.UI
         {
             for (int index = 0; index < _durationButtons.Length; index++)
             {
-                bool isSelected = SelectedDurationMinutes == index + 2;
+                bool isSelected = _selectedDurationMinutes == index + 2;
                 ApplySelectionVisual(_durationButtons[index], isSelected);
             }
 
@@ -232,7 +256,7 @@ namespace PiGame.UI
                     continue;
                 }
 
-                bool isSelected = (int)SelectedMode == index;
+                bool isSelected = (int)_selectedMode == index;
                 ApplySelectionVisual(_modeButtons[index], isSelected);
             }
         }
@@ -251,7 +275,7 @@ namespace PiGame.UI
 
         private void SelectCurrentOption()
         {
-            int durationIndex = Mathf.Clamp(SelectedDurationMinutes - 2, 0, _durationButtons.Length - 1);
+            int durationIndex = Mathf.Clamp(_selectedDurationMinutes - 2, 0, _durationButtons.Length - 1);
             EventSystem.current?.SetSelectedGameObject(_durationButtons[durationIndex].gameObject);
         }
 
@@ -271,8 +295,8 @@ namespace PiGame.UI
 
         private void LoadDraftFromConfirmedSettings()
         {
-            SelectedDurationMinutes = _confirmedSettings.DurationMinutes;
-            SelectedMode = _confirmedSettings.Mode;
+            _selectedDurationMinutes = _confirmedSettings.DurationMinutes;
+            _selectedMode = _confirmedSettings.Mode;
         }
     }
 }

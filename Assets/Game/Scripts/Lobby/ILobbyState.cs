@@ -9,7 +9,6 @@ namespace PiGame.Lobby
         event Action StageChanged;
         event Action MapVotesChanged;
         event Action MatchSettingsChanged;
-        event Action<LobbyMapId> MatchStartRequested;
 
         int PlayerCount { get; }
         int MapVoteCount { get; }

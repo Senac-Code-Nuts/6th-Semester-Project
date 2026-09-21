@@ -147,7 +147,8 @@ namespace PiGame.UI
 
             if (_lobbyPause.IsControlsVisible)
             {
-                if (keyboardBack || gamepadMenu || gamepadBack)
+                if ((keyboardBack || gamepadMenu || gamepadBack)
+                    && !_lobbyPause.BlocksControlsBackShortcut)
                 {
                     _lobbyPause.HandleControlsBack();
                 }
@@ -178,6 +179,29 @@ namespace PiGame.UI
                     {
                         CloseLobbyPause();
                     }
+                }
+
+                return;
+            }
+
+            bool keyboardSettings = Keyboard.current != null
+                && Keyboard.current.tabKey.wasPressedThisFrame;
+            bool gamepadSettings = Gamepad.current != null
+                && Gamepad.current.buttonNorth.wasPressedThisFrame;
+            if ((keyboardSettings || gamepadSettings)
+                && _connectionServiceContract != null
+                && _connectionServiceContract.IsHost
+                && _pendingConfirmation == ConfirmationAction.None
+                && !_mapVotingController.IsVisible
+                && _lobbyPanel.activeInHierarchy)
+            {
+                if (_matchSettingsPanel.IsOpen)
+                {
+                    _matchSettingsPanel.Hide();
+                }
+                else
+                {
+                    _matchSettingsPanel.Show();
                 }
 
                 return;
@@ -487,6 +511,7 @@ namespace PiGame.UI
                 return;
             }
 
+            _lobbyPause.SetVisible(false);
             _connectionPanel.SetInteractionEnabled(true);
             _connectionPanel.FocusDefaultButton();
         }
