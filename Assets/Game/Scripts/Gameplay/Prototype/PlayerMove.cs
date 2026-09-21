@@ -14,6 +14,9 @@ namespace PiGame.Gameplay
 
         [SerializeField] private InputActionReference _moveAction;
         [SerializeField] private InputActionReference _jumpAction;
+        [SerializeField] private InputActionReference _crouchAction;
+        [SerializeField] private InputActionReference _aimFireAction;
+        [SerializeField] private InputActionReference _abilityAction;
 
         private Rigidbody2D _rigidbody;
         private Collider2D _bodyCollider;
@@ -51,7 +54,6 @@ namespace PiGame.Gameplay
         private float _wallJumpControlTimer ;
         private bool _isGameplayInputBlocked;
         private InputActionMap _playerActions;
-        private InputAction _crouchAction;
 
         public bool IsCrouching => _isCrouching;
 
@@ -265,28 +267,30 @@ namespace PiGame.Gameplay
         {
             InputAction move = _moveAction != null ? _moveAction.action : null;
             InputAction jump = _jumpAction != null ? _jumpAction.action : null;
-            if (move == null || jump == null || move.actionMap != jump.actionMap)
+            InputAction crouch = _crouchAction != null ? _crouchAction.action : null;
+            InputAction aimFire = _aimFireAction != null ? _aimFireAction.action : null;
+            InputAction ability = _abilityAction != null ? _abilityAction.action : null;
+            if (move == null || jump == null || crouch == null || aimFire == null || ability == null
+                || move.actionMap != jump.actionMap
+                || move.actionMap != crouch.actionMap
+                || move.actionMap != aimFire.actionMap
+                || move.actionMap != ability.actionMap)
             {
-                Debug.LogError("Configure Move e Jump do mesmo Action Map no PlayerMove.", this);
+                Debug.LogError("Configure Move, Jump, Crouch, AimFire e Ability do mesmo Action Map no PlayerMove.", this);
                 return false;
             }
 
             _playerActions = move.actionMap;
-            _crouchAction = _playerActions.FindAction("Crouch");
-            if (_crouchAction == null)
-            {
-                Debug.LogError("A ação Crouch não foi encontrada no Action Map do jogador.", this);
-                return false;
-            }
-
             new InputBindingService(_playerActions.asset).Load();
             return true;
         }
 
         private void UpdateCrouch()
         {
-            bool wantsToCrouch = _crouchAction.IsPressed();
-            _isCrouching = wantsToCrouch && _isGrounded;
+            bool wantsToCrouch = _crouchAction.action.IsPressed();
+            bool isAimingOrUsingAbility = _aimFireAction.action.IsPressed()
+                || _abilityAction.action.IsPressed();
+            _isCrouching = wantsToCrouch && _isGrounded && !isAimingOrUsingAbility;
 
             if (wantsToCrouch && !_isGrounded && _isTouchingWall)
             {

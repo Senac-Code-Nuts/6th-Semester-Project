@@ -61,9 +61,12 @@ namespace PiGame.UI
         private Coroutine _selectionRoutine;
         private Coroutine _rebindStartRoutine;
         private bool _staticButtonsBound;
+        // Evita que o mesmo B/bolinha conclua o rebind e volte no menu no mesmo frame.
+        private int _lastRebindFinishedFrame = -1;
 
         public bool IsVisible => enabled && _root != null && _root.activeSelf;
-        public bool IsCapturingBinding => _rebindOperation != null || _rebindStartRoutine != null;
+        private bool IsCapturingBinding => _rebindOperation != null || _rebindStartRoutine != null;
+        public bool BlocksBackShortcut => IsCapturingBinding || _lastRebindFinishedFrame == Time.frameCount;
 
         public event Action Closed;
 
@@ -105,6 +108,14 @@ namespace PiGame.UI
 
         private void Update()
         {
+            if (IsCapturingBinding
+                && Keyboard.current != null
+                && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                CancelRebind();
+                return;
+            }
+
             if (_rebindOperation != null && WasOppositeDeviceUsed())
             {
                 CancelRebind();
@@ -321,6 +332,7 @@ namespace PiGame.UI
                 operation.WithControlsExcluding("<Gamepad>")
                     .WithControlsExcluding("<Touchscreen>")
                     .WithControlsExcluding("<Joystick>")
+                    .WithControlsExcluding("<Keyboard>/escape")
                     .WithControlsExcluding("<Pointer>/position")
                     .WithControlsExcluding("<Pointer>/delta")
                     .WithCancelingThrough("<Keyboard>/escape");
@@ -332,6 +344,7 @@ namespace PiGame.UI
 
         private void HandleRebindCompleted(InputActionRebindingExtensions.RebindingOperation operation)
         {
+            _lastRebindFinishedFrame = Time.frameCount;
             InputAction action = operation.action;
             int targetIndex = _pendingTargetBindingIndex;
             string candidatePath = action.bindings[targetIndex].effectivePath;
@@ -361,6 +374,7 @@ namespace PiGame.UI
 
         private void HandleRebindCanceled(InputActionRebindingExtensions.RebindingOperation operation)
         {
+            _lastRebindFinishedFrame = Time.frameCount;
             InputAction action = operation.action;
             operation.Dispose();
             _rebindOperation = null;
@@ -416,6 +430,7 @@ namespace PiGame.UI
             {
                 StopCoroutine(_rebindStartRoutine);
                 _rebindStartRoutine = null;
+                _lastRebindFinishedFrame = Time.frameCount;
                 FinishRebind();
                 return;
             }

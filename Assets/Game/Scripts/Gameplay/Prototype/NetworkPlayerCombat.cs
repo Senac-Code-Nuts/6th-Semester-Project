@@ -1,4 +1,3 @@
-using PiGame.Input;
 using PiGame.Lobby;
 using Unity.Netcode;
 using UnityEngine;
@@ -9,7 +8,10 @@ namespace PiGame.Gameplay
     [RequireComponent(typeof(NetworkPlayerState), typeof(PlayerMove))]
     public class NetworkPlayerCombat : NetworkBehaviour, IGameplayInputBlocker
     {
-        [SerializeField] private InputActionAsset _inputActions;
+        [SerializeField] private InputActionReference _aimDirectionAction;
+        [SerializeField] private InputActionReference _aimPointerAction;
+        [SerializeField] private InputActionReference _aimFireAction;
+        [SerializeField] private InputActionReference _cancelAimAction;
         [SerializeField] private NetworkProjectile _projectilePrefab;
         [SerializeField] private float _shotCooldownSeconds = 0.35f;
         [SerializeField] private float _projectileSpawnDistance = 0.85f;
@@ -27,11 +29,6 @@ namespace PiGame.Gameplay
                 NetworkVariableWritePermission.Owner);
 
         private NetworkPlayerState _playerState;
-        private PlayerMove _playerMove;
-        private InputAction _aimDirectionAction;
-        private InputAction _aimPointerAction;
-        private InputAction _aimFireAction;
-        private InputAction _cancelAimAction;
         private LineRenderer _aimLine;
         private bool _localAimHeld;
         private bool _waitForAimRelease;
@@ -41,7 +38,6 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
-            _playerMove = GetComponent<PlayerMove>();
             CreateAimLine();
         }
 
@@ -90,13 +86,6 @@ namespace PiGame.Gameplay
             }
 
             bool aimPressed = ReadAimPressed();
-            if (_playerMove.IsCrouching)
-            {
-                _waitForAimRelease = aimPressed;
-                CancelLocalAim();
-                return;
-            }
-
             if (_waitForAimRelease)
             {
                 if (aimPressed)
@@ -195,13 +184,13 @@ namespace PiGame.Gameplay
         {
             if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad)
             {
-                return _aimDirectionAction.ReadValue<Vector2>();
+                return _aimDirectionAction.action.ReadValue<Vector2>();
             }
 
             if (Camera.main != null)
             {
                 Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(
-                    _aimPointerAction.ReadValue<Vector2>());
+                    _aimPointerAction.action.ReadValue<Vector2>());
                 return mouseWorld - transform.position;
             }
 
@@ -210,33 +199,27 @@ namespace PiGame.Gameplay
 
         private bool ReadAimPressed()
         {
-            return _aimFireAction.IsPressed();
+            return _aimFireAction.action.IsPressed();
         }
 
         private bool ReadCancelPressed()
         {
-            return _cancelAimAction.WasPressedThisFrame();
+            return _cancelAimAction.action.WasPressedThisFrame();
         }
 
         private bool ConfigureInput()
         {
-            InputActionMap playerActions = _inputActions != null
-                ? _inputActions.FindActionMap(InputBindingService.ActionMapName)
-                : null;
-            if (playerActions == null)
+            InputAction aimDirection = _aimDirectionAction != null ? _aimDirectionAction.action : null;
+            InputAction aimPointer = _aimPointerAction != null ? _aimPointerAction.action : null;
+            InputAction aimFire = _aimFireAction != null ? _aimFireAction.action : null;
+            InputAction cancelAim = _cancelAimAction != null ? _cancelAimAction.action : null;
+            if (aimDirection == null || aimPointer == null || aimFire == null || cancelAim == null
+                || aimDirection.actionMap == null
+                || aimDirection.actionMap != aimPointer.actionMap
+                || aimDirection.actionMap != aimFire.actionMap
+                || aimDirection.actionMap != cancelAim.actionMap)
             {
-                Debug.LogError("Configure o Action Map Player no NetworkPlayerCombat.", this);
-                return false;
-            }
-
-            _aimDirectionAction = playerActions.FindAction("AimDirection");
-            _aimPointerAction = playerActions.FindAction("AimPointer");
-            _aimFireAction = playerActions.FindAction("AimFire");
-            _cancelAimAction = playerActions.FindAction("CancelAim");
-            if (_aimDirectionAction == null || _aimPointerAction == null
-                || _aimFireAction == null || _cancelAimAction == null)
-            {
-                Debug.LogError("Faltam ações de mira no Action Map Player.", this);
+                Debug.LogError("Configure AimDirection, AimPointer, AimFire e CancelAim do mesmo Action Map no NetworkPlayerCombat.", this);
                 return false;
             }
 
