@@ -115,6 +115,11 @@ namespace PiGame.UI
                 return;
             }
 
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                return;
+            }
+
             SetLastInputDevice(ResolveInputDevice());
             BackRequested?.Invoke();
             eventData.Use();
