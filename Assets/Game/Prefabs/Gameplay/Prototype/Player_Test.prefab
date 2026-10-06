@@ -319,8 +319,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   _groundCheck: {fileID: 1201417585810588438}
+  _jumpBufferTime: 0.1
+  _coyoteTimer: 0.1
   _wallCheck: {fileID: 4427738194939039848}
-  _wallCheckDistance: 0.65
+  _wallCheckRadius: 0.65
   _wallLayer:
     serializedVersion: 2
     m_Bits: 72
@@ -329,6 +331,8 @@ MonoBehaviour:
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
+  _colliderShirnkOffset: -0.25
+  _colliderShirnkSize: 0.5
 --- !u!114 &880000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
