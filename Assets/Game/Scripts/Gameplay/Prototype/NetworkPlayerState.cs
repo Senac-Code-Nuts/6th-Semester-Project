@@ -23,8 +23,10 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(true);
 
         private SpriteRenderer[] _spriteRenderers;
+        private SpriteRenderer _bodySpriteRenderer;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
+        private bool _isInvulnerable;
 
         public event Action StateChanged;
         public event Action<NetworkPlayerState, ulong> Died;
@@ -37,9 +39,11 @@ namespace PiGame.Gameplay
         public int MaximumHealth => _maximumHealth;
         public bool IsAlive => _isAlive.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
+        public bool IsInvulnerable => _isInvulnerable;
 
         private void Awake()
         {
+            _bodySpriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
             _colliders = GetComponentsInChildren<Collider2D>(true);
             _rigidbody = GetComponent<Rigidbody2D>();
@@ -85,6 +89,15 @@ namespace PiGame.Gameplay
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
             _matchActive.Value = true;
+            _isInvulnerable = false;
+        }
+
+        public void SetInvulnerableServer(bool isInvulnerable)
+        {
+            if (IsServer)
+            {
+                _isInvulnerable = isInvulnerable;
+            }
         }
 
         public void SetMatchActiveServer(bool isActive)
@@ -103,7 +116,7 @@ namespace PiGame.Gameplay
 
         public void ApplyDamageServer(int amount, ulong attackerClientId)
         {
-            if (!IsServer || !CanAct || amount <= 0)
+            if (!IsServer || !CanAct || _isInvulnerable || amount <= 0)
             {
                 return;
             }
@@ -139,6 +152,7 @@ namespace PiGame.Gameplay
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
             _matchActive.Value = true;
+            _isInvulnerable = false;
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
@@ -189,10 +203,7 @@ namespace PiGame.Gameplay
             Color damageColor = new Color(0.55f, 0.18f, 0.18f, 1f);
             Color playerColor = Color.Lerp(damageColor, Color.white, healthRatio);
 
-            foreach (SpriteRenderer spriteRenderer in _spriteRenderers)
-            {
-                spriteRenderer.color = playerColor;
-            }
+            _bodySpriteRenderer.color = playerColor;
         }
 
         private void HandleCharacterChanged(
