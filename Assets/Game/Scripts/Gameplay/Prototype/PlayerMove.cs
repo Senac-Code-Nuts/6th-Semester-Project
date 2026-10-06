@@ -56,7 +56,7 @@ namespace PiGame.Gameplay
         private bool _isGrounded;
         private bool _isTouchingWall;
         private bool _isWallSliding;
-        private bool _isCrounching;
+        private NetworkVariable<bool> _isCrounching = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         private float _stickTimer;
 
@@ -78,21 +78,25 @@ namespace PiGame.Gameplay
 
         public override void OnNetworkSpawn()
         {
+            _isCrounching.OnValueChanged += OnCrouchChanged;
             if (!IsOwner)
                 return;
 
             _moveAction.action.Enable();
             _jumpAction.action.Enable();
+            _crouchAction.action.Enable();
         }
 
         public override void OnNetworkDespawn()
         {
+            _isCrounching.OnValueChanged -= OnCrouchChanged;
             if (!IsOwner)
                 return;
 
             _isGameplayInputBlocked = false;
             _moveAction.action.Disable();
             _jumpAction.action.Disable();
+            _crouchAction.action.Disable();
         }
 
         private void Update()
@@ -167,18 +171,18 @@ namespace PiGame.Gameplay
             {
                 if (!_isGrounded) return;
 
-                _isCrounching = true;
-                _boxCollider2D.size = new Vector2(_originalColliderSize.x, _originalColliderSize.y * _colliderShirnkSize);
-                _boxCollider2D.offset = new Vector2(_originalColliderOffset.x, _colliderShirnkOffset);
+                _isCrounching.Value = true;
+                //_boxCollider2D.size = new Vector2(_originalColliderSize.x, _originalColliderSize.y * _colliderShirnkSize);
+                //_boxCollider2D.offset = new Vector2(_originalColliderOffset.x, _colliderShirnkOffset);
             }
 
             if (_crouchAction.action.WasReleasedThisFrame())
             {
-                if (!_isCrounching) return;
+                if (!_isCrounching.Value) return;
 
-                _isCrounching = false;
-                _boxCollider2D.size = _originalColliderSize;
-                _boxCollider2D.offset = _originalColliderOffset;
+                _isCrounching.Value = false;
+                //_boxCollider2D.size = _originalColliderSize;
+                //_boxCollider2D.offset = _originalColliderOffset;
             }
 
         }
@@ -340,6 +344,27 @@ namespace PiGame.Gameplay
             else
             {
                 _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, -_wallSlideSpeed);
+            }
+        }
+
+        private void OnCrouchChanged(bool previousValue,bool newValue)
+        {
+            if(newValue)
+            {
+                _boxCollider2D.size = new Vector2(
+                _originalColliderSize.x,
+                _originalColliderSize.y * _colliderShirnkSize
+                );
+
+                _boxCollider2D.offset = new Vector2(
+                    _originalColliderOffset.x,
+                    _colliderShirnkOffset
+                );
+            }
+            else
+            {
+                _boxCollider2D.size = _originalColliderSize;
+                _boxCollider2D.offset = _originalColliderOffset;
             }
         }
     }
