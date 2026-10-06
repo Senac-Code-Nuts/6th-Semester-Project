@@ -13,13 +13,13 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.85f;
         
         private NetworkPlayerState _playerState;
-        private Rigidbody2D _rigidbody;
+        private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
+        public bool HasShot => _hasShot.Value;
         private float _nextShotTime;
 
         public void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
-            _rigidbody = GetComponent<Rigidbody2D>();
             if (_projectile == null || _projectile.Prefab == null)
             {
                 Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
@@ -27,7 +27,7 @@ namespace PiGame.Gameplay
         }
         public void ShootServer(Vector2 direction)
         {
-            if (!IsServer || !_playerState.CanAct || _projectile == null
+            if (!IsServer || !_playerState.CanAct || _projectile == null || !_hasShot.Value
                 || _projectile.Prefab == null || Time.time < _nextShotTime)
             {
                 return;
@@ -44,10 +44,22 @@ namespace PiGame.Gameplay
 
             NetworkProjectile projectile = Instantiate(
                 _projectile.Prefab, spawnPosition, Quaternion.identity);
+
             projectile.NetworkObject.Spawn(true);
 
-            projectile.InitializeServer(
-                OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
+            RebeldeProjectile rebeldeProjectile = projectile.GetComponent<RebeldeProjectile>();
+            if(rebeldeProjectile != null)
+            {
+                rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile, 1,_projectile.Speed);
+                _hasShot.Value = false;
+            }
+        }
+        public void AddShotServer()
+        {
+            if (!IsServer)
+                return;
+
+            _hasShot.Value = true;
         }
         public void ShootReleaseServer()
         {

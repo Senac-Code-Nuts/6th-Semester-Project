@@ -44,6 +44,7 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _projectileCollider = GetComponent<Collider2D>();
+            _useLifetime = false;
             UpdateColliders();
         }
 

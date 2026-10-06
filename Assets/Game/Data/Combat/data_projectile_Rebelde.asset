@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91cbe23a6c384f1ca0c0b1dba9871011, type: 3}
   m_Name: data_projectile_Rebelde
   m_EditorClassIdentifier: 
-  _prefab: {fileID: 900000000000000008, guid: 86671a1e5e6e7ff40ac61bd84bd21251, type: 3}
+  _prefab: {fileID: 5352191587516756331, guid: 86671a1e5e6e7ff40ac61bd84bd21251, type: 3}
   _damage: 1
   _speed: 16
   _lifetimeSeconds: 3

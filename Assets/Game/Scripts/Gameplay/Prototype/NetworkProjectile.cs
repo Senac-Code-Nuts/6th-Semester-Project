@@ -18,6 +18,8 @@ namespace PiGame.Gameplay
         protected float _speed;
         protected int _damage;
 
+        protected bool _useLifetime = true;
+
         private void Awake()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -63,7 +65,7 @@ namespace PiGame.Gameplay
             }
 
             transform.position += (Vector3)(_direction * _speed * Time.deltaTime);
-            if (Time.time >= _despawnAt)
+            if (_useLifetime && Time.time >= _despawnAt)
             {
                 NetworkObject.Despawn();
             }
