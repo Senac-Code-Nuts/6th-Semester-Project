@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 using System;
+using PiGame.Input;
 
 namespace PiGame.Gameplay
 {
@@ -14,6 +15,8 @@ namespace PiGame.Gameplay
         [SerializeField] private InputActionReference _moveAction;
         [SerializeField] private InputActionReference _jumpAction;
         [SerializeField] private InputActionReference _crouchAction;
+        [SerializeField] private InputActionReference _aimFireAction;
+        [SerializeField] private InputActionReference _abilityAction;
 
         private Rigidbody2D _rigidbody;
         private BoxCollider2D _boxCollider2D;
@@ -57,12 +60,37 @@ namespace PiGame.Gameplay
         private bool _isTouchingWall;
         private bool _isWallSliding;
         private NetworkVariable<bool> _isCrounching = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        private bool _isCrouching;
+        private bool _isDroppingFromWall;
 
         private float _stickTimer;
 
         private int _wallDirection;
         private float _wallJumpControlTimer;
         private bool _isGameplayInputBlocked;
+        private bool _waitForJumpRelease;
+        private bool _hasHorizontalMovementOverride;
+        private float _horizontalMovementOverrideSpeed;
+        private InputActionMap _playerActions;
+
+        public bool IsCrouching => _isCrouching;
+
+        public bool CanBeginWallRestrictedAbility()
+        {
+            return !_boxCollider2D.IsTouchingLayers(_wallLayer)
+                && _wallJumpControlTimer <= 0f;
+        }
+
+        public Vector2 ReadMovementDirection()
+        {
+            float horizontal = _moveAction.action.ReadValue<Vector2>().x;
+            if (Mathf.Abs(horizontal) <= 0.01f)
+            {
+                horizontal = _spriteRenderer.flipX ? -1f : 1f;
+            }
+
+            return horizontal < 0f ? Vector2.left : Vector2.right;
+        }
 
         private void Awake()
         {
@@ -79,24 +107,35 @@ namespace PiGame.Gameplay
         public override void OnNetworkSpawn()
         {
             _isCrounching.OnValueChanged += OnCrouchChanged;
+            OnCrouchChanged(false, _isCrounching.Value);
             if (!IsOwner)
                 return;
 
-            _moveAction.action.Enable();
-            _jumpAction.action.Enable();
-            _crouchAction.action.Enable();
+            if (!ConfigureInput())
+            {
+                enabled = false;
+                return;
+            }
+
+            _playerActions.Enable();
         }
 
         public override void OnNetworkDespawn()
         {
-            _isCrounching.OnValueChanged -= OnCrouchChanged;
             if (!IsOwner)
+            {
+                _isCrounching.OnValueChanged -= OnCrouchChanged;
+                OnCrouchChanged(false, false);
                 return;
+            }
 
             _isGameplayInputBlocked = false;
-            _moveAction.action.Disable();
-            _jumpAction.action.Disable();
-            _crouchAction.action.Disable();
+            _waitForJumpRelease = false;
+            _hasHorizontalMovementOverride = false;
+            ResetCrouch();
+            _playerActions?.Disable();
+            _isCrounching.OnValueChanged -= OnCrouchChanged;
+            OnCrouchChanged(false, false);
         }
 
         private void Update()
@@ -106,12 +145,14 @@ namespace PiGame.Gameplay
 
             if (_isGameplayInputBlocked)
             {
+                ResetCrouch();
                 _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
                 return;
             }
 
             if (_playerState != null && !_playerState.CanAct)
             {
+                ResetCrouch();
                 _rigidbody.linearVelocity = Vector2.zero;
                 return;
             }
@@ -123,13 +164,23 @@ namespace PiGame.Gameplay
 
             CheckGround();
             CheckWall();
+            if (_hasHorizontalMovementOverride)
+            {
+                ResetCrouch();
+                _rigidbody.linearVelocity = new Vector2(
+                    _horizontalMovementOverrideSpeed, _rigidbody.linearVelocity.y);
+                _playerAnimator.SetFloat("xVelocity", Mathf.Abs(_horizontalMovementOverrideSpeed));
+                _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
+                _spriteRenderer.flipX = _horizontalMovementOverrideSpeed < 0f;
+                return;
+            }
 
+            UpdateCrouch();
             HandleMovement();
             HandleWallSlide();
             HandleJump();
 
 
-            HandleCrouch();           
         }
 
         public void SetGameplayInputBlocked(bool isBlocked)
@@ -140,9 +191,33 @@ namespace PiGame.Gameplay
             }
 
             _isGameplayInputBlocked = isBlocked;
+            if (isBlocked)
+                _waitForJumpRelease = true;
+
             if (isBlocked && _rigidbody != null)
             {
+                ResetCrouch();
                 _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
+            }
+        }
+
+        public void BeginHorizontalMovementOverride(float speed)
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+
+            _horizontalMovementOverrideSpeed = speed;
+            _hasHorizontalMovementOverride = true;
+            ResetCrouch();
+        }
+
+        public void EndHorizontalMovementOverride()
+        {
+            if (IsOwner)
+            {
+                _hasHorizontalMovementOverride = false;
             }
         }
 
@@ -151,6 +226,11 @@ namespace PiGame.Gameplay
             if (_wallJumpControlTimer > 0f) return;
 
             Vector2 input = _moveAction.action.ReadValue<Vector2>();
+            if (_isCrouching)
+            {
+                input.x = 0f;
+            }
+
             _rigidbody.linearVelocity = new Vector2(input.x * _moveSpeed, _rigidbody.linearVelocity.y);
 
             _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
@@ -164,36 +244,18 @@ namespace PiGame.Gameplay
 
         }
 
-        private void HandleCrouch()
-        {
-
-            if (_crouchAction.action.WasPressedThisFrame())
-            {
-                if (!_isGrounded) return;
-
-                _isCrounching.Value = true;
-                //_boxCollider2D.size = new Vector2(_originalColliderSize.x, _originalColliderSize.y * _colliderShirnkSize);
-                //_boxCollider2D.offset = new Vector2(_originalColliderOffset.x, _colliderShirnkOffset);
-            }
-
-            if (_crouchAction.action.WasReleasedThisFrame())
-            {
-                if (!_isCrounching.Value) return;
-
-                _isCrounching.Value = false;
-                //_boxCollider2D.size = _originalColliderSize;
-                //_boxCollider2D.offset = _originalColliderOffset;
-            }
-
-        }
-
         private void HandleJump()
         {
-            if (_jumpAction.action.WasPressedThisFrame())
+            if (_waitForJumpRelease)
             {
+                if (!_jumpAction.action.IsPressed())
+                    _waitForJumpRelease = false;
+                return;
+            }
 
+            if (!_isCrouching && _jumpAction.action.WasPressedThisFrame())
+            {
                 _jumpBufferCounter = _jumpBufferTime;
-
             }
 
 
@@ -315,9 +377,71 @@ namespace PiGame.Gameplay
             return false;
         }
 
+        private bool ConfigureInput()
+        {
+            InputAction move = _moveAction != null ? _moveAction.action : null;
+            InputAction jump = _jumpAction != null ? _jumpAction.action : null;
+            InputAction crouch = _crouchAction != null ? _crouchAction.action : null;
+            InputAction aimFire = _aimFireAction != null ? _aimFireAction.action : null;
+            InputAction ability = _abilityAction != null ? _abilityAction.action : null;
+            if (move == null || jump == null || crouch == null || aimFire == null || ability == null
+                || move.actionMap != jump.actionMap
+                || move.actionMap != crouch.actionMap
+                || move.actionMap != aimFire.actionMap
+                || move.actionMap != ability.actionMap)
+            {
+                Debug.LogError("Configure Move, Jump, Crouch, AimFire e Ability do mesmo Action Map no PlayerMove.", this);
+                return false;
+            }
+
+            _playerActions = move.actionMap;
+            new InputBindingService(_playerActions.asset).Load();
+            return true;
+        }
+
+        private void UpdateCrouch()
+        {
+            bool wantsToCrouch = _crouchAction.action.IsPressed();
+            bool isAimingOrUsingAbility = _aimFireAction.action.IsPressed()
+                || _abilityAction.action.IsPressed();
+            _isCrouching = wantsToCrouch && _isGrounded && !isAimingOrUsingAbility;
+            SyncCrouch();
+
+            if (wantsToCrouch && !_isGrounded && _isTouchingWall)
+            {
+                _isDroppingFromWall = true;
+                _isWallSliding = false;
+                _stickTimer = 0f;
+            }
+            else if (!wantsToCrouch || _isGrounded)
+            {
+                _isDroppingFromWall = false;
+            }
+        }
+
+        private void ResetCrouch()
+        {
+            _isCrouching = false;
+            _isDroppingFromWall = false;
+            SyncCrouch();
+        }
+
+        private void SyncCrouch()
+        {
+            if (_isCrounching.Value != _isCrouching)
+                _isCrounching.Value = _isCrouching;
+        }
+
         private void HandleWallSlide()
         {
             if (_wallJumpControlTimer > 0f) return;
+
+            if (_isDroppingFromWall)
+            {
+                _isWallSliding = false;
+                _stickTimer = 0f;
+                return;
+            }
 
             if (_isGrounded)
             {
