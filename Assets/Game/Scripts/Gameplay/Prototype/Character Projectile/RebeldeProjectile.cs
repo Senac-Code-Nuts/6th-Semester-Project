@@ -35,7 +35,7 @@ namespace PiGame.Gameplay
             _useLifetime = false;
         }
 
-        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, int stack, float speed)
+        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed)
         {
             if (!IsServer)
                 return;
@@ -51,12 +51,14 @@ namespace PiGame.Gameplay
             _speed = speed;
 
             _isStopped = false;
+            _falling = false;
+            _fallVelocity = Vector2.zero;            
 
         }
 
         protected override void Update()
         {
-            
+            //Deixando Update vazio para sobrescrever a movimentação no Update da classe pai
         }
 
         protected override void OnTriggerEnter2D(Collider2D other)
@@ -266,13 +268,14 @@ namespace PiGame.Gameplay
             _speed = currentSpeed;
         }
 
-        private void StopBall()
+        public override void ReflectServer(float minimumSpeed)
         {
-            _speed = 0f;
-            _isStopped = true;
+            base.ReflectServer(minimumSpeed);
+
+            _falling = false;
+            _fallVelocity = Vector2.zero;
+            _isStopped = false;
         }
-
-
 
     }
     
