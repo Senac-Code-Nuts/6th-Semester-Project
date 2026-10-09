@@ -20,13 +20,14 @@ namespace PiGame.Gameplay
         [SerializeField] private float _collisionOffset = 0.01f;
 
         [Header("Referencer")]
-        [SerializeField] private Collider2D solidCollider;
+        [SerializeField] private Collider2D _solidCollider;
+        private Collider2D _projectileCollider;
+        private Rigidbody2D _rigidbody;
 
         private bool _isStopped;
         private bool _falling;
         private Vector2 _fallVelocity;
 
-        private Collider2D _projectileCollider;
 
         public float MinimumSpeed => _minimumSpeed;
 
@@ -34,9 +35,13 @@ namespace PiGame.Gameplay
         {
 
             _projectileCollider = GetComponent<Collider2D>();
+            _rigidbody = GetComponent<Rigidbody2D>();
 
             _useLifetime = false;
-            solidCollider.enabled = false;
+            _solidCollider.enabled = false;
+
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.gravityScale = 0f;
         }
 
         public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed)
@@ -99,7 +104,6 @@ namespace PiGame.Gameplay
             
             if(_falling)
             {
-                UpdateFalling();
                 return;
             }
 
@@ -141,68 +145,31 @@ namespace PiGame.Gameplay
             transform.position += (Vector3)movement;
         }
 
-        private void UpdateFalling()
-        {
-            _fallVelocity.y -=
-                _fallGravity * Time.fixedDeltaTime;
-
-            Vector2 movement =
-                _fallVelocity * Time.fixedDeltaTime;
-
-            float distance = movement.magnitude;
-
-            if (distance <= 0f)
-                return;
-
-            RaycastHit2D[] hits = new RaycastHit2D[4];
-
-            int hitCount = _projectileCollider.Cast(
-                movement.normalized,
-                hits,
-                distance,
-                true);
-
-            for (int i = 0; i < hitCount; i++)
-            {
-                RaycastHit2D hit = hits[i];
-
-                if (hit.collider == null)
-                    continue;
-
-                if (((1 << hit.collider.gameObject.layer) &
-                    _collisionLayers) == 0)
-                {
-                    continue;
-                }
-
-                HandleFallCollision(hit);
-                return;
-            }
-
-            transform.position += (Vector3)movement;
-        }
-        private void HandleFallCollision(RaycastHit2D hit)
-        {
-            transform.position =
-                hit.point +
-                hit.normal * _collisionOffset;
-
-            _fallVelocity = Vector2.zero;
-
-            _isStopped = true;
-        }
-
         private void StartFalling()
         {
+            if (_falling)
+                return;
+
             _falling = true;
-
             _speed = 0f;
+            _solidCollider.enabled = true;
 
-            _fallVelocity = Vector2.down * 2f;
-
-            solidCollider.enabled = true;
+            _rigidbody.bodyType = RigidbodyType2D.Dynamic;
+            _rigidbody.gravityScale = 1f;
+            _rigidbody.linearVelocity = Vector2.down * 2f;
         }
 
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (!IsServer || !_falling || _isStopped)
+                return;
+
+           /* _isStopped = true;
+
+            _rigidbody.linearVelocity = Vector2.zero;
+            _rigidbody.angularVelocity = 0f;
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;*/
+        }
 
         private void HandleCollision(RaycastHit2D hit)
         {

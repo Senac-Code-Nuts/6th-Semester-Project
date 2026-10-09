@@ -33,6 +33,9 @@ namespace PiGame.Gameplay
             private float _projectileVelocity;
             private int _projectileVelocityPointer = 0;
 
+            private AmmoIndicatorsView _ammoIndicatorsView;
+
+            private NetworkVariable<int> _ammo = new NetworkVariable<int>(1,NetworkVariableReadPermission.Owner);
             
             private NetworkPlayerState _playerState;
             private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
@@ -49,10 +52,12 @@ namespace PiGame.Gameplay
                 }
                 _facingSprite = GetComponent<SpriteRenderer>();
                 _projectileVelocity = _projectileVelocityStack[0];
+
+                _ammoIndicatorsView = GetComponent<AmmoIndicatorsView>();
             }
             public void ShootServer(Vector2 direction)
             {
-                if (!IsServer || !_playerState.CanAct || _projectile == null || !_hasShot.Value
+                if (!IsServer || !_playerState.CanAct || _ammo.Value <= 0 || _projectile == null || !_hasShot.Value
                     || _projectile.Prefab == null || Time.time < _nextShotTime)
                 {
                     return;
@@ -78,6 +83,7 @@ namespace PiGame.Gameplay
                     rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile,_projectileVelocity);
                     _hasShot.Value = false;
                 }
+                _ammo.Value = 0;
                 GetNextShot();
             }
         private void Update()
@@ -103,12 +109,48 @@ namespace PiGame.Gameplay
                 _abilityCooldownUntil = 0f;
             }
         }
+        public override void OnNetworkSpawn()
+        {
+            _ammo.OnValueChanged += HandleAmmoChanged;
+            _playerState.StateChanged += RefreshAmmoIndicators;
+
+            if (IsServer)
+            {
+                _ammo.Value = 1;
+            }
+
+            RefreshAmmoIndicators();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _ammo.OnValueChanged -= HandleAmmoChanged;
+            _playerState.StateChanged -= RefreshAmmoIndicators;
+        }
+
+        private void HandleAmmoChanged(int previousValue, int currentValue)
+        {
+            RefreshAmmoIndicators();
+        }
+
+        private void RefreshAmmoIndicators()
+        {
+            if (_ammoIndicatorsView == null)
+                return;
+
+            _ammoIndicatorsView.SetCount(
+                _ammo.Value,
+                IsOwner && _playerState.CanAct
+            );
+        }
         public void AddShotServer()
             {
                 if (!IsServer)
                     return;
 
                 _hasShot.Value = true;
+
+                _ammo.Value = 1;
             }
             private void GetNextShot()
             {
