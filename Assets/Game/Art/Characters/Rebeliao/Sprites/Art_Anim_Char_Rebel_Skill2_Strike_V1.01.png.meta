@@ -1,0 +1,325 @@
+fileFormatVersion: 2
+guid: 271c42ea6d8d73845a7ed9be19b14835
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3277032674307710439
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_0
+  - first:
+      213: -7914808144792450450
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_1
+  - first:
+      213: -2686258064179807315
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_2
+  - first:
+      213: -3715270728860602034
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_3
+  - first:
+      213: 3186844698987110388
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_4
+  - first:
+      213: 3119639818224882189
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_5
+  - first:
+      213: -8631948050887247204
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_6
+  - first:
+      213: -1036391373361507414
+    second: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_7
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: 4
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_0
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 7
+        width: 13
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9126a8a2524a582d0800000000000000
+      internalID: -3277032674307710439
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_1
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 7
+        width: 17
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6a07404de3f82290800000000000000
+      internalID: -7914808144792450450
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_2
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 7
+        width: 19
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dabb885e58e78bad0800000000000000
+      internalID: -2686258064179807315
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_3
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 7
+        width: 22
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e417bd9d4f4b07cc0800000000000000
+      internalID: -3715270728860602034
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_4
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 7
+        width: 18
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ff967d7e52f93c20800000000000000
+      internalID: 3186844698987110388
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_5
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 7
+        width: 12
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d025578d2ef2b4b20800000000000000
+      internalID: 3119639818224882189
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_6
+      rect:
+        serializedVersion: 2
+        x: 202
+        y: 7
+        width: 13
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c9a7d335bf8253880800000000000000
+      internalID: -8631948050887247204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Skill2_Strike_V1.01_7
+      rect:
+        serializedVersion: 2
+        x: 234
+        y: 7
+        width: 11
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa31286798ffd91f0800000000000000
+      internalID: -1036391373361507414
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_0: -3277032674307710439
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_1: -7914808144792450450
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_2: -2686258064179807315
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_3: -3715270728860602034
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_4: 3186844698987110388
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_5: 3119639818224882189
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_6: -8631948050887247204
+      Art_Anim_Char_Rebel_Skill2_Strike_V1.01_7: -1036391373361507414
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

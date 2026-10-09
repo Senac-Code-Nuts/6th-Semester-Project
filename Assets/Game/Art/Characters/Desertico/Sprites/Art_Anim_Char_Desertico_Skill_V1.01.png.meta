@@ -1,31 +1,31 @@
 fileFormatVersion: 2
-guid: e0640b0cfe2bc8042bbd659cffdc5f8b
+guid: e2cb1ac25f487a54fbb725eae8c025c8
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8884247853236890641
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_0
+      213: -6778648677349995207
+    second: Art_Anim_Char_Desertico_Skill_V1.01_0
   - first:
-      213: 7524000432959330159
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_1
+      213: 7980402172635284139
+    second: Art_Anim_Char_Desertico_Skill_V1.01_1
   - first:
-      213: -2667301361256942113
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_2
+      213: 7189134428506671754
+    second: Art_Anim_Char_Desertico_Skill_V1.01_2
   - first:
-      213: -4766906518022437006
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_3
+      213: -6181681532001265699
+    second: Art_Anim_Char_Desertico_Skill_V1.01_3
   - first:
-      213: -2545063965386735403
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_4
+      213: 8014276571089090664
+    second: Art_Anim_Char_Desertico_Skill_V1.01_4
   - first:
-      213: 3254567918489917439
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_5
+      213: -3932470838861822896
+    second: Art_Anim_Char_Desertico_Skill_V1.01_5
   - first:
-      213: -1946447400827135962
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_6
+      213: -4980731147394451572
+    second: Art_Anim_Char_Desertico_Skill_V1.01_6
   - first:
-      213: 8607507690816166128
-    second: Art_Anim_Char_Irrigador_Walk_V1.02_7
+      213: -7523120014424995964
+    second: Art_Anim_Char_Desertico_Skill_V1.01_7
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -121,12 +121,34 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_0
+      name: Art_Anim_Char_Desertico_Skill_V1.01_0
       rect:
         serializedVersion: 2
-        x: 7
+        x: 0
         y: 7
-        width: 13
+        width: 26
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93dc16951f66de1a0800000000000000
+      internalID: -6778648677349995207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Desertico_Skill_V1.01_1
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 7
+        width: 22
         height: 18
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -136,20 +158,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fe3d943f5afc4b480800000000000000
-      internalID: -8884247853236890641
+      spriteID: ba28ea87e7510ce60800000000000000
+      internalID: 7980402172635284139
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_1
+      name: Art_Anim_Char_Desertico_Skill_V1.01_2
       rect:
         serializedVersion: 2
-        x: 39
+        x: 66
         y: 7
-        width: 13
-        height: 19
+        width: 24
+        height: 15
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -158,19 +180,63 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f671d68a78e9a6860800000000000000
-      internalID: 7524000432959330159
+      spriteID: a8acbad4cafe4c360800000000000000
+      internalID: 7189134428506671754
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_2
+      name: Art_Anim_Char_Desertico_Skill_V1.01_3
       rect:
         serializedVersion: 2
-        x: 71
-        y: 8
-        width: 13
+        x: 96
+        y: 7
+        width: 23
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd7d87a0661463aa0800000000000000
+      internalID: -6181681532001265699
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Desertico_Skill_V1.01_4
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 7
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8683087741e683f60800000000000000
+      internalID: 8014276571089090664
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Desertico_Skill_V1.01_5
+      rect:
+        serializedVersion: 2
+        x: 169
+        y: 7
+        width: 15
         height: 18
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -180,20 +246,42 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fd53d5d3b87dbfad0800000000000000
-      internalID: -2667301361256942113
+      spriteID: 0540f007b9e0d69c0800000000000000
+      internalID: -3932470838861822896
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_3
+      name: Art_Anim_Char_Desertico_Skill_V1.01_6
       rect:
         serializedVersion: 2
-        x: 103
+        x: 200
+        y: 6
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c8774d51963e0eab0800000000000000
+      internalID: -4980731147394451572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Desertico_Skill_V1.01_7
+      rect:
+        serializedVersion: 2
+        x: 234
         y: 7
         width: 13
-        height: 18
+        height: 21
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -202,96 +290,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 27747cb27cb88ddb0800000000000000
-      internalID: -4766906518022437006
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_4
-      rect:
-        serializedVersion: 2
-        x: 135
-        y: 7
-        width: 13
-        height: 18
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 5d00a7ccecd1eacd0800000000000000
-      internalID: -2545063965386735403
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_5
-      rect:
-        serializedVersion: 2
-        x: 167
-        y: 7
-        width: 13
-        height: 19
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: ff759f6474c8a2d20800000000000000
-      internalID: 3254567918489917439
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_6
-      rect:
-        serializedVersion: 2
-        x: 199
-        y: 8
-        width: 13
-        height: 18
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 62857b3d664dcf4e0800000000000000
-      internalID: -1946447400827135962
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Walk_V1.02_7
-      rect:
-        serializedVersion: 2
-        x: 231
-        y: 7
-        width: 13
-        height: 18
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0f85a88e3a2047770800000000000000
-      internalID: 8607507690816166128
+      spriteID: 4870191c432889790800000000000000
+      internalID: -7523120014424995964
       vertices: []
       indices: 
       edges: []
@@ -300,7 +300,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -310,14 +310,14 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Art_Anim_Char_Irrigador_Walk_V1.02_0: -8884247853236890641
-      Art_Anim_Char_Irrigador_Walk_V1.02_1: 7524000432959330159
-      Art_Anim_Char_Irrigador_Walk_V1.02_2: -2667301361256942113
-      Art_Anim_Char_Irrigador_Walk_V1.02_3: -4766906518022437006
-      Art_Anim_Char_Irrigador_Walk_V1.02_4: -2545063965386735403
-      Art_Anim_Char_Irrigador_Walk_V1.02_5: 3254567918489917439
-      Art_Anim_Char_Irrigador_Walk_V1.02_6: -1946447400827135962
-      Art_Anim_Char_Irrigador_Walk_V1.02_7: 8607507690816166128
+      Art_Anim_Char_Desertico_Skill_V1.01_0: -6778648677349995207
+      Art_Anim_Char_Desertico_Skill_V1.01_1: 7980402172635284139
+      Art_Anim_Char_Desertico_Skill_V1.01_2: 7189134428506671754
+      Art_Anim_Char_Desertico_Skill_V1.01_3: -6181681532001265699
+      Art_Anim_Char_Desertico_Skill_V1.01_4: 8014276571089090664
+      Art_Anim_Char_Desertico_Skill_V1.01_5: -3932470838861822896
+      Art_Anim_Char_Desertico_Skill_V1.01_6: -4980731147394451572
+      Art_Anim_Char_Desertico_Skill_V1.01_7: -7523120014424995964
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

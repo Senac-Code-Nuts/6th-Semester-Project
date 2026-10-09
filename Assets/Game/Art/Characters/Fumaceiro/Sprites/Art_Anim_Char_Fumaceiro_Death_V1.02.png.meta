@@ -1,19 +1,13 @@
 fileFormatVersion: 2
-guid: 5e921ccad4b38c042b5f471e03f8f929
+guid: 4ec04efcae1e02844a68dde49a8c2afd
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2309704782208607543
-    second: Art_Anim_Char_Irrigador_Fall_V1.02_0
+      213: -2365605947176470294
+    second: Art_Anim_Char_Fumaceiro_Death_V1.02_0
   - first:
-      213: 5841008595951904502
-    second: Art_Anim_Char_Irrigador_Fall_V1.02_1
-  - first:
-      213: -4801593227590739365
-    second: Art_Anim_Char_Irrigador_Fall_V1.02_2
-  - first:
-      213: -5356787770523889020
-    second: Art_Anim_Char_Irrigador_Fall_V1.02_3
+      213: -2829950024882129524
+    second: Art_Anim_Char_Fumaceiro_Death_V1.02_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -109,13 +103,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Fall_V1.02_0
+      name: Art_Anim_Char_Fumaceiro_Death_V1.02_0
       rect:
         serializedVersion: 2
-        x: 8
-        y: 8
+        x: 11
+        y: 7
         width: 13
-        height: 17
+        height: 15
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +118,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9ca5f68ecb742ffd0800000000000000
-      internalID: -2309704782208607543
+      spriteID: ae8beffacedab2fd0800000000000000
+      internalID: -2365605947176470294
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Fall_V1.02_1
+      name: Art_Anim_Char_Fumaceiro_Death_V1.02_1
       rect:
         serializedVersion: 2
-        x: 40
-        y: 8
-        width: 14
-        height: 17
+        x: 39
+        y: 7
+        width: 17
+        height: 8
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -146,52 +140,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6f667bbfe5e6f0150800000000000000
-      internalID: 5841008595951904502
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Fall_V1.02_2
-      rect:
-        serializedVersion: 2
-        x: 72
-        y: 8
-        width: 14
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: b5a588146605d5db0800000000000000
-      internalID: -4801593227590739365
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Fall_V1.02_3
-      rect:
-        serializedVersion: 2
-        x: 104
-        y: 8
-        width: 14
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 48254c877edd8a5b0800000000000000
-      internalID: -5356787770523889020
+      spriteID: c85fac2327ff9b8d0800000000000000
+      internalID: -2829950024882129524
       vertices: []
       indices: 
       edges: []
@@ -200,7 +150,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -210,10 +160,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Art_Anim_Char_Irrigador_Fall_V1.02_0: -2309704782208607543
-      Art_Anim_Char_Irrigador_Fall_V1.02_1: 5841008595951904502
-      Art_Anim_Char_Irrigador_Fall_V1.02_2: -4801593227590739365
-      Art_Anim_Char_Irrigador_Fall_V1.02_3: -5356787770523889020
+      Art_Anim_Char_Fumaceiro_Death_V1.02_0: -2365605947176470294
+      Art_Anim_Char_Fumaceiro_Death_V1.02_1: -2829950024882129524
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

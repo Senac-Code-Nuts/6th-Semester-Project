@@ -1,0 +1,325 @@
+fileFormatVersion: 2
+guid: 4355758670310eb4f9ba2a4da98b8a5b
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8108823613206342568
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_0
+  - first:
+      213: 4279511841518482866
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_1
+  - first:
+      213: 188078106352656329
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_2
+  - first:
+      213: 9029674981108608575
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_3
+  - first:
+      213: 6181352238076858149
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_4
+  - first:
+      213: 8482649951619823478
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_5
+  - first:
+      213: -8855513638122057266
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_6
+  - first:
+      213: 366491093399231998
+    second: Art_Anim_Char_Irrigador_Idle_V1.03_7
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: 4
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_0
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 7
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 854598cd2eba77f80800000000000000
+      internalID: -8108823613206342568
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_1
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 7
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b579c59851e36b30800000000000000
+      internalID: 4279511841518482866
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_2
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 7
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9cf9d2f8a003c9200800000000000000
+      internalID: 188078106352656329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_3
+      rect:
+        serializedVersion: 2
+        x: 103
+        y: 7
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f3ee536dd89df4d70800000000000000
+      internalID: 9029674981108608575
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_4
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 7
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52f032e3c1398c550800000000000000
+      internalID: 6181352238076858149
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_5
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 7
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 677b840203d68b570800000000000000
+      internalID: 8482649951619823478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_6
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 7
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ec19b10c345ea1580800000000000000
+      internalID: -8855513638122057266
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Irrigador_Idle_V1.03_7
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 7
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: efdd76b25b9061500800000000000000
+      internalID: 366491093399231998
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Art_Anim_Char_Irrigador_Idle_V1.03_0: -8108823613206342568
+      Art_Anim_Char_Irrigador_Idle_V1.03_1: 4279511841518482866
+      Art_Anim_Char_Irrigador_Idle_V1.03_2: 188078106352656329
+      Art_Anim_Char_Irrigador_Idle_V1.03_3: 9029674981108608575
+      Art_Anim_Char_Irrigador_Idle_V1.03_4: 6181352238076858149
+      Art_Anim_Char_Irrigador_Idle_V1.03_5: 8482649951619823478
+      Art_Anim_Char_Irrigador_Idle_V1.03_6: -8855513638122057266
+      Art_Anim_Char_Irrigador_Idle_V1.03_7: 366491093399231998
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,19 +1,13 @@
 fileFormatVersion: 2
-guid: f65e45054474b8e4382c5b17aa8a47ea
+guid: bb6d61ebf1125684c8123309057da375
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 261603718899584711
-    second: Art_Anim_Char_Irrigador_Jump_V1.02_0
+      213: 8595914201536279133
+    second: Art_Anim_Char_Irrigador_Crounch_V1.03_0
   - first:
-      213: -8972104257367029769
-    second: Art_Anim_Char_Irrigador_Jump_V1.02_1
-  - first:
-      213: -3726256478269088638
-    second: Art_Anim_Char_Irrigador_Jump_V1.02_2
-  - first:
-      213: -7476520647615526299
-    second: Art_Anim_Char_Irrigador_Jump_V1.02_3
+      213: 9084594773699888061
+    second: Art_Anim_Char_Irrigador_Crounch_V1.03_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -109,13 +103,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Jump_V1.02_0
+      name: Art_Anim_Char_Irrigador_Crounch_V1.03_0
       rect:
         serializedVersion: 2
-        x: 8
-        y: 8
-        width: 13
-        height: 17
+        x: 7
+        y: 7
+        width: 15
+        height: 16
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +118,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7ce4ee0423761a300800000000000000
-      internalID: 261603718899584711
+      spriteID: d523e465c62da4770800000000000000
+      internalID: 8595914201536279133
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Jump_V1.02_1
+      name: Art_Anim_Char_Irrigador_Crounch_V1.03_1
       rect:
         serializedVersion: 2
-        x: 40
-        y: 8
-        width: 13
-        height: 17
+        x: 39
+        y: 7
+        width: 16
+        height: 11
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -146,52 +140,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7f74ed3d6beac7380800000000000000
-      internalID: -8972104257367029769
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Jump_V1.02_2
-      rect:
-        serializedVersion: 2
-        x: 72
-        y: 8
-        width: 13
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 28cd5ceb97da94cc0800000000000000
-      internalID: -3726256478269088638
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Jump_V1.02_3
-      rect:
-        serializedVersion: 2
-        x: 104
-        y: 8
-        width: 13
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 56ac00355101e3890800000000000000
-      internalID: -7476520647615526299
+      spriteID: db380ce70d6f21e70800000000000000
+      internalID: 9084594773699888061
       vertices: []
       indices: 
       edges: []
@@ -200,7 +150,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -210,10 +160,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Art_Anim_Char_Irrigador_Jump_V1.02_0: 261603718899584711
-      Art_Anim_Char_Irrigador_Jump_V1.02_1: -8972104257367029769
-      Art_Anim_Char_Irrigador_Jump_V1.02_2: -3726256478269088638
-      Art_Anim_Char_Irrigador_Jump_V1.02_3: -7476520647615526299
+      Art_Anim_Char_Irrigador_Crounch_V1.03_0: 8595914201536279133
+      Art_Anim_Char_Irrigador_Crounch_V1.03_1: 9084594773699888061
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

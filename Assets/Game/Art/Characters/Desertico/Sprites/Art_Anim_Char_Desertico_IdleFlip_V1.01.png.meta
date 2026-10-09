@@ -1,31 +1,31 @@
 fileFormatVersion: 2
-guid: 8007130d3901f3840ac9b56bb9d3c468
+guid: 327c72129d3f9b744bdd6fa01183fdb0
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6558564647381497011
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_0
+      213: -4206912099063594748
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_0
   - first:
-      213: -7858908843790719824
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_1
+      213: 8845501802318432117
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_1
   - first:
-      213: 9120784515361319132
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_2
+      213: 2688256490225052071
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_2
   - first:
-      213: -6221259343341814237
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_3
+      213: 773655762618728231
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_3
   - first:
-      213: 4760346450377412362
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_4
+      213: 3538401466450019369
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_4
   - first:
-      213: -461698921067172680
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_5
+      213: 423208736847742068
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_5
   - first:
-      213: -1267779514798477953
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_6
+      213: -4077313261753700372
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_6
   - first:
-      213: 883662688860856513
-    second: Art_Anim_Char_Irrigador_Idle_V1.02_7
+      213: -4016941651163630324
+    second: Art_Anim_Char_Desertico_IdleFlip_V1.01_7
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -121,13 +121,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_0
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_0
       rect:
         serializedVersion: 2
-        x: 7
+        x: 10
         y: 7
-        width: 13
-        height: 18
+        width: 12
+        height: 21
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -136,20 +136,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3b4fb9b4cc3b40b50800000000000000
-      internalID: 6558564647381497011
+      spriteID: 401850e2cbb0e95c0800000000000000
+      internalID: -4206912099063594748
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_1
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_1
       rect:
         serializedVersion: 2
-        x: 39
+        x: 42
         y: 7
-        width: 13
-        height: 19
+        width: 12
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -158,20 +158,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0b4adab7b0c8fe290800000000000000
-      internalID: -7858908843790719824
+      spriteID: 5778443160981ca70800000000000000
+      internalID: 8845501802318432117
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_2
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_2
       rect:
         serializedVersion: 2
-        x: 71
+        x: 74
         y: 7
-        width: 13
-        height: 19
+        width: 12
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -180,20 +180,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: cd8aef65139839e70800000000000000
-      internalID: 9120784515361319132
+      spriteID: 7a9a00de80b9e4520800000000000000
+      internalID: 2688256490225052071
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_3
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_3
       rect:
         serializedVersion: 2
-        x: 103
+        x: 106
         y: 7
-        width: 13
-        height: 18
+        width: 12
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -202,20 +202,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 32ef780c695a9a9a0800000000000000
-      internalID: -6221259343341814237
+      spriteID: 72fb25d21d39cba00800000000000000
+      internalID: 773655762618728231
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_4
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_4
       rect:
         serializedVersion: 2
-        x: 135
+        x: 138
         y: 7
-        width: 13
-        height: 18
+        width: 12
+        height: 21
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -224,20 +224,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a0f898e00e5201240800000000000000
-      internalID: 4760346450377412362
+      spriteID: 9248970f26dea1130800000000000000
+      internalID: 3538401466450019369
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_5
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_5
       rect:
         serializedVersion: 2
-        x: 167
+        x: 170
         y: 7
-        width: 13
-        height: 19
+        width: 12
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -246,20 +246,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 8bc2c980747b799f0800000000000000
-      internalID: -461698921067172680
+      spriteID: 474c6a99a1a8fd500800000000000000
+      internalID: 423208736847742068
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_6
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_6
       rect:
         serializedVersion: 2
-        x: 199
+        x: 202
         y: 7
-        width: 13
-        height: 19
+        width: 12
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -268,20 +268,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f7d6bee8f31f76ee0800000000000000
-      internalID: -1267779514798477953
+      spriteID: cef6e23e0397a67c0800000000000000
+      internalID: -4077313261753700372
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Art_Anim_Char_Irrigador_Idle_V1.02_7
+      name: Art_Anim_Char_Desertico_IdleFlip_V1.01_7
       rect:
         serializedVersion: 2
-        x: 231
+        x: 234
         y: 7
-        width: 13
-        height: 18
+        width: 12
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -290,8 +290,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1c061de9886634c00800000000000000
-      internalID: 883662688860856513
+      spriteID: c05bbe6d9d4f048c0800000000000000
+      internalID: -4016941651163630324
       vertices: []
       indices: 
       edges: []
@@ -300,7 +300,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -310,14 +310,14 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Art_Anim_Char_Irrigador_Idle_V1.02_0: 6558564647381497011
-      Art_Anim_Char_Irrigador_Idle_V1.02_1: -7858908843790719824
-      Art_Anim_Char_Irrigador_Idle_V1.02_2: 9120784515361319132
-      Art_Anim_Char_Irrigador_Idle_V1.02_3: -6221259343341814237
-      Art_Anim_Char_Irrigador_Idle_V1.02_4: 4760346450377412362
-      Art_Anim_Char_Irrigador_Idle_V1.02_5: -461698921067172680
-      Art_Anim_Char_Irrigador_Idle_V1.02_6: -1267779514798477953
-      Art_Anim_Char_Irrigador_Idle_V1.02_7: 883662688860856513
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_0: -4206912099063594748
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_1: 8845501802318432117
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_2: 2688256490225052071
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_3: 773655762618728231
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_4: 3538401466450019369
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_5: 423208736847742068
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_6: -4077313261753700372
+      Art_Anim_Char_Desertico_IdleFlip_V1.01_7: -4016941651163630324
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
