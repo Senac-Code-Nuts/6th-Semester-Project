@@ -29,6 +29,9 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Game/Scenes/Music_tests/Music.unity
     guid: 7c335fe0e5a6add4dbd6ca79cf2bddba
+  - enabled: 1
+    path: Assets/_Test/Scene/Clank-test.unity
+    guid: 547da7a11dfef79469046e29c470a7c2
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
