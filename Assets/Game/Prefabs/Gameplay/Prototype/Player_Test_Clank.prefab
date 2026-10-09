@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: 3317054087486104629}
   - component: {fileID: 3216733317862606300}
   - component: {fileID: 7423979285644332156}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Player_Test_Clank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1453141490
+  GlobalObjectIdHash: 1910428715
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -392,10 +392,14 @@ MonoBehaviour:
   _abilityCooldownSeconds: 3.5
   _hammerLaunchForce: 14
   _knockbackRadius: 2.5
-  _knockbackForce: 8
+  _knockbackForce: 14
   _playerLayer:
     serializedVersion: 2
     m_Bits: 128
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  _knockbackWireColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &1364266427991100992
 GameObject:
   m_ObjectHideFlags: 0
@@ -406,7 +410,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4701928323273952525}
   - component: {fileID: 600632348148388916}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Aim (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -497,7 +501,7 @@ GameObject:
   m_Component:
   - component: {fileID: 474611584026397635}
   - component: {fileID: 4102835440971441943}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Aim
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -588,7 +592,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5280776497923308623}
   - component: {fileID: 4693148425088654773}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Aim (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -679,7 +683,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2993932809149866907}
   - component: {fileID: 3604067049232222192}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Aim (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -769,7 +773,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4427738194939039848}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: WallCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -801,7 +805,7 @@ GameObject:
   m_Component:
   - component: {fileID: 292473246594738591}
   - component: {fileID: 5770279518815378814}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Aim (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -891,7 +895,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1201417585810588438}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: GroundCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
