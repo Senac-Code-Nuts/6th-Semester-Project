@@ -319,5 +319,26 @@ namespace PiGame.Gameplay
             _aimIndicator.transform.localPosition =
                 (Vector3)(_aimDirection * _aimIndicatorDistance);
         }
+        [Rpc(SendTo.Owner)]
+        public void ApplyUpwardImpulseRpc( float impulse, RpcParams rpcParams = default)
+        {
+            if (!IsOwner)
+                return;
+
+            Rigidbody2D rigidbody = GetComponentInParent<Rigidbody2D>();
+
+            if (rigidbody == null)
+            {
+                Debug.LogWarning(
+                    "[Impulse] Rigidbody2D não encontrado.",
+                    this);
+                return;
+            }
+
+            Vector2 velocity = rigidbody.linearVelocity;
+            velocity.y = Mathf.Max(velocity.y, impulse);
+            rigidbody.linearVelocity = velocity;
+
+        }
     }
 }

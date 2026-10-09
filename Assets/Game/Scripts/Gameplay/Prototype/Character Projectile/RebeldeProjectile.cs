@@ -19,6 +19,9 @@ namespace PiGame.Gameplay
         [SerializeField] private LayerMask _collisionLayers;
         [SerializeField] private float _collisionOffset = 0.01f;
 
+        [Header("Referencer")]
+        [SerializeField] private Collider2D solidCollider;
+
         private bool _isStopped;
         private bool _falling;
         private Vector2 _fallVelocity;
@@ -33,6 +36,7 @@ namespace PiGame.Gameplay
             _projectileCollider = GetComponent<Collider2D>();
 
             _useLifetime = false;
+            solidCollider.enabled = false;
         }
 
         public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed)
@@ -195,6 +199,8 @@ namespace PiGame.Gameplay
             _speed = 0f;
 
             _fallVelocity = Vector2.down * 2f;
+
+            solidCollider.enabled = true;
         }
 
 

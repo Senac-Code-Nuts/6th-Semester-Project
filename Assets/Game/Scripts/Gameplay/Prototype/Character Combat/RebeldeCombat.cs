@@ -1,5 +1,6 @@
     using UnityEngine;
     using Unity.Netcode;
+using System.Collections.Generic;
 
 
 namespace PiGame.Gameplay
@@ -16,9 +17,19 @@ namespace PiGame.Gameplay
             [SerializeField] private float[] _projectileVelocityStack = {5f, 10f, 15f};
 
             [Header("Ability Settings")]
-            [SerializeField] private float _coneDistance = 4f;
-            [SerializeField] private float _coneAngle = 60f;
-            [SerializeField] private float _projectileReflectMinimumSpeed = 3f;
+            [SerializeField, Min(0f)] private float _coneDistance = 4f;
+            [SerializeField, Range(0f, 180f)] private float _coneAngle = 60f;
+            [SerializeField, Min(0f)] private float _projectileReflectMinimumSpeed = 3f;
+
+            [SerializeField, Min(0.1f)] private float _maxAbilityHoldSeconds = 1.5f;
+            [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 4f;
+            [SerializeField, Min(0f)] private float _playerUpwardImpulse = 3f;
+            private bool _abilityActive;
+            private Vector2 _abilityForward = Vector2.right;
+            private float _abilityStartedAt;
+            private float _abilityCooldownUntil;
+            private SpriteRenderer _facingSprite;
+
             private float _projectileVelocity;
             private int _projectileVelocityPointer = 0;
 
@@ -27,6 +38,7 @@ namespace PiGame.Gameplay
             private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
             public bool HasShot => _hasShot.Value;
             private float _nextShotTime;
+   
 
             public void Awake()
             {
@@ -35,6 +47,7 @@ namespace PiGame.Gameplay
                 {
                     Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
                 }
+                _facingSprite = GetComponent<SpriteRenderer>();
                 _projectileVelocity = _projectileVelocityStack[0];
             }
             public void ShootServer(Vector2 direction)
@@ -67,7 +80,30 @@ namespace PiGame.Gameplay
                 }
                 GetNextShot();
             }
-            public void AddShotServer()
+        private void Update()
+        {
+            if (!IsServer)
+                return;
+
+            if (_abilityActive)
+            {
+                float heldTime = Time.time - _abilityStartedAt;
+
+                if (heldTime >= _maxAbilityHoldSeconds)
+                {
+                    _abilityActive = false;
+                    _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                }
+            }
+
+            if (!_abilityActive &&
+                _abilityCooldownUntil > 0f &&
+                Time.time >= _abilityCooldownUntil)
+            {
+                _abilityCooldownUntil = 0f;
+            }
+        }
+        public void AddShotServer()
             {
                 if (!IsServer)
                     return;
@@ -84,6 +120,8 @@ namespace PiGame.Gameplay
 
                 _projectileVelocity = _projectileVelocityStack[_projectileVelocityPointer];
             }
+
+            //Esse personagem não precisa destes métodos, mas estão aqui pela implementação da interface
             public void ShootReleaseServer()
             {
 
@@ -96,11 +134,41 @@ namespace PiGame.Gameplay
 
             public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
             {
+                if (!IsServer || !_playerState.CanAct || _abilityActive)
+                    return;
 
+                if (Time.time < _abilityCooldownUntil)
+                {
+                    return;
+                }
+
+                _abilityActive = true;
+                _abilityStartedAt = Time.time;
+
+                _abilityForward = GetFacingDirection(aimDirection, moveDirection);
             }
             public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
             {
+                if (!IsServer)
+                    return;
 
+                if (!_abilityActive)
+                {
+                    return;
+                }
+
+                float heldTime = Time.time - _abilityStartedAt;
+
+                _abilityActive = false;
+
+                if (heldTime >= _maxAbilityHoldSeconds)
+                {
+                    _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+
+                    return;
+                }
+
+                ExecuteAbilityCone();
             }
 
             private bool IsInsideAbilityCone(Vector2 targetPosition, Vector2 forward)
@@ -126,31 +194,93 @@ namespace PiGame.Gameplay
 
                 return angle <= _coneAngle;
             }
-
-            private void ReflectProjectilesInCone(Vector2 forward)
+            private void ExecuteAbilityCone()
             {
-                Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _coneDistance);
+                Collider2D[] hits = Physics2D.OverlapCircleAll(
+                    transform.position,
+                    _coneDistance);
 
-                foreach(Collider2D hit in hits)
+                HashSet<NetworkObject> processed = new HashSet<NetworkObject>();
+
+                foreach (Collider2D hit in hits)
                 {
-                    NetworkProjectile projectile = hit.GetComponentInParent<NetworkProjectile>();
 
-                    if(projectile == null)
-                    {
-                        continue;
-                    }
-                    if(projectile.ShooterClientId == OwnerClientId)
+                    if (!IsInsideAbilityCone(hit.bounds.center, _abilityForward))
                     {
                         continue;
                     }
 
-                    if(!IsInsideAbilityCone(projectile.transform.position, forward))
+                    NetworkProjectile projectile =
+                        hit.GetComponentInParent<NetworkProjectile>();
+
+                    if (projectile != null)
+                    {
+                        if (projectile.ShooterClientId == OwnerClientId)
+                        {
+                            continue;
+                        }
+
+                        if (!processed.Add(projectile.NetworkObject))
+                            continue;
+
+                        projectile.ReflectServer(_projectileReflectMinimumSpeed);
+
+                        continue;
+                    }
+
+                    NetworkPlayerState player =
+                        hit.GetComponentInParent<NetworkPlayerState>();
+
+                    if (player == null)
                     {
                         continue;
                     }
 
-                    projectile.ReflectServer(_projectileReflectMinimumSpeed);
+                    if (player.OwnerClientId == OwnerClientId)
+                    {
+                        continue;
+                    }
+
+                    ApplyUpwardImpulse(player);
                 }
+            }
+
+            private void ApplyUpwardImpulse(NetworkPlayerState targetPlayer)
+            {
+                if (!IsServer || targetPlayer == null)
+                    return;
+
+                NetworkPlayerCombat targetCombat =
+                    targetPlayer.GetComponent<NetworkPlayerCombat>();
+
+                if (targetCombat == null)
+                {
+                    Debug.LogWarning(
+                        $"[Impulse] RebeldeCombat não encontrado em {targetPlayer.name}.",
+                        targetPlayer);
+                    return;
+                }
+
+                targetCombat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
+            }
+
+            private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
+            {
+                if(Mathf.Abs(aimDirection.x) > 0.01f)
+                {
+                    return aimDirection.x < 0f ? Vector2.left : Vector2.right;
+                }
+                else if(Mathf.Abs(moveDirection.x) > 0.01f)
+                {
+                    return moveDirection.x < 0f ?Vector2.left : Vector2.right;
+                }
+
+                if(_facingSprite != null)
+                {
+                    return _facingSprite.flipX ? Vector2.left : Vector2.right;
+                }
+
+                return _abilityForward;
             }
         }
 

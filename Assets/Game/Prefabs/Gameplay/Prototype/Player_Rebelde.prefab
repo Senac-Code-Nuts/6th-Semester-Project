@@ -16,7 +16,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6333809922354673906
 Transform:
   m_ObjectHideFlags: 0
@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 1051320667569579731}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.33, y: 0.95, z: 0}
+  m_LocalPosition: {x: 0, y: 0.95, z: 0}
   m_LocalScale: {x: 0.22, y: 0.22, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -210,7 +210,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2198905131
+  GlobalObjectIdHash: 4156283411
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -418,7 +418,7 @@ MonoBehaviour:
   _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _aimIndicator: {fileID: 8525174473988980903}
   _aimIndicatorDistance: 1.15
-  _preventAbilityOnWallOrWallJump: 1
+  _preventAbilityOnWallOrWallJump: 0
 --- !u!114 &4911287939155995333
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -435,10 +435,16 @@ MonoBehaviour:
   _projectile: {fileID: 11400000, guid: 1fbb78d0696d84b47b6ae623750063cf, type: 2}
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.85
-  _projectileVelocities:
+  _projectileVelocityStack:
   - 5
   - 10
   - 15
+  _coneDistance: 4
+  _coneAngle: 60
+  _projectileReflectMinimumSpeed: 3
+  _maxAbilityHoldSeconds: 5
+  _abilityCooldownSeconds: 4
+  _playerUpwardImpulse: 10
 --- !u!114 &880000000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
