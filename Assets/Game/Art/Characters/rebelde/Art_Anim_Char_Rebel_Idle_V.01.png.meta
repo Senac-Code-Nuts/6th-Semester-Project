@@ -1,0 +1,325 @@
+fileFormatVersion: 2
+guid: aa76d2922c8d07349bc7ee905f180ca2
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8334770746512074820
+    second: Art_Anim_Char_Rebel_Idle_V.01_0
+  - first:
+      213: 4390894713768485846
+    second: Art_Anim_Char_Rebel_Idle_V.01_1
+  - first:
+      213: -5920258712029997613
+    second: Art_Anim_Char_Rebel_Idle_V.01_2
+  - first:
+      213: -373246014151358432
+    second: Art_Anim_Char_Rebel_Idle_V.01_3
+  - first:
+      213: 3209991636795797395
+    second: Art_Anim_Char_Rebel_Idle_V.01_4
+  - first:
+      213: 73980079602461566
+    second: Art_Anim_Char_Rebel_Idle_V.01_5
+  - first:
+      213: 8682158321615768009
+    second: Art_Anim_Char_Rebel_Idle_V.01_6
+  - first:
+      213: -539743891633868707
+    second: Art_Anim_Char_Rebel_Idle_V.01_7
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_0
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 7
+        width: 14
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4486b2e95dd0ba370800000000000000
+      internalID: 8334770746512074820
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_1
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 7
+        width: 14
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d3af4c6a779fec30800000000000000
+      internalID: 4390894713768485846
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_2
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 7
+        width: 14
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d55a0b711407dda0800000000000000
+      internalID: -5920258712029997613
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_3
+      rect:
+        serializedVersion: 2
+        x: 103
+        y: 7
+        width: 14
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0288da84ab6f1daf0800000000000000
+      internalID: -373246014151358432
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_4
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 7
+        width: 14
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 39f203be26e2c8c20800000000000000
+      internalID: 3209991636795797395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_5
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 7
+        width: 14
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e7be82d8d74d60100800000000000000
+      internalID: 73980079602461566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_6
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 7
+        width: 14
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c90c935ef83d7870800000000000000
+      internalID: 8682158321615768009
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Char_Rebel_Idle_V.01_7
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 7
+        width: 14
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d50f97d4ac17288f0800000000000000
+      internalID: -539743891633868707
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Art_Anim_Char_Rebel_Idle_V.01_0: 8334770746512074820
+      Art_Anim_Char_Rebel_Idle_V.01_1: 4390894713768485846
+      Art_Anim_Char_Rebel_Idle_V.01_2: -5920258712029997613
+      Art_Anim_Char_Rebel_Idle_V.01_3: -373246014151358432
+      Art_Anim_Char_Rebel_Idle_V.01_4: 3209991636795797395
+      Art_Anim_Char_Rebel_Idle_V.01_5: 73980079602461566
+      Art_Anim_Char_Rebel_Idle_V.01_6: 8682158321615768009
+      Art_Anim_Char_Rebel_Idle_V.01_7: -539743891633868707
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
