@@ -15,6 +15,7 @@ namespace PiGame.Gameplay
         [SerializeField] private InputActionReference _moveAction;
         [SerializeField] private InputActionReference _jumpAction;
         [SerializeField] private InputActionReference _crouchAction;
+        [SerializeField] private InputActionReference _dropThroughAction;
         [SerializeField] private InputActionReference _aimFireAction;
         [SerializeField] private InputActionReference _abilityAction;
 
@@ -29,6 +30,13 @@ namespace PiGame.Gameplay
         [SerializeField] private float _groundCheckDistance = 0.1f;
         [SerializeField] private LayerMask _groundLayer;
         [SerializeField] private Transform _groundCheck;
+
+        [Header("Platforms")]
+        [SerializeField, Min(0.1f)] private float _dropThroughTimeoutSeconds = 1f;
+        private RaycastHit2D _groundHit;
+        private Collider2D _ignoredPlatform;
+        private float _dropThroughSurfaceY;
+        private float _dropThroughEndsAt;
 
         [Header("Jump")]
         [SerializeField] private float _jumpBufferTime;
@@ -132,6 +140,7 @@ namespace PiGame.Gameplay
             _isGameplayInputBlocked = false;
             _waitForJumpRelease = false;
             _hasHorizontalMovementOverride = false;
+            RestorePlatformCollision();
             ResetCrouch();
             _playerActions?.Disable();
             _isCrounching.OnValueChanged -= OnCrouchChanged;
@@ -143,6 +152,8 @@ namespace PiGame.Gameplay
             if (!IsOwner)
                 return;
 
+            UpdatePlatformCollision();
+
             if (_isGameplayInputBlocked)
             {
                 ResetCrouch();
@@ -152,6 +163,7 @@ namespace PiGame.Gameplay
 
             if (_playerState != null && !_playerState.CanAct)
             {
+                RestorePlatformCollision();
                 ResetCrouch();
                 _rigidbody.linearVelocity = Vector2.zero;
                 return;
@@ -176,6 +188,7 @@ namespace PiGame.Gameplay
             }
 
             UpdateCrouch();
+            HandlePlatformDrop();
             HandleMovement();
             HandleWallSlide();
             HandleJump();
@@ -191,8 +204,11 @@ namespace PiGame.Gameplay
             }
 
             _isGameplayInputBlocked = isBlocked;
+            _dropThroughAction.action.Reset();
             if (isBlocked)
+            {
                 _waitForJumpRelease = true;
+            }
 
             if (isBlocked && _rigidbody != null)
             {
@@ -235,8 +251,6 @@ namespace PiGame.Gameplay
 
             _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
             _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
-
-            _wallDirection = (int)input.x;
 
             _wallCheck.position = new Vector2(transform.position.x + 0.25f * Mathf.Sign(input.x), transform.position.y);
 
@@ -324,7 +338,7 @@ namespace PiGame.Gameplay
                 Mathf.Max(0.05f, bounds.size.x * 0.75f),
                 Physics2D.defaultContactOffset * 2f);
 
-            RaycastHit2D hit = Physics2D.BoxCast(
+            _groundHit = Physics2D.BoxCast(
                 probeOrigin,
                 probeSize,
                 0f,
@@ -333,7 +347,9 @@ namespace PiGame.Gameplay
                 _groundLayer);
 
             bool isFallingOrStill = _rigidbody.linearVelocity.y <= 0.05f;
-            bool foundFloor = hit.collider != null && hit.normal.y >= 0.5f;
+            bool foundFloor = _groundHit.collider != null
+                && _groundHit.collider != _ignoredPlatform
+                && _groundHit.normal.y >= 0.5f;
             _isGrounded = isFallingOrStill && foundFloor;
 
             if (_isGrounded)
@@ -350,6 +366,53 @@ namespace PiGame.Gameplay
             }
         }
 
+        private void HandlePlatformDrop()
+        {
+            if (!_isGrounded || _ignoredPlatform != null
+                || !_dropThroughAction.action.WasPerformedThisFrame())
+                return;
+
+            Collider2D platform = _groundHit.collider;
+            if (!platform.usedByEffector
+                || !platform.TryGetComponent(out PlatformEffector2D effector)
+                || !effector.isActiveAndEnabled || !effector.useOneWay)
+                return;
+
+            ResetCrouch();
+            _ignoredPlatform = platform;
+            _dropThroughSurfaceY = _groundHit.point.y;
+            _dropThroughEndsAt = Time.time + _dropThroughTimeoutSeconds;
+            Physics2D.IgnoreCollision(_boxCollider2D, platform, true);
+            _isGrounded = false;
+            _coyoteCounter = 0f;
+            _jumpBufferCounter = 0f;
+            _isTouchingWall = false;
+            _isWallSliding = false;
+            _stickTimer = 0f;
+            _rigidbody.linearVelocity = new Vector2(
+                _rigidbody.linearVelocity.x, Mathf.Min(_rigidbody.linearVelocity.y, -1f));
+        }
+
+        private void UpdatePlatformCollision()
+        {
+            if (_ignoredPlatform != null
+                && (_boxCollider2D.bounds.max.y < _dropThroughSurfaceY - Physics2D.defaultContactOffset
+                    || Time.time >= _dropThroughEndsAt))
+                RestorePlatformCollision();
+        }
+
+        private void RestorePlatformCollision()
+        {
+            if (_ignoredPlatform != null)
+                Physics2D.IgnoreCollision(_boxCollider2D, _ignoredPlatform, false);
+            _ignoredPlatform = null;
+        }
+
+        private void OnDisable()
+        {
+            RestorePlatformCollision();
+        }
+
         private void CheckWall()
         {
             if (_isGrounded)
@@ -359,7 +422,28 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _isTouchingWall = Physics2D.OverlapCircle(_wallCheck.position, _wallCheckRadius, _groundLayer);
+            Vector2 input = _moveAction.action.ReadValue<Vector2>();
+            if (Mathf.Abs(input.x) > 0.01f)
+            {
+                _wallCheck.position = new Vector2(
+                    transform.position.x + 0.25f * Mathf.Sign(input.x),
+                    transform.position.y);
+            }
+
+            Collider2D wall = Physics2D.OverlapCircle(
+                _wallCheck.position,
+                _wallCheckRadius,
+                _wallLayer);
+
+            _isTouchingWall = wall != null && wall != _ignoredPlatform;
+            if (wall != null)
+            {
+                _wallDirection = wall.bounds.center.x >= transform.position.x ? 1 : -1;
+            }
+            else
+            {
+                _wallDirection = 0;
+            }
 
         }
 
@@ -382,15 +466,18 @@ namespace PiGame.Gameplay
             InputAction move = _moveAction != null ? _moveAction.action : null;
             InputAction jump = _jumpAction != null ? _jumpAction.action : null;
             InputAction crouch = _crouchAction != null ? _crouchAction.action : null;
+            InputAction dropThrough = _dropThroughAction != null ? _dropThroughAction.action : null;
             InputAction aimFire = _aimFireAction != null ? _aimFireAction.action : null;
             InputAction ability = _abilityAction != null ? _abilityAction.action : null;
-            if (move == null || jump == null || crouch == null || aimFire == null || ability == null
+            if (move == null || jump == null || crouch == null || dropThrough == null
+                || aimFire == null || ability == null
                 || move.actionMap != jump.actionMap
                 || move.actionMap != crouch.actionMap
+                || move.actionMap != dropThrough.actionMap
                 || move.actionMap != aimFire.actionMap
                 || move.actionMap != ability.actionMap)
             {
-                Debug.LogError("Configure Move, Jump, Crouch, AimFire e Ability do mesmo Action Map no PlayerMove.", this);
+                Debug.LogError("Configure Move, Jump, Crouch, DropThrough, AimFire e Ability do mesmo Action Map no PlayerMove.", this);
                 return false;
             }
 

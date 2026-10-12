@@ -21,6 +21,8 @@ namespace PiGame.Gameplay
         private PlayerMove _playerMove;
         private ICharacterCombat _characterCombat;
         private Vector2 _aimDirection = Vector2.right;
+        private LobbyInputDeviceKind _localAimInputDevice;
+        private Vector2 _previousPointerPosition;
         private bool _localAimHeld;
         private bool _localAbilityHeld;
         private bool _waitForAimRelease;
@@ -55,6 +57,9 @@ namespace PiGame.Gameplay
                     enabled = false;
                     return;
                 }
+
+                _localAimInputDevice = LobbyInputDeviceKind.Unknown;
+                _previousPointerPosition = _aimPointerAction.action.ReadValue<Vector2>();
             }
 
             _playerState.StateChanged += RefreshAimIndicator;
@@ -87,7 +92,7 @@ namespace PiGame.Gameplay
                 _waitForAimRelease = true;
                 _waitForAbilityRelease = true;
                 CancelLocalAim();
-                _localAbilityHeld = false;
+                CancelLocalAbility();
                 return;
             }
 
@@ -96,14 +101,14 @@ namespace PiGame.Gameplay
                 _waitForAimRelease = true;
                 _waitForAbilityRelease = true;
                 CancelLocalAim();
-                _localAbilityHeld = false;
+                CancelLocalAbility();
                 return;
             }
 
             Vector2 aim = ReadAimDirection();
             if (aim.sqrMagnitude >= 0.04f)
             {
-                _aimDirection = aim.normalized;
+                _aimDirection = SnapAimToEightDirections(aim);
                 RefreshAimIndicator();
             }
 
@@ -161,7 +166,7 @@ namespace PiGame.Gameplay
                 _waitForAimRelease = true;
                 _waitForAbilityRelease = true;
                 CancelLocalAim();
-                _localAbilityHeld = false;
+                CancelLocalAbility();
             }
         }
 
@@ -208,6 +213,16 @@ namespace PiGame.Gameplay
 
             _localAimHeld = false;
             RefreshAimIndicator();
+        }
+
+        private void CancelLocalAbility()
+        {
+            if (_localAbilityHeld)
+            {
+                EndAbilityRpc(_aimDirection, _playerMove.ReadMovementDirection());
+            }
+
+            _localAbilityHeld = false;
         }
 
         [Rpc(SendTo.Server)]
@@ -257,7 +272,7 @@ namespace PiGame.Gameplay
         private void EndAbilityRpc(
             Vector2 aimDirection, Vector2 moveDirection, RpcParams rpcParams = default)
         {
-            if (_playerState.CanAct && rpcParams.Receive.SenderClientId == OwnerClientId)
+            if (rpcParams.Receive.SenderClientId == OwnerClientId)
             {
                 _characterCombat.EndAbilityServer(aimDirection, moveDirection);
             }
@@ -265,19 +280,59 @@ namespace PiGame.Gameplay
 
         private Vector2 ReadAimDirection()
         {
-            if (_playerState.InputDevice == LobbyInputDeviceKind.Gamepad)
+            Vector2 directionalAim = _aimDirectionAction.action.ReadValue<Vector2>();
+            Vector2 pointerPosition = _aimPointerAction.action.ReadValue<Vector2>();
+            if (_localAimInputDevice == LobbyInputDeviceKind.Unknown)
             {
-                return _aimDirectionAction.action.ReadValue<Vector2>();
+                _localAimInputDevice = _playerState.InputDevice;
+            }
+
+            // A escolha do lobby é inicial; durante o jogo, vale o último input de mira usado.
+            if ((pointerPosition - _previousPointerPosition).sqrMagnitude > 0.01f)
+            {
+                _localAimInputDevice = LobbyInputDeviceKind.Keyboard;
+            }
+            _previousPointerPosition = pointerPosition;
+
+            if (_aimDirectionAction.action.WasPerformedThisFrame()
+                && directionalAim.sqrMagnitude >= 0.04f)
+            {
+                _localAimInputDevice = LobbyInputDeviceKind.Gamepad;
+            }
+
+            if (_aimFireAction.action.WasPressedThisFrame())
+            {
+                InputDevice device = _aimFireAction.action.activeControl?.device;
+                if (device is Gamepad || device is Joystick)
+                {
+                    _localAimInputDevice = LobbyInputDeviceKind.Gamepad;
+                }
+                else if (device is Keyboard || device is Mouse)
+                {
+                    _localAimInputDevice = LobbyInputDeviceKind.Keyboard;
+                }
+            }
+
+            if (_localAimInputDevice == LobbyInputDeviceKind.Gamepad)
+            {
+                return directionalAim;
             }
 
             if (Camera.main != null)
             {
                 Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(
-                    _aimPointerAction.action.ReadValue<Vector2>());
+                    pointerPosition);
                 return mouseWorld - transform.position;
             }
 
             return _aimDirection;
+        }
+
+        private static Vector2 SnapAimToEightDirections(Vector2 direction)
+        {
+            float step = Mathf.PI / 4f;
+            float angle = Mathf.Round(Mathf.Atan2(direction.y, direction.x) / step) * step;
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
         }
 
         private bool ReadAimPressed()
