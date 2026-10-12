@@ -18,6 +18,9 @@ namespace PiGame.Gameplay
         protected float _speed;
         protected int _damage;
 
+        protected bool _useLifetime = true;
+        protected bool _canDoSelfDamage = false;
+
         private void Awake()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -53,6 +56,8 @@ namespace PiGame.Gameplay
                 : Vector2.right;
             _color.Value = color;
             _despawnAt = Time.time + definition.LifetimeSeconds;
+
+            _canDoSelfDamage = false;
         }
 
         protected virtual void Update()
@@ -63,7 +68,7 @@ namespace PiGame.Gameplay
             }
 
             transform.position += (Vector3)(_direction * _speed * Time.deltaTime);
-            if (Time.time >= _despawnAt)
+            if (_useLifetime && Time.time >= _despawnAt)
             {
                 NetworkObject.Despawn();
             }
@@ -84,7 +89,7 @@ namespace PiGame.Gameplay
             NetworkPlayerState playerState = other.GetComponentInParent<NetworkPlayerState>();
             if (playerState != null)
             {
-                if (playerState.OwnerClientId == _shooterClientId)
+                if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
                 {
                     return;
                 }
@@ -111,6 +116,17 @@ namespace PiGame.Gameplay
             {
                 _spriteRenderer.color = color;
             }
+        }
+
+        public virtual void ReflectServer(float minimumSpeed)
+        {
+            if (!IsServer || !IsSpawned)
+                return;
+            
+            _direction = -_direction;
+
+            _speed = Mathf.Max(_speed, minimumSpeed);
+            _canDoSelfDamage = true;
         }
     }
 }
