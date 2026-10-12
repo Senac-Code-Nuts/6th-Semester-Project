@@ -203,6 +203,7 @@ namespace PiGame.Gameplay
             }
             else
             {
+                TriggerSkillReleaseAnimation();
                 SetSkillAnimation(false);
                 EndAbilityRpc(_aimDirection, moveDirection);
             }
@@ -235,6 +236,25 @@ namespace PiGame.Gameplay
             if (_animator != null && _animator.runtimeAnimatorController != null)
             {
                 _animator.SetBool("isSkill", isActive);
+            }
+        }
+
+        private void TriggerSkillReleaseAnimation()
+        {
+            if (_animator == null || _animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            AnimatorControllerParameter[] parameters = _animator.parameters;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].name == "skillRelease"
+                    && parameters[i].type == AnimatorControllerParameterType.Trigger)
+                {
+                    _animator.SetTrigger("skillRelease");
+                    return;
+                }
             }
         }
 
