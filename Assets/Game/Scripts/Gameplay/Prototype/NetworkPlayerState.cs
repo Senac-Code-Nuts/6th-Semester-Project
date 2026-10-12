@@ -1,3 +1,4 @@
+using System.Collections;
 using System;
 using PiGame.Lobby;
 using Unity.Netcode;
@@ -5,7 +6,7 @@ using UnityEngine;
 
 namespace PiGame.Gameplay
 {
-    [RequireComponent(typeof(NetworkObject))]
+    [RequireComponent(typeof(NetworkObject), typeof(SpriteRenderer))]
     public class NetworkPlayerState : NetworkBehaviour
     {
         [SerializeField] private int _maximumHealth = 3;
@@ -18,15 +19,15 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<Color> _indicatorColor =
             new NetworkVariable<Color>(Color.white);
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
-        //mudança temporario
-        private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
-        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(false);
+        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
 
         private SpriteRenderer[] _spriteRenderers;
         private SpriteRenderer _bodySpriteRenderer;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
         private bool _isInvulnerable;
+        private Coroutine _knockbackRoutine;
 
         public event Action StateChanged;
         public event Action<NetworkPlayerState, ulong> Died;
@@ -98,6 +99,37 @@ namespace PiGame.Gameplay
             {
                 _isInvulnerable = isInvulnerable;
             }
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ApplyKnockbackOwnerRpc(Vector2 velocity)
+        {
+            if (!IsOwner || _rigidbody == null)
+            {
+                return;
+            }
+
+            _rigidbody.linearVelocity = velocity;
+            if (_knockbackRoutine != null)
+            {
+                StopCoroutine(_knockbackRoutine);
+            }
+
+            _knockbackRoutine = StartCoroutine(DisableMovementRoutine(0.25f));
+        }
+
+        private IEnumerator DisableMovementRoutine(float duration)
+        {
+            PlayerMove playerMove = GetComponent<PlayerMove>();
+            if (playerMove == null)
+            {
+                yield break;
+            }
+
+            playerMove.enabled = false;
+            yield return new WaitForSeconds(duration);
+            playerMove.enabled = true;
+            _knockbackRoutine = null;
         }
 
         public void SetMatchActiveServer(bool isActive)

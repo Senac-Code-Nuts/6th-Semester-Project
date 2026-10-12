@@ -6,51 +6,51 @@ using UnityEngine;
 public class ClankCombat : NetworkBehaviour, ICharacterCombat
 {
     [Header("Projectile Settings")]
-    [SerializeField, Tooltip("Definição do projétil disparado pelo jogador.")]
+    [SerializeField, Tooltip("Definiï¿½ï¿½o do projï¿½til disparado pelo jogador.")]
     private ProjectileDefinition _projectile;
 
-    [SerializeField, Min(1), Tooltip("Quantidade máxima de munição de projéteis.")]
+    [SerializeField, Min(1), Tooltip("Quantidade mï¿½xima de muniï¿½ï¿½o de projï¿½teis.")]
     private int _maximumAmmo = 4;
 
     [SerializeField, Min(0f), Tooltip("Tempo de espera em segundos entre cada disparo.")]
     private float _shotCooldownSeconds = 0.35f;
 
-    [SerializeField, Min(0f), Tooltip("Distância à frente do jogador onde o projétil é instanciado.")]
+    [SerializeField, Min(0f), Tooltip("Distï¿½ncia ï¿½ frente do jogador onde o projï¿½til ï¿½ instanciado.")]
     private float _projectileSpawnDistance = 0.5f;
 
-    [SerializeField, Tooltip("Indicadores visuais da munição na interface ou sobre o jogador.")]
+    [SerializeField, Tooltip("Indicadores visuais da muniï¿½ï¿½o na interface ou sobre o jogador.")]
     private SpriteRenderer[] _ammoIndicators;
 
-    [SerializeField, Min(0.1f), Tooltip("Tempo agachado necessário para recarregar uma munição.")]
+    [SerializeField, Min(0.1f), Tooltip("Tempo agachado necessï¿½rio para recarregar uma muniï¿½ï¿½o.")]
     private float _crouchReloadInterval = 0.6f;
 
     [Header("Special Settings")]
-    [SerializeField, Min(1), Tooltip("Quantidade máxima de cargas da habilidade especial.")]
+    [SerializeField, Min(1), Tooltip("Quantidade mï¿½xima de cargas da habilidade especial.")]
     private int _maxAbilityCharges = 2;
 
     [SerializeField, Min(0.1f), Tooltip("Tempo em segundos para recarregar uma carga da habilidade especial.")]
     private float _abilityCooldownSeconds = 3.5f;
 
-    [SerializeField, Min(1f), Tooltip("Força do impulso aplicado ao próprio jogador ao usar o especial.")]
+    [SerializeField, Min(1f), Tooltip("Forï¿½a do impulso aplicado ao prï¿½prio jogador ao usar o especial.")]
     private float _hammerLaunchForce = 14f;
 
-    [SerializeField, Min(0.1f), Tooltip("Raio da área circular para detectar e empurrar jogadores próximos.")]
+    [SerializeField, Min(0.1f), Tooltip("Raio da ï¿½rea circular para detectar e empurrar jogadores prï¿½ximos.")]
     private float _knockbackRadius = 2.5f;
 
-    [SerializeField, Min(1f), Tooltip("Força de repulsão aplicada aos jogadores atingidos.")]
+    [SerializeField, Min(1f), Tooltip("Forï¿½a de repulsï¿½o aplicada aos jogadores atingidos.")]
     private float _knockbackForce = 8f;
 
-    [SerializeField, Min(0.01f), Tooltip("Distância do Raycast para verificar se o jogador está em contato com o chão.")]
+    [SerializeField, Min(0.01f), Tooltip("Distï¿½ncia do Raycast para verificar se o jogador estï¿½ em contato com o chï¿½o.")]
     private float _groundCheckDistance = 0.2f;
 
-    [SerializeField, Tooltip("Layer de colisão utilizada para identificar outros jogadores no alcance.")]
+    [SerializeField, Tooltip("Layer de colisï¿½o utilizada para identificar outros jogadores no alcance.")]
     private LayerMask _playerLayer;
 
-    [SerializeField, Tooltip("Layer de colisão utilizada para identificar plataformas e o chão.")]
+    [SerializeField, Tooltip("Layer de colisï¿½o utilizada para identificar plataformas e o chï¿½o.")]
     private LayerMask _groundLayer;
 
     [Header("Gizmo Settings")]
-    [SerializeField, Tooltip("Cor do contorno do Gizmo do raio de repulsão no Editor.")]
+    [SerializeField, Tooltip("Cor do contorno do Gizmo do raio de repulsï¿½o no Editor.")]
     private Color _knockbackWireColor = Color.red;
 
     private readonly NetworkVariable<int> _ammo = new NetworkVariable<int>(
@@ -76,7 +76,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         if (_projectile == null || _projectile.Prefab == null
             || _ammoIndicators == null || _ammoIndicators.Length != _maximumAmmo)
         {
-            Debug.LogError("Configure o projétil e os indicadores de munição no ClankCombat.", this);
+            Debug.LogError("Configure o projï¿½til e os indicadores de muniï¿½ï¿½o no ClankCombat.", this);
             enabled = false;
             return;
         }
@@ -85,7 +85,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         {
             if (indicator == null)
             {
-                Debug.LogError("Todos os indicadores de munição devem estar atribuídos no ClankCombat.", this);
+                Debug.LogError("Todos os indicadores de muniï¿½ï¿½o devem estar atribuï¿½dos no ClankCombat.", this);
                 enabled = false;
                 return;
             }
@@ -206,7 +206,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         bool hitOtherPlayer = false;
         foreach (Collider2D col in playerHits)
         {
-            NetworkPlayerState targetState = col.GetComponent<NetworkPlayerState>();
+            NetworkPlayerState targetState = col.GetComponentInParent<NetworkPlayerState>();
             if (targetState != null && targetState != _playerState && targetState.CanAct)
             {
                 hitOtherPlayer = true;
@@ -229,7 +229,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
 
         foreach (Collider2D hitCollider in playerHits)
         {
-            NetworkPlayerState targetState = hitCollider.GetComponent<NetworkPlayerState>();
+            NetworkPlayerState targetState = hitCollider.GetComponentInParent<NetworkPlayerState>();
             if (targetState != null && targetState != _playerState && targetState.CanAct)
             {
                 Vector2 knockbackDir = ((Vector2)targetState.transform.position - (Vector2)transform.position).normalized;
@@ -238,11 +238,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
                     knockbackDir = Vector2.right;
                 }
 
-                ClankCombat targetCombat = targetState.GetComponent<ClankCombat>();
-                if (targetCombat != null)
-                {
-                    targetCombat.ApplyKnockbackOwnerRpc(knockbackDir * _knockbackForce);
-                }
+                targetState.ApplyKnockbackOwnerRpc(knockbackDir * _knockbackForce);
             }
         }
     }
@@ -320,7 +316,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     {
         for (int index = 0; index < _ammoIndicators.Length; index++)
         {
-            _ammoIndicators[index].enabled = _playerState != null && _playerState.CanAct
+            _ammoIndicators[index].enabled = IsOwner && _playerState != null && _playerState.CanAct
                 && index < _ammo.Value;
         }
     }

@@ -236,8 +236,6 @@ namespace PiGame.Gameplay
             _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
             _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
 
-            _wallDirection = (int)input.x;
-
             _wallCheck.position = new Vector2(transform.position.x + 0.25f * Mathf.Sign(input.x), transform.position.y);
 
             _spriteRenderer.flipX = Mathf.Sign(input.x) > 0.01f ? false : true;
@@ -359,7 +357,28 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _isTouchingWall = Physics2D.OverlapCircle(_wallCheck.position, _wallCheckRadius, _groundLayer);
+            Vector2 input = _moveAction.action.ReadValue<Vector2>();
+            if (Mathf.Abs(input.x) > 0.01f)
+            {
+                _wallCheck.position = new Vector2(
+                    transform.position.x + 0.25f * Mathf.Sign(input.x),
+                    transform.position.y);
+            }
+
+            Collider2D wall = Physics2D.OverlapCircle(
+                _wallCheck.position,
+                _wallCheckRadius,
+                _wallLayer);
+
+            _isTouchingWall = wall != null;
+            if (wall != null)
+            {
+                _wallDirection = wall.bounds.center.x >= transform.position.x ? 1 : -1;
+            }
+            else
+            {
+                _wallDirection = 0;
+            }
 
         }
 
