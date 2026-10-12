@@ -294,7 +294,7 @@ namespace PiGame.Gameplay
             if (_falling)
                 return;
 
-            if (playerState.OwnerClientId == _shooterClientId)
+            if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
                 return;
 
             if (_hasHitPlayer &&
