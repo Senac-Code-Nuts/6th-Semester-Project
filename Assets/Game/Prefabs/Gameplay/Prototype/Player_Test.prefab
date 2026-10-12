@@ -313,6 +313,7 @@ MonoBehaviour:
   _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _crouchAction: {fileID: 7040659881675835329, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
+  _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
   _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _groundCheckDistance: 0.1

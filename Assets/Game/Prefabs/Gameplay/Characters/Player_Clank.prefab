@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 3216733317862606300}
   - component: {fileID: 7423979285644332156}
   m_Layer: 7
-  m_Name: Player_Test_Clank
+  m_Name: Player_Clank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -98,8 +98,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.27094212, g: 0.7735849, b: 0.16420436, a: 1}
+  m_Sprite: {fileID: -9126715418129559662, guid: 165ccab6eaba663419c71bd86c362edb, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -199,6 +199,8 @@ MonoBehaviour:
   _moveAction: {fileID: -1680190386980627800, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _crouchAction: {fileID: 7040659881675835329, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
+  _dropThroughAction: {fileID: 0}
   _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _groundCheckDistance: 1
@@ -206,6 +208,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   _groundCheck: {fileID: 1201417585810588438}
+  _dropThroughTimeoutSeconds: 1
   _jumpBufferTime: 2
   _coyoteTimer: 1
   _wallCheck: {fileID: 4427738194939039848}
@@ -335,7 +338,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
+    oldSize: {x: 0.9375, y: 1.3125}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -353,7 +356,7 @@ Animator:
   m_GameObject: {fileID: 1324757442989677250}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8051e24c93925424db3864fa08a089e7, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -393,6 +396,7 @@ MonoBehaviour:
   _hammerLaunchForce: 14
   _knockbackRadius: 2.5
   _knockbackForce: 14
+  _groundCheckDistance: 0.2
   _playerLayer:
     serializedVersion: 2
     m_Bits: 128

@@ -188,9 +188,9 @@ SpriteRenderer:
   m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_Sprite: {fileID: -3547570607645705700, guid: ccc84036d56e7524cab982126a6d2007, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
+  m_FlipX: 1
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 1, y: 2}
@@ -316,6 +316,7 @@ MonoBehaviour:
   _moveAction: {fileID: -1680190386980627800, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _crouchAction: {fileID: 7040659881675835329, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
   _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _groundCheckDistance: 0.1
@@ -323,6 +324,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 72
   _groundCheck: {fileID: 2891493776680242955}
+  _dropThroughTimeoutSeconds: 1
   _jumpBufferTime: 0.1
   _coyoteTimer: 0.1
   _wallCheck: {fileID: 3692848841454754831}
@@ -376,7 +378,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
+    oldSize: {x: 0.875, y: 1.3125}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -490,6 +492,26 @@ MonoBehaviour:
       NameHash: -357477766
       Synchronize: 1
       ParameterType: 4
+    - name: isCrouching
+      NameHash: 1035320983
+      Synchronize: 1
+      ParameterType: 4
+    - name: isWallSliding
+      NameHash: -1514754429
+      Synchronize: 1
+      ParameterType: 4
+    - name: isDead
+      NameHash: 1276664872
+      Synchronize: 1
+      ParameterType: 4
+    - name: isHit
+      NameHash: -1235987232
+      Synchronize: 1
+      ParameterType: 4
+    - name: isSkill
+      NameHash: 1462408521
+      Synchronize: 1
+      ParameterType: 4
   AnimatorParametersExpanded: 0
 --- !u!95 &381949192463674323
 Animator:
@@ -501,7 +523,7 @@ Animator:
   m_GameObject: {fileID: 1324757442989677250}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: d6f406dba470a004185d0dc4e6d25508, type: 2}
+  m_Controller: {fileID: 9100000, guid: 137fb7ee72196ce4f905841f7f55cb82, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
