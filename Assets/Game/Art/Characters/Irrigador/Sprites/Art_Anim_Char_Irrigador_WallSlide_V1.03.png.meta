@@ -106,12 +106,12 @@ TextureImporter:
       name: Art_Anim_Char_Irrigador_WallSlide_V1.03_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 9
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 0
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.42187500, y: 0.50000000}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -128,12 +128,12 @@ TextureImporter:
       name: Art_Anim_Char_Irrigador_WallSlide_V1.03_1
       rect:
         serializedVersion: 2
-        x: 40
-        y: 9
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 32
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.42187500, y: 0.50000000}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
