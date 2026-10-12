@@ -87,7 +87,7 @@ namespace PiGame.Gameplay
                 _waitForAimRelease = true;
                 _waitForAbilityRelease = true;
                 CancelLocalAim();
-                _localAbilityHeld = false;
+                CancelLocalAbility();
                 return;
             }
 
@@ -96,7 +96,7 @@ namespace PiGame.Gameplay
                 _waitForAimRelease = true;
                 _waitForAbilityRelease = true;
                 CancelLocalAim();
-                _localAbilityHeld = false;
+                CancelLocalAbility();
                 return;
             }
 
@@ -161,7 +161,7 @@ namespace PiGame.Gameplay
                 _waitForAimRelease = true;
                 _waitForAbilityRelease = true;
                 CancelLocalAim();
-                _localAbilityHeld = false;
+                CancelLocalAbility();
             }
         }
 
@@ -208,6 +208,16 @@ namespace PiGame.Gameplay
 
             _localAimHeld = false;
             RefreshAimIndicator();
+        }
+
+        private void CancelLocalAbility()
+        {
+            if (_localAbilityHeld)
+            {
+                EndAbilityRpc(_aimDirection, _playerMove.ReadMovementDirection());
+            }
+
+            _localAbilityHeld = false;
         }
 
         [Rpc(SendTo.Server)]
@@ -257,7 +267,7 @@ namespace PiGame.Gameplay
         private void EndAbilityRpc(
             Vector2 aimDirection, Vector2 moveDirection, RpcParams rpcParams = default)
         {
-            if (_playerState.CanAct && rpcParams.Receive.SenderClientId == OwnerClientId)
+            if (rpcParams.Receive.SenderClientId == OwnerClientId)
             {
                 _characterCombat.EndAbilityServer(aimDirection, moveDirection);
             }
