@@ -10,7 +10,8 @@ namespace PiGame.Input
         public const string KeyboardMouseGroup = "Keyboard&Mouse";
         public const string GamepadGroup = "Gamepad";
 
-        private const string PlayerPrefsKey = "PiGame.InputBindings.v2";
+        private const string PlayerPrefsKey = "PiGame.InputBindings.v3";
+        private const string PreviousPlayerPrefsKey = "PiGame.InputBindings.v2";
         private const string LegacyPlayerPrefsKey = "PiGame.InputBindings.v1";
 
         private readonly InputActionAsset _actions;
@@ -24,9 +25,12 @@ namespace PiGame.Input
 
         public void Load()
         {
-            if (PlayerPrefs.HasKey(LegacyPlayerPrefsKey))
+            if (PlayerPrefs.HasKey(LegacyPlayerPrefsKey)
+                || PlayerPrefs.HasKey(PreviousPlayerPrefsKey))
             {
+                _actions.RemoveAllBindingOverrides();
                 PlayerPrefs.DeleteKey(LegacyPlayerPrefsKey);
+                PlayerPrefs.DeleteKey(PreviousPlayerPrefsKey);
                 PlayerPrefs.Save();
             }
 
