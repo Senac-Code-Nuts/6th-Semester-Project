@@ -257,9 +257,13 @@ namespace PiGame.Gameplay
             _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
             _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
 
-            _wallCheck.position = new Vector2(transform.position.x + 0.25f * Mathf.Sign(input.x), transform.position.y);
-
-            _spriteRenderer.flipX = Mathf.Sign(input.x) > 0.01f ? false : true;
+            if (Mathf.Abs(input.x) > 0.01f)
+            {
+                _wallCheck.position = new Vector2(
+                    transform.position.x + 0.25f * Mathf.Sign(input.x),
+                    transform.position.y);
+                _spriteRenderer.flipX = input.x < 0f;
+            }
 
         }
 
