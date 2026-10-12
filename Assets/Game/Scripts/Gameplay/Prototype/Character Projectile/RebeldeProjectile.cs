@@ -13,20 +13,19 @@ namespace PiGame.Gameplay
         [SerializeField] private float _wallBounceSpeedLoss = 0.25f;
         [SerializeField] private float _playerBounceSpeedLoss = 0.5f;
         [SerializeField] private float _fallSpeedThreshold = 3f;
-        [SerializeField] private float _fallGravity = 20f;
 
         [Header("Collision")]
         [SerializeField] private LayerMask _collisionLayers;
         [SerializeField] private float _collisionOffset = 0.01f;
+        
 
         [Header("Referencer")]
         [SerializeField] private Collider2D _solidCollider;
-        private Collider2D _projectileCollider;
         private Rigidbody2D _rigidbody;
 
         private bool _isStopped;
         private bool _falling;
-        private Vector2 _fallVelocity;
+
 
 
         public float MinimumSpeed => _minimumSpeed;
@@ -34,7 +33,6 @@ namespace PiGame.Gameplay
         private void Awake()
         {
 
-            _projectileCollider = GetComponent<Collider2D>();
             _rigidbody = GetComponent<Rigidbody2D>();
 
             _useLifetime = false;
@@ -60,8 +58,7 @@ namespace PiGame.Gameplay
             _speed = speed;
 
             _isStopped = false;
-            _falling = false;
-            _fallVelocity = Vector2.zero;            
+            _falling = false;      
 
         }
 
@@ -164,11 +161,25 @@ namespace PiGame.Gameplay
             if (!IsServer || !_falling || _isStopped)
                 return;
 
-           /* _isStopped = true;
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (contact.normal.y > 0.5f)
+                {
+                    StopOnGround();
+                    return;
+                }
+            }
+        }
+
+        private void StopOnGround()
+        {
+            _isStopped = true;
 
             _rigidbody.linearVelocity = Vector2.zero;
             _rigidbody.angularVelocity = 0f;
-            _rigidbody.bodyType = RigidbodyType2D.Kinematic;*/
+
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.gravityScale = 0f;
         }
 
         private void HandleCollision(RaycastHit2D hit)
@@ -243,11 +254,20 @@ namespace PiGame.Gameplay
 
         public override void ReflectServer(float minimumSpeed)
         {
+            if (!IsServer || !IsSpawned)
+                return;
+
             base.ReflectServer(minimumSpeed);
 
             _falling = false;
-            _fallVelocity = Vector2.zero;
             _isStopped = false;
+
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.gravityScale = 0f;
+            _rigidbody.linearVelocity = Vector2.zero;
+            _rigidbody.angularVelocity = 0f;
+
+            _solidCollider.enabled = false;
         }
 
     }

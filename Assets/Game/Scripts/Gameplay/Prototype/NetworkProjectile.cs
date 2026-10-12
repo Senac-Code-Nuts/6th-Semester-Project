@@ -127,6 +127,10 @@ namespace PiGame.Gameplay
 
             _speed = Mathf.Max(_speed, minimumSpeed);
             _canDoSelfDamage = true;
+
+            float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+
+            transform.rotation = Quaternion.Euler(0f,0f,angle);
         }
     }
 }

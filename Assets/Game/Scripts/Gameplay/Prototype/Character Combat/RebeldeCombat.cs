@@ -178,6 +178,7 @@ namespace PiGame.Gameplay
             {
                 if (!IsServer || !_playerState.CanAct || _abilityActive)
                     return;
+                Debug.Log( $"[Rebelde] Begin | IsServer={IsServer} | Time={Time.time}");
 
                 if (Time.time < _abilityCooldownUntil)
                 {
@@ -198,6 +199,10 @@ namespace PiGame.Gameplay
                 {
                     return;
                 }
+
+                    Debug.Log(
+        $"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
+    );
 
                 float heldTime = Time.time - _abilityStartedAt;
 

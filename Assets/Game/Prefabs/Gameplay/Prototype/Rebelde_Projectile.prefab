@@ -187,11 +187,15 @@ MonoBehaviour:
   _wallBounceSpeedLoss: 5
   _playerBounceSpeedLoss: 10
   _fallSpeedThreshold: 3
-  _fallGravity: 20
   _collisionLayers:
     serializedVersion: 2
     m_Bits: 200
   _collisionOffset: 0.01
+  _fallGravity: 25
+  _groundClearance: 0.02
+  _groundLayers:
+    serializedVersion: 2
+    m_Bits: 72
   _solidCollider: {fileID: 2345641286752468861}
 --- !u!50 &900000000000000006
 Rigidbody2D:
