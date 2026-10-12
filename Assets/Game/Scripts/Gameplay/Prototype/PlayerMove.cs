@@ -247,6 +247,7 @@ namespace PiGame.Gameplay
             if (_wallJumpControlTimer > 0f) return;
 
             Vector2 input = _moveAction.action.ReadValue<Vector2>();
+            float facingInput = input.x;
             if (_isCrouching)
             {
                 input.x = 0f;
@@ -257,12 +258,12 @@ namespace PiGame.Gameplay
             _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
             _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
 
-            if (Mathf.Abs(input.x) > 0.01f)
+            if (Mathf.Abs(facingInput) > 0.01f)
             {
                 _wallCheck.position = new Vector2(
-                    transform.position.x + 0.25f * Mathf.Sign(input.x),
+                    transform.position.x + 0.25f * Mathf.Sign(facingInput),
                     transform.position.y);
-                _spriteRenderer.flipX = input.x < 0f;
+                _spriteRenderer.flipX = facingInput < 0f;
             }
 
         }
