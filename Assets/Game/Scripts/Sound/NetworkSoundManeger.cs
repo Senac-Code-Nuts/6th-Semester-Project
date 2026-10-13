@@ -4,7 +4,10 @@ using UnityEngine;
 
 namespace PiGame.Sound
 {
-    public enum SFXList { SFX1, SFX2, SFX3 }
+    public enum SFXList { WallJump, PlayerJump, Hit, DeathHit, DrawRoulette, VolumeScroll, LevelSelect, UiButton, DownPlatform, UpPlatform, WhirlPlatform,
+    StuckNail, ShootNail, IrrigadorPull, IrrigadorSkill, DeserticoRoll, DeserticoShot, DeserticoEmpty, DeserticoReload, RebeldeBounce, RebeldeCatch, RebeldeEmpty, RebeldeSkill,
+    RebeldeShot, FumaceiroEmpty, FumaceiroCatch, FumaceiroThrow, FumaceiroSkill, PlayerRespawn
+        }
     public enum OSTList { OST1, OST2, OST3 }
 
     public class NetworkSoundManager : NetworkBehaviour
@@ -25,11 +28,11 @@ namespace PiGame.Sound
             public AudioClip clip;
         }
 
-        [Header("Componentes de Áudio")]
+        [Header("Componentes de ï¿½udio")]
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioSource ostSource;
 
-        [Header("Listas de Áudio (Configure no Inspector)")]
+        [Header("Listas de ï¿½udio (Configure no Inspector)")]
         [SerializeField] private List<SoundData> sfxList = new();
         [SerializeField] private List<MusicData> ostList = new();
 
@@ -103,7 +106,7 @@ namespace PiGame.Sound
         }
         #endregion
 
-        #region Execução Local
+        #region Execuï¿½ï¿½o Local
         private void PlaySFXLocal(SFXList sfx)
         {
             if (_sfxDict.TryGetValue(sfx, out AudioClip clip))
@@ -112,7 +115,7 @@ namespace PiGame.Sound
             }
             else
             {
-                Debug.LogWarning($"O SFX '{sfx}' não foi configurado nas listas do SoundManager!");
+                Debug.LogWarning($"O SFX '{sfx}' nï¿½o foi configurado nas listas do SoundManager!");
             }
         }
 
@@ -126,7 +129,7 @@ namespace PiGame.Sound
             }
             else
             {
-                Debug.LogWarning($"A OST '{ost}' não foi configurada nas listas do SoundManager!");
+                Debug.LogWarning($"A OST '{ost}' nï¿½o foi configurada nas listas do SoundManager!");
             }
         }
 

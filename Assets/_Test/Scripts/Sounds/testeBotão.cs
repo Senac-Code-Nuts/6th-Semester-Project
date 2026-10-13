@@ -5,7 +5,7 @@ namespace PiGame.Sound.Tests
     {
         public void AoClicarNoBotao()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.SFX1);
+            //NetworkSoundManager.Instance.PlaySFX(SFXList.SFX1);
         }
         public void AoClicarNoBotao2()
         {
