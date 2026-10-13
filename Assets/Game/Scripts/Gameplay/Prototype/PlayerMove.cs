@@ -82,6 +82,7 @@ namespace PiGame.Gameplay
         private InputActionMap _playerActions;
 
         public bool IsCrouching => _isCrouching;
+        public bool IsWallSliding => _isWallSliding;
 
         public bool CanBeginWallRestrictedAbility()
         {
@@ -158,6 +159,7 @@ namespace PiGame.Gameplay
             {
                 ResetCrouch();
                 _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
+                UpdateAnimatorState();
                 return;
             }
 
@@ -166,6 +168,7 @@ namespace PiGame.Gameplay
                 RestorePlatformCollision();
                 ResetCrouch();
                 _rigidbody.linearVelocity = Vector2.zero;
+                UpdateAnimatorState();
                 return;
             }
 
@@ -184,6 +187,7 @@ namespace PiGame.Gameplay
                 _playerAnimator.SetFloat("xVelocity", Mathf.Abs(_horizontalMovementOverrideSpeed));
                 _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
                 _spriteRenderer.flipX = _horizontalMovementOverrideSpeed < 0f;
+                UpdateAnimatorState();
                 return;
             }
 
@@ -192,6 +196,7 @@ namespace PiGame.Gameplay
             HandleMovement();
             HandleWallSlide();
             HandleJump();
+            UpdateAnimatorState();
 
 
         }
@@ -242,6 +247,7 @@ namespace PiGame.Gameplay
             if (_wallJumpControlTimer > 0f) return;
 
             Vector2 input = _moveAction.action.ReadValue<Vector2>();
+            float facingInput = input.x;
             if (_isCrouching)
             {
                 input.x = 0f;
@@ -252,9 +258,13 @@ namespace PiGame.Gameplay
             _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
             _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
 
-            _wallCheck.position = new Vector2(transform.position.x + 0.25f * Mathf.Sign(input.x), transform.position.y);
-
-            _spriteRenderer.flipX = Mathf.Sign(input.x) > 0.01f ? false : true;
+            if (Mathf.Abs(facingInput) > 0.01f)
+            {
+                _wallCheck.position = new Vector2(
+                    transform.position.x + 0.25f * Mathf.Sign(facingInput),
+                    transform.position.y);
+                _spriteRenderer.flipX = facingInput < 0f;
+            }
 
         }
 
@@ -517,6 +527,17 @@ namespace PiGame.Gameplay
         {
             if (_isCrounching.Value != _isCrouching)
                 _isCrounching.Value = _isCrouching;
+        }
+
+        private void UpdateAnimatorState()
+        {
+            if (_playerAnimator == null || _playerAnimator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            _playerAnimator.SetBool("isCrouching", _isCrouching);
+            _playerAnimator.SetBool("isWallSliding", _isWallSliding);
         }
 
         private void HandleWallSlide()

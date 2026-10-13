@@ -44,6 +44,7 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _projectileCollider = GetComponent<Collider2D>();
+            _useLifetime = false;
             UpdateColliders();
         }
 
@@ -293,7 +294,7 @@ namespace PiGame.Gameplay
             if (_falling)
                 return;
 
-            if (playerState.OwnerClientId == _shooterClientId)
+            if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
                 return;
 
             if (_hasHitPlayer &&

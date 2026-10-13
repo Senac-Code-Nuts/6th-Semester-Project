@@ -1,0 +1,334 @@
+    using UnityEngine;
+    using Unity.Netcode;
+using System.Collections.Generic;
+
+
+namespace PiGame.Gameplay
+    {
+        [RequireComponent(typeof(NetworkPlayerState))]
+        
+        public class RebeldeCombat : NetworkBehaviour, ICharacterCombat
+        {
+            [Header("Combat Settings")]
+            [SerializeField] private ProjectileDefinition _projectile;
+            [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
+            [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.85f;
+
+            [SerializeField] private float[] _projectileVelocityStack = {5f, 10f, 15f};
+
+            [Header("Ability Settings")]
+            [SerializeField, Min(0f)] private float _coneDistance = 4f;
+            [SerializeField, Range(0f, 180f)] private float _coneAngle = 60f;
+            [SerializeField, Min(0f)] private float _projectileReflectMinimumSpeed = 3f;
+
+            [SerializeField, Min(0.1f)] private float _maxAbilityHoldSeconds = 1.5f;
+            [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 4f;
+            [SerializeField, Min(0f)] private float _playerUpwardImpulse = 3f;
+            private bool _abilityActive;
+            private Vector2 _abilityForward = Vector2.right;
+            private float _abilityStartedAt;
+            private float _abilityCooldownUntil;
+            private SpriteRenderer _facingSprite;
+
+            private float _projectileVelocity;
+            private int _projectileVelocityPointer = 0;
+
+            private AmmoIndicatorsView _ammoIndicatorsView;
+
+            private NetworkVariable<int> _ammo = new NetworkVariable<int>(1,NetworkVariableReadPermission.Owner);
+            
+            private NetworkPlayerState _playerState;
+            private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
+            public bool HasShot => _hasShot.Value;
+            private float _nextShotTime;
+   
+
+            public void Awake()
+            {
+                _playerState = GetComponent<NetworkPlayerState>();
+                if (_projectile == null || _projectile.Prefab == null)
+                {
+                    Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
+                }
+                _facingSprite = GetComponent<SpriteRenderer>();
+                _projectileVelocity = _projectileVelocityStack[0];
+
+                _ammoIndicatorsView = GetComponent<AmmoIndicatorsView>();
+            }
+            public void ShootServer(Vector2 direction)
+            {
+                if (!IsServer || !_playerState.CanAct || _ammo.Value <= 0 || _projectile == null || !_hasShot.Value
+                    || _projectile.Prefab == null || Time.time < _nextShotTime)
+                {
+                    return;
+                }
+
+                _nextShotTime = Time.time + _shotCooldownSeconds;
+
+                Vector2 shotDirection = direction.sqrMagnitude > 0.01f
+                    ? direction.normalized
+                    : Vector2.right;
+                    
+                Vector3 spawnPosition = transform.position
+                    + (Vector3)(shotDirection * _projectileSpawnDistance);
+
+                NetworkProjectile projectile = Instantiate(
+                    _projectile.Prefab, spawnPosition, Quaternion.identity);
+
+                projectile.NetworkObject.Spawn(true);
+
+                RebeldeProjectile rebeldeProjectile = projectile.GetComponent<RebeldeProjectile>();
+                if(rebeldeProjectile != null)
+                {
+                    rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile,_projectileVelocity);
+                    _hasShot.Value = false;
+                }
+                _ammo.Value = 0;
+                GetNextShot();
+            }
+        private void Update()
+        {
+            if (!IsServer)
+                return;
+
+            if (_abilityActive)
+            {
+                float heldTime = Time.time - _abilityStartedAt;
+
+                if (heldTime >= _maxAbilityHoldSeconds)
+                {
+                    _abilityActive = false;
+                    _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                }
+            }
+
+            if (!_abilityActive &&
+                _abilityCooldownUntil > 0f &&
+                Time.time >= _abilityCooldownUntil)
+            {
+                _abilityCooldownUntil = 0f;
+            }
+        }
+        public override void OnNetworkSpawn()
+        {
+            _ammo.OnValueChanged += HandleAmmoChanged;
+            _playerState.StateChanged += RefreshAmmoIndicators;
+
+            if (IsServer)
+            {
+                _ammo.Value = 1;
+            }
+
+            RefreshAmmoIndicators();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _ammo.OnValueChanged -= HandleAmmoChanged;
+            _playerState.StateChanged -= RefreshAmmoIndicators;
+        }
+
+        private void HandleAmmoChanged(int previousValue, int currentValue)
+        {
+            RefreshAmmoIndicators();
+        }
+
+        private void RefreshAmmoIndicators()
+        {
+            if (_ammoIndicatorsView == null)
+                return;
+
+            _ammoIndicatorsView.SetCount(
+                _ammo.Value,
+                IsOwner && _playerState.CanAct
+            );
+        }
+        public void AddShotServer()
+            {
+                if (!IsServer)
+                    return;
+
+                _hasShot.Value = true;
+
+                _ammo.Value = 1;
+            }
+            private void GetNextShot()
+            {
+                _projectileVelocityPointer++;
+                if(_projectileVelocityPointer >= _projectileVelocityStack.Length)
+                {
+                    _projectileVelocityPointer = 0;
+                }
+
+                _projectileVelocity = _projectileVelocityStack[_projectileVelocityPointer];
+            }
+
+            //Esse personagem não precisa destes métodos, mas estão aqui pela implementação da interface
+            public void ShootReleaseServer()
+            {
+
+            }
+            public void UpdateShootAimServer(Vector2 direction)
+            {
+
+            }
+
+
+            public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
+            {
+                if (!IsServer || !_playerState.CanAct || _abilityActive)
+                    return;
+                Debug.Log( $"[Rebelde] Begin | IsServer={IsServer} | Time={Time.time}");
+
+                if (Time.time < _abilityCooldownUntil)
+                {
+                    return;
+                }
+
+                _abilityActive = true;
+                _abilityStartedAt = Time.time;
+
+                _abilityForward = GetFacingDirection(aimDirection, moveDirection);
+            }
+            public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
+            {
+                if (!IsServer)
+                    return;
+
+                if (!_abilityActive)
+                {
+                    return;
+                }
+
+                    Debug.Log(
+        $"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
+    );
+
+                float heldTime = Time.time - _abilityStartedAt;
+
+                _abilityActive = false;
+
+                if (heldTime >= _maxAbilityHoldSeconds)
+                {
+                    _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+
+                    return;
+                }
+
+                ExecuteAbilityCone();
+            }
+
+            private bool IsInsideAbilityCone(Vector2 targetPosition, Vector2 forward)
+            {
+                Vector2 toTarget = targetPosition - (Vector2)transform.position;
+
+                float distance = toTarget.magnitude;
+
+                if(distance > _coneDistance)
+                {
+                    return false;
+                }
+
+                if(distance <= 0.001f)
+                {
+                    return true;
+                }
+
+                float angle =
+                    Vector2.Angle(
+                        forward,
+                        toTarget.normalized);
+
+                return angle <= _coneAngle;
+            }
+            private void ExecuteAbilityCone()
+            {
+                Collider2D[] hits = Physics2D.OverlapCircleAll(
+                    transform.position,
+                    _coneDistance);
+
+                HashSet<NetworkObject> processed = new HashSet<NetworkObject>();
+
+                foreach (Collider2D hit in hits)
+                {
+
+                    if (!IsInsideAbilityCone(hit.bounds.center, _abilityForward))
+                    {
+                        continue;
+                    }
+
+                    NetworkProjectile projectile =
+                        hit.GetComponentInParent<NetworkProjectile>();
+
+                    if (projectile != null)
+                    {
+                        if (projectile.ShooterClientId == OwnerClientId)
+                        {
+                            continue;
+                        }
+
+                        if (!processed.Add(projectile.NetworkObject))
+                            continue;
+
+                        projectile.ReflectServer(_projectileReflectMinimumSpeed);
+
+                        continue;
+                    }
+
+                    NetworkPlayerState player =
+                        hit.GetComponentInParent<NetworkPlayerState>();
+
+                    if (player == null)
+                    {
+                        continue;
+                    }
+
+                    if (player.OwnerClientId == OwnerClientId)
+                    {
+                        continue;
+                    }
+
+                    ApplyUpwardImpulse(player);
+                }
+            }
+
+            private void ApplyUpwardImpulse(NetworkPlayerState targetPlayer)
+            {
+                if (!IsServer || targetPlayer == null)
+                    return;
+
+                NetworkPlayerCombat targetCombat =
+                    targetPlayer.GetComponent<NetworkPlayerCombat>();
+
+                if (targetCombat == null)
+                {
+                    Debug.LogWarning(
+                        $"[Impulse] RebeldeCombat não encontrado em {targetPlayer.name}.",
+                        targetPlayer);
+                    return;
+                }
+
+                targetCombat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
+            }
+
+            private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
+            {
+                if(Mathf.Abs(aimDirection.x) > 0.01f)
+                {
+                    return aimDirection.x < 0f ? Vector2.left : Vector2.right;
+                }
+                else if(Mathf.Abs(moveDirection.x) > 0.01f)
+                {
+                    return moveDirection.x < 0f ?Vector2.left : Vector2.right;
+                }
+
+                if(_facingSprite != null)
+                {
+                    return _facingSprite.flipX ? Vector2.left : Vector2.right;
+                }
+
+                return _abilityForward;
+            }
+        }
+
+    }

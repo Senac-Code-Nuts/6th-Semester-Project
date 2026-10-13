@@ -26,8 +26,10 @@ namespace PiGame.Gameplay
         private SpriteRenderer _bodySpriteRenderer;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
+        private Animator _animator;
         private bool _isInvulnerable;
         private Coroutine _knockbackRoutine;
+        private Coroutine _hitAnimationRoutine;
 
         public event Action StateChanged;
         public event Action<NetworkPlayerState, ulong> Died;
@@ -48,6 +50,7 @@ namespace PiGame.Gameplay
             _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
             _colliders = GetComponentsInChildren<Collider2D>(true);
             _rigidbody = GetComponent<Rigidbody2D>();
+            _animator = GetComponent<Animator>();
         }
 
         public override void OnNetworkSpawn()
@@ -62,6 +65,7 @@ namespace PiGame.Gameplay
 
             ApplyAlivePresentation(_isAlive.Value);
             ApplyHealthPresentation();
+            UpdateDeathAnimation(_isAlive.Value);
             StateChanged?.Invoke();
         }
 
@@ -200,7 +204,16 @@ namespace PiGame.Gameplay
         private void HandleAliveChanged(bool previousValue, bool currentValue)
         {
             ApplyAlivePresentation(currentValue);
+            UpdateDeathAnimation(currentValue);
             StateChanged?.Invoke();
+        }
+
+        private void UpdateDeathAnimation(bool isAlive)
+        {
+            if (_animator != null && _animator.runtimeAnimatorController != null)
+            {
+                _animator.SetBool("isDead", !isAlive);
+            }
         }
 
         private void ApplyAlivePresentation(bool isAlive)
@@ -224,7 +237,38 @@ namespace PiGame.Gameplay
         private void HandleIntChanged(int previousValue, int currentValue)
         {
             ApplyHealthPresentation();
+            if (currentValue < previousValue && IsAlive)
+            {
+                PlayHitAnimation();
+            }
             StateChanged?.Invoke();
+        }
+
+        private void PlayHitAnimation()
+        {
+            if (_animator == null || _animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            _animator.SetBool("isHit", true);
+            if (_hitAnimationRoutine != null)
+            {
+                StopCoroutine(_hitAnimationRoutine);
+            }
+
+            _hitAnimationRoutine = StartCoroutine(ResetHitAnimationRoutine());
+        }
+
+        private IEnumerator ResetHitAnimationRoutine()
+        {
+            yield return null;
+            if (_animator != null)
+            {
+                _animator.SetBool("isHit", false);
+            }
+
+            _hitAnimationRoutine = null;
         }
 
         private void ApplyHealthPresentation()

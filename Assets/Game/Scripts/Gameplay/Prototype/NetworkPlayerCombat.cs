@@ -19,6 +19,7 @@ namespace PiGame.Gameplay
 
         private NetworkPlayerState _playerState;
         private PlayerMove _playerMove;
+        private Animator _animator;
         private ICharacterCombat _characterCombat;
         private Vector2 _aimDirection = Vector2.right;
         private LobbyInputDeviceKind _localAimInputDevice;
@@ -33,6 +34,7 @@ namespace PiGame.Gameplay
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _playerMove = GetComponent<PlayerMove>();
+            _animator = GetComponent<Animator>();
             _characterCombat = GetComponent<ICharacterCombat>();
             if (_characterCombat == null || _aimIndicator == null)
             {
@@ -195,11 +197,14 @@ namespace PiGame.Gameplay
                 if (!_preventAbilityOnWallOrWallJump
                     || _playerMove.CanBeginWallRestrictedAbility())
                 {
+                    SetSkillAnimation(true);
                     BeginAbilityRpc(_aimDirection, moveDirection);
                 }
             }
             else
             {
+                TriggerSkillReleaseAnimation();
+                SetSkillAnimation(false);
                 EndAbilityRpc(_aimDirection, moveDirection);
             }
         }
@@ -223,6 +228,34 @@ namespace PiGame.Gameplay
             }
 
             _localAbilityHeld = false;
+            SetSkillAnimation(false);
+        }
+
+        private void SetSkillAnimation(bool isActive)
+        {
+            if (_animator != null && _animator.runtimeAnimatorController != null)
+            {
+                _animator.SetBool("isSkill", isActive);
+            }
+        }
+
+        private void TriggerSkillReleaseAnimation()
+        {
+            if (_animator == null || _animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            AnimatorControllerParameter[] parameters = _animator.parameters;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].name == "skillRelease"
+                    && parameters[i].type == AnimatorControllerParameterType.Trigger)
+                {
+                    _animator.SetTrigger("skillRelease");
+                    return;
+                }
+            }
         }
 
         [Rpc(SendTo.Server)]
@@ -373,6 +406,27 @@ namespace PiGame.Gameplay
             _aimIndicator.color = _playerState.IndicatorColor;
             _aimIndicator.transform.localPosition =
                 (Vector3)(_aimDirection * _aimIndicatorDistance);
+        }
+        [Rpc(SendTo.Owner)]
+        public void ApplyUpwardImpulseRpc( float impulse, RpcParams rpcParams = default)
+        {
+            if (!IsOwner)
+                return;
+
+            Rigidbody2D rigidbody = GetComponentInParent<Rigidbody2D>();
+
+            if (rigidbody == null)
+            {
+                Debug.LogWarning(
+                    "[Impulse] Rigidbody2D não encontrado.",
+                    this);
+                return;
+            }
+
+            Vector2 velocity = rigidbody.linearVelocity;
+            velocity.y = Mathf.Max(velocity.y, impulse);
+            rigidbody.linearVelocity = velocity;
+
         }
     }
 }
