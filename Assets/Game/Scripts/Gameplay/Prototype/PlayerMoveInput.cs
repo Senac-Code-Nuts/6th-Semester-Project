@@ -100,23 +100,21 @@ namespace PiGame.Gameplay
 
         private bool ConfigureInput()
         {
-            InputAction move = _moveAction != null ? _moveAction.action : null;
-            InputAction jump = _jumpAction != null ? _jumpAction.action : null;
-            InputAction crouch = _crouchAction != null ? _crouchAction.action : null;
-            InputAction drop = _dropThroughAction != null ? _dropThroughAction.action : null;
-            InputAction aim = _aimFireAction != null ? _aimFireAction.action : null;
-            InputAction ability = _abilityAction != null ? _abilityAction.action : null;
-            if (move == null || jump == null || crouch == null || drop == null
-                || aim == null || ability == null || move.actionMap == null
-                || move.actionMap != jump.actionMap || move.actionMap != crouch.actionMap
-                || move.actionMap != drop.actionMap || move.actionMap != aim.actionMap
-                || move.actionMap != ability.actionMap)
+            InputActionReference[] references =
+                { _moveAction, _jumpAction, _crouchAction, _dropThroughAction, _aimFireAction, _abilityAction };
+            InputActionMap actionMap = null;
+            foreach (InputActionReference reference in references)
             {
-                Debug.LogError("Configure Move, Jump, Crouch, DropThrough, AimFire e Ability do mesmo Action Map no PlayerMoveInput.", this);
-                return false;
+                InputActionMap map = reference != null ? reference.action?.actionMap : null;
+                if (map == null || (actionMap != null && map != actionMap))
+                {
+                    Debug.LogError("Configure Move, Jump, Crouch, DropThrough, AimFire e Ability do mesmo Action Map no PlayerMoveInput.", this);
+                    return false;
+                }
+                actionMap = map;
             }
 
-            _playerActions = move.actionMap;
+            _playerActions = actionMap;
             return true;
         }
     }
