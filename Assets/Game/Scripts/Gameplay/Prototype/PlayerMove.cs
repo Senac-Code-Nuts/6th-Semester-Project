@@ -1,30 +1,19 @@
-using UnityEngine;
 using Unity.Netcode;
-using UnityEngine.InputSystem;
-using System;
-using PiGame.Input;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace PiGame.Gameplay
 {
     [RequireComponent(typeof(Rigidbody2D))]
-    public class PlayerMove : NetworkBehaviour, IGameplayInputBlocker
+    public class PlayerMove : NetworkBehaviour
     {
+        [Header("Components")]
+        [SerializeField] private PlayerMoveInput _input;
+        [SerializeField] private PlayerAnimatorController _presentation;
+
+        [Header("Movement")]
         [SerializeField] private float _moveSpeed = 7f;
         [SerializeField] private float _jumpForce = 12f;
-
-        [SerializeField] private InputActionReference _moveAction;
-        [SerializeField] private InputActionReference _jumpAction;
-        [SerializeField] private InputActionReference _crouchAction;
-        [SerializeField] private InputActionReference _dropThroughAction;
-        [SerializeField] private InputActionReference _aimFireAction;
-        [SerializeField] private InputActionReference _abilityAction;
-
-        private Rigidbody2D _rigidbody;
-        private BoxCollider2D _boxCollider2D;
-        private NetworkPlayerState _playerState;
-
-        private Animator _playerAnimator;
-        private SpriteRenderer _spriteRenderer;
 
         [Header("Ground")]
         [SerializeField] private float _groundCheckDistance = 0.1f;
@@ -33,17 +22,10 @@ namespace PiGame.Gameplay
 
         [Header("Platforms")]
         [SerializeField, Min(0.1f)] private float _dropThroughTimeoutSeconds = 1f;
-        private RaycastHit2D _groundHit;
-        private Collider2D _ignoredPlatform;
-        private float _dropThroughSurfaceY;
-        private float _dropThroughEndsAt;
 
         [Header("Jump")]
         [SerializeField] private float _jumpBufferTime;
         [SerializeField] private float _coyoteTimer;
-        private float _jumpBufferCounter;
-        private float _coyoteCounter;
-
 
         [Header("Wall")]
         [SerializeField] private Transform _wallCheck;
@@ -51,132 +33,118 @@ namespace PiGame.Gameplay
         [SerializeField] private LayerMask _wallLayer;
         [SerializeField] private float _wallStickTime = 0.5f;
         [SerializeField] private float _wallSlideSpeed = 3f;
-        [SerializeField] private float _wallCheckXPos;
 
-        [Header("WallJump")]
+        [Header("Wall Jump")]
         [SerializeField] private float _wallJumpHorizontalForce = 10f;
         [SerializeField] private float _wallJumpVerticalForce = 12f;
         [SerializeField] private float _wallJumpControlLockTime = 0.2f;
 
         [Header("Crouch")]
-        [SerializeField] private float _colliderShirnkOffset;
-        [SerializeField] private float _colliderShirnkSize;
+        [FormerlySerializedAs("_colliderShirnkOffset")]
+        [SerializeField] private float _crouchColliderOffset;
+        [FormerlySerializedAs("_colliderShirnkSize")]
+        [SerializeField] private float _crouchColliderHeightMultiplier;
+
+        private readonly NetworkVariable<bool> _crouching = new(false,
+            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        private Rigidbody2D _rigidbody;
+        private BoxCollider2D _bodyCollider;
+        private NetworkPlayerState _playerState;
+        private bool _referencesConfigured;
         private Vector2 _originalColliderSize;
         private Vector2 _originalColliderOffset;
-
+        private float _horizontalInput;
+        private float _facingInput;
+        private Vector2 _lastMovementDirection = Vector2.right;
         private bool _isGrounded;
+        private bool _isJumping;
         private bool _isTouchingWall;
         private bool _isWallSliding;
-        private NetworkVariable<bool> _isCrounching = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        private bool _isCrouching;
         private bool _isDroppingFromWall;
-
-        private float _stickTimer;
-
         private int _wallDirection;
+        private float _stickTimer;
         private float _wallJumpControlTimer;
-        private bool _isGameplayInputBlocked;
-        private bool _waitForJumpRelease;
+        private float _jumpBufferCounter;
+        private float _coyoteCounter;
+        private bool _isInputBlocked;
         private bool _hasHorizontalMovementOverride;
         private float _horizontalMovementOverrideSpeed;
-        private InputActionMap _playerActions;
+        private RaycastHit2D _groundHit;
+        private Collider2D _ignoredPlatform;
+        private float _dropThroughSurfaceY;
+        private float _dropThroughEndsAt;
 
-        public bool IsCrouching => _isCrouching;
-        public bool IsWallSliding => _isWallSliding;
-
-        public bool CanBeginWallRestrictedAbility()
-        {
-            return !_boxCollider2D.IsTouchingLayers(_wallLayer)
-                && _wallJumpControlTimer <= 0f;
-        }
-
-        public Vector2 ReadMovementDirection()
-        {
-            float horizontal = _moveAction.action.ReadValue<Vector2>().x;
-            if (Mathf.Abs(horizontal) <= 0.01f)
-            {
-                horizontal = _spriteRenderer.flipX ? -1f : 1f;
-            }
-
-            return horizontal < 0f ? Vector2.left : Vector2.right;
-        }
+        public bool IsCrouching => _crouching.Value;
 
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody2D>();
+            _bodyCollider = GetComponent<BoxCollider2D>();
             _playerState = GetComponent<NetworkPlayerState>();
-            _playerAnimator = GetComponent<Animator>();
-            _spriteRenderer = GetComponent<SpriteRenderer>();
-            _boxCollider2D = GetComponent<BoxCollider2D>();
-
-            _originalColliderSize = _boxCollider2D.size;
-            _originalColliderOffset = _boxCollider2D.offset;
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            _isCrounching.OnValueChanged += OnCrouchChanged;
-            OnCrouchChanged(false, _isCrounching.Value);
-            if (!IsOwner)
-                return;
-
-            if (!ConfigureInput())
+            if (_rigidbody == null || _bodyCollider == null || _playerState == null
+                || _input == null || _presentation == null
+                || _groundCheck == null || _wallCheck == null)
             {
+                Debug.LogError("Configure os componentes, Ground Check e Wall Check do PlayerMove no prefab.", this);
                 enabled = false;
                 return;
             }
 
-            _playerActions.Enable();
+            _originalColliderSize = _bodyCollider.size;
+            _originalColliderOffset = _bodyCollider.offset;
+            _referencesConfigured = true;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (!_referencesConfigured) return;
+            _crouching.OnValueChanged += OnCrouchChanged;
+            OnCrouchChanged(false, _crouching.Value);
         }
 
         public override void OnNetworkDespawn()
         {
-            if (!IsOwner)
-            {
-                _isCrounching.OnValueChanged -= OnCrouchChanged;
-                OnCrouchChanged(false, false);
-                return;
-            }
-
-            _isGameplayInputBlocked = false;
-            _waitForJumpRelease = false;
+            _crouching.OnValueChanged -= OnCrouchChanged;
+            if (!_referencesConfigured) return;
+            _isInputBlocked = false;
             _hasHorizontalMovementOverride = false;
+            _lastMovementDirection = Vector2.right;
+            _jumpBufferCounter = 0f;
             RestorePlatformCollision();
-            ResetCrouch();
-            _playerActions?.Disable();
-            _isCrounching.OnValueChanged -= OnCrouchChanged;
+            if (IsOwner) ResetCrouch();
             OnCrouchChanged(false, false);
         }
 
-        private void Update()
+        // PlayerMoveInput chama uma vez por Update, preservando o ciclo atual da física.
+        public void ProcessInput(Vector2 direction, bool jumpPressed, bool jumpReleased,
+            bool crouchRequested, bool dropRequested, bool actionHeld)
         {
-            if (!IsOwner)
-                return;
-
+            if (!isActiveAndEnabled || !IsSpawned || !IsOwner) return;
+            _horizontalInput = direction.x;
+            if (Mathf.Abs(_horizontalInput) > 0.01f)
+                _lastMovementDirection = _horizontalInput < 0f ? Vector2.left : Vector2.right;
+            _facingInput = 0f;
             UpdatePlatformCollision();
+            ApplyMovement(jumpPressed, jumpReleased, crouchRequested, dropRequested, actionHeld);
+            _presentation.UpdateMovement(_rigidbody.linearVelocity, _facingInput,
+                _isJumping, IsCrouching, _isWallSliding);
+        }
 
-            if (_isGameplayInputBlocked)
+        private void ApplyMovement(bool jumpPressed, bool jumpReleased,
+            bool crouchRequested, bool dropRequested, bool actionHeld)
+        {
+            if (_isInputBlocked || !_playerState.CanAct)
             {
                 ResetCrouch();
-                _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
-                UpdateAnimatorState();
+                _jumpBufferCounter = 0f;
+                if (!_playerState.CanAct) RestorePlatformCollision();
+                _rigidbody.linearVelocity = new Vector2(0f,
+                    _playerState.CanAct ? _rigidbody.linearVelocity.y : 0f);
                 return;
             }
 
-            if (_playerState != null && !_playerState.CanAct)
-            {
-                RestorePlatformCollision();
-                ResetCrouch();
-                _rigidbody.linearVelocity = Vector2.zero;
-                UpdateAnimatorState();
-                return;
-            }
-
-            if (_wallJumpControlTimer > 0f)
-            {
-                _wallJumpControlTimer -= Time.deltaTime;
-            }
-
+            _wallJumpControlTimer = Mathf.Max(0f, _wallJumpControlTimer - Time.deltaTime);
             CheckGround();
             CheckWall();
             if (_hasHorizontalMovementOverride)
@@ -184,51 +152,43 @@ namespace PiGame.Gameplay
                 ResetCrouch();
                 _rigidbody.linearVelocity = new Vector2(
                     _horizontalMovementOverrideSpeed, _rigidbody.linearVelocity.y);
-                _playerAnimator.SetFloat("xVelocity", Mathf.Abs(_horizontalMovementOverrideSpeed));
-                _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
-                _spriteRenderer.flipX = _horizontalMovementOverrideSpeed < 0f;
-                UpdateAnimatorState();
+                _facingInput = _horizontalMovementOverrideSpeed;
                 return;
             }
 
-            UpdateCrouch();
-            HandlePlatformDrop();
+            UpdateCrouch(crouchRequested, actionHeld);
+            if (dropRequested) TryDropThroughPlatform();
             HandleMovement();
             HandleWallSlide();
-            HandleJump();
-            UpdateAnimatorState();
-
-
+            HandleJump(jumpPressed, jumpReleased);
         }
 
         public void SetGameplayInputBlocked(bool isBlocked)
         {
-            if (!IsOwner)
-            {
-                return;
-            }
+            if (!IsOwner) return;
+            _isInputBlocked = isBlocked;
+            if (!isBlocked) return;
+            _jumpBufferCounter = 0f;
+            ResetCrouch();
+            _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
+        }
 
-            _isGameplayInputBlocked = isBlocked;
-            _dropThroughAction.action.Reset();
-            if (isBlocked)
-            {
-                _waitForJumpRelease = true;
-            }
+        public Vector2 ReadMovementDirection()
+        {
+            float horizontal = _input.Direction.x;
+            return Mathf.Abs(horizontal) <= 0.01f
+                ? _lastMovementDirection
+                : (horizontal < 0f ? Vector2.left : Vector2.right);
+        }
 
-            if (isBlocked && _rigidbody != null)
-            {
-                ResetCrouch();
-                _rigidbody.linearVelocity = new Vector2(0f, _rigidbody.linearVelocity.y);
-            }
+        public bool CanBeginWallRestrictedAbility()
+        {
+            return !_bodyCollider.IsTouchingLayers(_wallLayer) && _wallJumpControlTimer <= 0f;
         }
 
         public void BeginHorizontalMovementOverride(float speed)
         {
-            if (!IsOwner)
-            {
-                return;
-            }
-
+            if (!IsOwner) return;
             _horizontalMovementOverrideSpeed = speed;
             _hasHorizontalMovementOverride = true;
             ResetCrouch();
@@ -236,163 +196,151 @@ namespace PiGame.Gameplay
 
         public void EndHorizontalMovementOverride()
         {
-            if (IsOwner)
-            {
-                _hasHorizontalMovementOverride = false;
-            }
+            if (IsOwner) _hasHorizontalMovementOverride = false;
         }
 
         private void HandleMovement()
         {
             if (_wallJumpControlTimer > 0f) return;
-
-            Vector2 input = _moveAction.action.ReadValue<Vector2>();
-            float facingInput = input.x;
-            if (_isCrouching)
-            {
-                input.x = 0f;
-            }
-
-            _rigidbody.linearVelocity = new Vector2(input.x * _moveSpeed, _rigidbody.linearVelocity.y);
-
-            _playerAnimator.SetFloat("xVelocity", Math.Abs(_rigidbody.linearVelocity.x));
-            _playerAnimator.SetFloat("yVelocity", _rigidbody.linearVelocity.y);
-
-            if (Mathf.Abs(facingInput) > 0.01f)
-            {
-                _wallCheck.position = new Vector2(
-                    transform.position.x + 0.25f * Mathf.Sign(facingInput),
-                    transform.position.y);
-                _spriteRenderer.flipX = facingInput < 0f;
-            }
-
+            float speed = IsCrouching ? 0f : _horizontalInput * _moveSpeed;
+            _rigidbody.linearVelocity = new Vector2(speed, _rigidbody.linearVelocity.y);
+            _facingInput = _horizontalInput;
+            UpdateWallCheckPosition();
         }
 
-        private void HandleJump()
+        private void HandleJump(bool pressed, bool released)
         {
-            if (_waitForJumpRelease)
+            if (!IsCrouching && pressed) _jumpBufferCounter = _jumpBufferTime;
+            if (released)
             {
-                if (!_jumpAction.action.IsPressed())
-                    _waitForJumpRelease = false;
-                return;
-            }
-
-            if (!_isCrouching && _jumpAction.action.WasPressedThisFrame())
-            {
-                _jumpBufferCounter = _jumpBufferTime;
-            }
-
-
-            if (_jumpAction.action.WasReleasedThisFrame())
-            {
-                _jumpBufferCounter = 0;
-
+                _jumpBufferCounter = 0f;
                 if (_rigidbody.linearVelocity.y > 0f)
-                {
-                    _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, 1);
-
-                }
-
+                    _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, 1f);
             }
 
-
-            if (_jumpBufferCounter > 0f)
+            if (_jumpBufferCounter <= 0f) return;
+            _jumpBufferCounter -= Time.deltaTime;
+            if (_isWallSliding)
             {
-
-                _jumpBufferCounter -= Time.deltaTime;
-
-                if (_isWallSliding)
-                {
-                    float jumpDirection = -_wallDirection;
-
-                    _rigidbody.linearVelocity = new Vector2(jumpDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
-                    _playerAnimator.SetBool("isJumping", true);
-
-                    _wallJumpControlTimer = _wallJumpControlLockTime;
-
-                    _stickTimer = 0f;
-                    _jumpBufferCounter = 0f;
-
-                    return;
-                }
-
-                if (_coyoteCounter > 0f)
-                {
-                    _coyoteCounter = 0f;
-                    _jumpBufferCounter = 0f;
-
-                    _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
-
-                    _playerAnimator.SetBool("isJumping", true);
-                    _isGrounded = false;
-                    return;
-                }
-
+                _rigidbody.linearVelocity = new Vector2(
+                    -_wallDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
+                _wallJumpControlTimer = _wallJumpControlLockTime;
+                _stickTimer = 0f;
             }
+            else if (_coyoteCounter > 0f)
+            {
+                _coyoteCounter = 0f;
+                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
+                _isGrounded = false;
+            }
+            else return;
 
+            _isJumping = true;
+            _jumpBufferCounter = 0f;
         }
 
         private void CheckGround()
         {
-            if (_boxCollider2D == null || _groundCheck == null)
-            {
-                _isGrounded = false;
-                return;
-            }
-
-            Bounds bounds = _boxCollider2D.bounds;
-            Vector2 probeOrigin = new Vector2(
-                _groundCheck.position.x,
-                bounds.min.y + Physics2D.defaultContactOffset);
-            Vector2 probeSize = new Vector2(
-                Mathf.Max(0.05f, bounds.size.x * 0.75f),
-                Physics2D.defaultContactOffset * 2f);
-
-            _groundHit = Physics2D.BoxCast(
-                probeOrigin,
-                probeSize,
-                0f,
-                Vector2.down,
-                _groundCheckDistance,
-                _groundLayer);
-
-            bool isFallingOrStill = _rigidbody.linearVelocity.y <= 0.05f;
-            bool foundFloor = _groundHit.collider != null
-                && _groundHit.collider != _ignoredPlatform
+            Bounds bounds = _bodyCollider.bounds;
+            Vector2 origin = new(_groundCheck.position.x, bounds.min.y + Physics2D.defaultContactOffset);
+            Vector2 size = new(Mathf.Max(0.05f, bounds.size.x * 0.75f), Physics2D.defaultContactOffset * 2f);
+            _groundHit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, _groundCheckDistance, _groundLayer);
+            _isGrounded = _rigidbody.linearVelocity.y <= 0.05f
+                && _groundHit.collider != null && _groundHit.collider != _ignoredPlatform
                 && _groundHit.normal.y >= 0.5f;
-            _isGrounded = isFallingOrStill && foundFloor;
-
             if (_isGrounded)
             {
-                _playerAnimator.SetBool("isJumping", false);
+                _isJumping = false;
                 _coyoteCounter = _coyoteTimer;
             }
-            else
-            {
-                if (_coyoteCounter > 0)
-                {
-                    _coyoteCounter -= Time.deltaTime;
-                }
-            }
+            else _coyoteCounter = Mathf.Max(0f, _coyoteCounter - Time.deltaTime);
         }
 
-        private void HandlePlatformDrop()
+        private void CheckWall()
         {
-            if (!_isGrounded || _ignoredPlatform != null
-                || !_dropThroughAction.action.WasPerformedThisFrame())
+            if (_isGrounded)
+            {
+                _isWallSliding = false;
+                _stickTimer = _wallStickTime;
                 return;
+            }
 
-            Collider2D platform = _groundHit.collider;
-            if (!platform.usedByEffector
-                || !platform.TryGetComponent(out PlatformEffector2D effector)
-                || !effector.isActiveAndEnabled || !effector.useOneWay)
+            UpdateWallCheckPosition();
+            Collider2D wall = Physics2D.OverlapCircle(_wallCheck.position, _wallCheckRadius, _wallLayer);
+            _isTouchingWall = wall != null && wall != _ignoredPlatform;
+            _wallDirection = wall == null ? 0 : (wall.bounds.center.x >= transform.position.x ? 1 : -1);
+        }
+
+        private void UpdateWallCheckPosition()
+        {
+            if (Mathf.Abs(_horizontalInput) > 0.01f)
+                _wallCheck.position = new Vector2(
+                    transform.position.x + 0.25f * Mathf.Sign(_horizontalInput), transform.position.y);
+        }
+
+        private void HandleWallSlide()
+        {
+            if (_wallJumpControlTimer > 0f) return;
+            bool pressingWall = _wallDirection * _horizontalInput > 0f;
+            if (_isDroppingFromWall || _isGrounded || !_isTouchingWall || !pressingWall)
+            {
+                _isWallSliding = false;
+                _stickTimer = 0f;
                 return;
+            }
+
+            _isWallSliding = true;
+            _stickTimer += Time.deltaTime;
+            _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x,
+                _stickTimer < _wallStickTime ? 0f : -_wallSlideSpeed);
+        }
+
+        private void UpdateCrouch(bool requested, bool actionHeld)
+        {
+            SetCrouching(requested && _isGrounded && !actionHeld);
+            if (requested && !_isGrounded && _isTouchingWall)
+            {
+                _isDroppingFromWall = true;
+                _isWallSliding = false;
+                _stickTimer = 0f;
+            }
+            else if (!requested || _isGrounded) _isDroppingFromWall = false;
+        }
+
+        private void ResetCrouch()
+        {
+            SetCrouching(false);
+            _isDroppingFromWall = false;
+        }
+
+        private void SetCrouching(bool crouching)
+        {
+            if (_crouching.Value != crouching) _crouching.Value = crouching;
+        }
+
+        private void OnCrouchChanged(bool previousValue, bool crouching)
+        {
+            _bodyCollider.size = crouching
+                ? new Vector2(_originalColliderSize.x, _originalColliderSize.y * _crouchColliderHeightMultiplier)
+                : _originalColliderSize;
+            _bodyCollider.offset = crouching
+                ? new Vector2(_originalColliderOffset.x, _crouchColliderOffset)
+                : _originalColliderOffset;
+            _presentation.SetCrouching(crouching);
+        }
+
+        private void TryDropThroughPlatform()
+        {
+            if (!_isGrounded || _ignoredPlatform != null) return;
+            Collider2D platform = _groundHit.collider;
+            if (!platform.usedByEffector || !platform.TryGetComponent(out PlatformEffector2D effector)
+                || !effector.isActiveAndEnabled || !effector.useOneWay) return;
 
             ResetCrouch();
             _ignoredPlatform = platform;
             _dropThroughSurfaceY = _groundHit.point.y;
             _dropThroughEndsAt = Time.time + _dropThroughTimeoutSeconds;
-            Physics2D.IgnoreCollision(_boxCollider2D, platform, true);
+            Physics2D.IgnoreCollision(_bodyCollider, platform, true);
             _isGrounded = false;
             _coyoteCounter = 0f;
             _jumpBufferCounter = 0f;
@@ -406,198 +354,20 @@ namespace PiGame.Gameplay
         private void UpdatePlatformCollision()
         {
             if (_ignoredPlatform != null
-                && (_boxCollider2D.bounds.max.y < _dropThroughSurfaceY - Physics2D.defaultContactOffset
-                    || Time.time >= _dropThroughEndsAt))
-                RestorePlatformCollision();
+                && (_bodyCollider.bounds.max.y < _dropThroughSurfaceY - Physics2D.defaultContactOffset
+                    || Time.time >= _dropThroughEndsAt)) RestorePlatformCollision();
         }
 
         private void RestorePlatformCollision()
         {
-            if (_ignoredPlatform != null)
-                Physics2D.IgnoreCollision(_boxCollider2D, _ignoredPlatform, false);
+            if (_ignoredPlatform != null) Physics2D.IgnoreCollision(_bodyCollider, _ignoredPlatform, false);
             _ignoredPlatform = null;
         }
 
         private void OnDisable()
         {
+            _jumpBufferCounter = 0f;
             RestorePlatformCollision();
-        }
-
-        private void CheckWall()
-        {
-            if (_isGrounded)
-            {
-                _isWallSliding = false;
-                _stickTimer = _wallStickTime;
-                return;
-            }
-
-            Vector2 input = _moveAction.action.ReadValue<Vector2>();
-            if (Mathf.Abs(input.x) > 0.01f)
-            {
-                _wallCheck.position = new Vector2(
-                    transform.position.x + 0.25f * Mathf.Sign(input.x),
-                    transform.position.y);
-            }
-
-            Collider2D wall = Physics2D.OverlapCircle(
-                _wallCheck.position,
-                _wallCheckRadius,
-                _wallLayer);
-
-            _isTouchingWall = wall != null && wall != _ignoredPlatform;
-            if (wall != null)
-            {
-                _wallDirection = wall.bounds.center.x >= transform.position.x ? 1 : -1;
-            }
-            else
-            {
-                _wallDirection = 0;
-            }
-
-        }
-
-        private bool IsPressingAgainstWall()
-        {
-            Vector2 input = _moveAction.action.ReadValue<Vector2>();
-
-            if (_wallDirection != 0)
-            {
-
-                return (_wallDirection * input.x) > 0;
-
-            }
-
-            return false;
-        }
-
-        private bool ConfigureInput()
-        {
-            InputAction move = _moveAction != null ? _moveAction.action : null;
-            InputAction jump = _jumpAction != null ? _jumpAction.action : null;
-            InputAction crouch = _crouchAction != null ? _crouchAction.action : null;
-            InputAction dropThrough = _dropThroughAction != null ? _dropThroughAction.action : null;
-            InputAction aimFire = _aimFireAction != null ? _aimFireAction.action : null;
-            InputAction ability = _abilityAction != null ? _abilityAction.action : null;
-            if (move == null || jump == null || crouch == null || dropThrough == null
-                || aimFire == null || ability == null
-                || move.actionMap != jump.actionMap
-                || move.actionMap != crouch.actionMap
-                || move.actionMap != dropThrough.actionMap
-                || move.actionMap != aimFire.actionMap
-                || move.actionMap != ability.actionMap)
-            {
-                Debug.LogError("Configure Move, Jump, Crouch, DropThrough, AimFire e Ability do mesmo Action Map no PlayerMove.", this);
-                return false;
-            }
-
-            _playerActions = move.actionMap;
-            new InputBindingService(_playerActions.asset).Load();
-            return true;
-        }
-
-        private void UpdateCrouch()
-        {
-            bool wantsToCrouch = _crouchAction.action.IsPressed();
-            bool isAimingOrUsingAbility = _aimFireAction.action.IsPressed()
-                || _abilityAction.action.IsPressed();
-            _isCrouching = wantsToCrouch && _isGrounded && !isAimingOrUsingAbility;
-            SyncCrouch();
-
-            if (wantsToCrouch && !_isGrounded && _isTouchingWall)
-            {
-                _isDroppingFromWall = true;
-                _isWallSliding = false;
-                _stickTimer = 0f;
-            }
-            else if (!wantsToCrouch || _isGrounded)
-            {
-                _isDroppingFromWall = false;
-            }
-        }
-
-        private void ResetCrouch()
-        {
-            _isCrouching = false;
-            _isDroppingFromWall = false;
-            SyncCrouch();
-        }
-
-        private void SyncCrouch()
-        {
-            if (_isCrounching.Value != _isCrouching)
-                _isCrounching.Value = _isCrouching;
-        }
-
-        private void UpdateAnimatorState()
-        {
-            if (_playerAnimator == null || _playerAnimator.runtimeAnimatorController == null)
-            {
-                return;
-            }
-
-            _playerAnimator.SetBool("isCrouching", _isCrouching);
-            _playerAnimator.SetBool("isWallSliding", _isWallSliding);
-        }
-
-        private void HandleWallSlide()
-        {
-            if (_wallJumpControlTimer > 0f) return;
-
-            if (_isDroppingFromWall)
-            {
-                _isWallSliding = false;
-                _stickTimer = 0f;
-                return;
-            }
-
-            if (_isGrounded)
-            {
-                _isWallSliding = false;
-                _stickTimer = 0f;
-                return;
-            }
-
-            if (!_isTouchingWall || !IsPressingAgainstWall())
-            {
-                _isWallSliding = false;
-                _stickTimer = 0f;
-                return;
-            }
-
-            _isWallSliding = true;
-
-            _stickTimer += Time.deltaTime;
-
-            if (_stickTimer < _wallStickTime)
-            {
-                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, 0f);
-            }
-            else
-            {
-                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, -_wallSlideSpeed);
-            }
-        }
-
-        private void OnCrouchChanged(bool previousValue,bool newValue)
-        {
-            if(newValue)
-            {
-                _boxCollider2D.size = new Vector2(
-                _originalColliderSize.x,
-                _originalColliderSize.y * _colliderShirnkSize
-                );
-
-                _boxCollider2D.offset = new Vector2(
-                    _originalColliderOffset.x,
-                    _colliderShirnkOffset
-                );
-            }
-            else
-            {
-                _boxCollider2D.size = _originalColliderSize;
-                _boxCollider2D.offset = _originalColliderOffset;
-            }
         }
     }
 }

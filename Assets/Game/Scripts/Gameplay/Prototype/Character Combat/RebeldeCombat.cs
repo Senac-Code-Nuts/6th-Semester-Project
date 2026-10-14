@@ -140,7 +140,8 @@ namespace PiGame.Gameplay
 
             _ammoIndicatorsView.SetCount(
                 _ammo.Value,
-                IsOwner && _playerState.CanAct
+                IsOwner && _playerState.CanAct,
+                _playerState.IndicatorColor
             );
         }
         public void AddShotServer()
