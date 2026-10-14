@@ -316,8 +316,11 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     {
         for (int index = 0; index < _ammoIndicators.Length; index++)
         {
-            _ammoIndicators[index].enabled = IsOwner && _playerState != null && _playerState.CanAct
+            bool visible = IsOwner && _playerState != null && _playerState.CanAct
                 && index < _ammo.Value;
+            _ammoIndicators[index].enabled = visible;
+            _ammoIndicators[index].gameObject.SetActive(visible);
+            if (visible) _ammoIndicators[index].color = _playerState.IndicatorColor;
         }
     }
 

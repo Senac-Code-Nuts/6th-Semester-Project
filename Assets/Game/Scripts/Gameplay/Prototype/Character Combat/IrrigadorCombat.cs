@@ -67,7 +67,7 @@ namespace PiGame.Gameplay
         {
             _nails.OnValueChanged -= HandleNailsChanged;
             _playerState.StateChanged -= RefreshNailIndicators;
-            _nailIndicators.SetCount(0, false);
+            _nailIndicators.SetCount(0, false, _playerState.IndicatorColor);
         }
 
         private void HandleNailsChanged(int previousValue, int currentValue)
@@ -77,7 +77,8 @@ namespace PiGame.Gameplay
 
         private void RefreshNailIndicators()
         {
-            _nailIndicators.SetCount(_nails.Value, IsOwner && _playerState.CanAct);
+            _nailIndicators.SetCount(_nails.Value, IsOwner && _playerState.CanAct,
+                _playerState.IndicatorColor);
         }
 
         public void ShootServer(Vector2 direction)
