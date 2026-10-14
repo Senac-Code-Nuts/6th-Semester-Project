@@ -658,6 +658,7 @@ GameObject:
   - component: {fileID: 880000000000000004}
   - component: {fileID: 750885784796070611}
   - component: {fileID: 381949192463674323}
+  - component: {fileID: 5017492614342648793}
   m_Layer: 7
   m_Name: Player_Cowboy
   m_TagString: Untagged
@@ -867,7 +868,6 @@ MonoBehaviour:
   _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _crouchAction: {fileID: 7040659881675835329, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
-  _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
   _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _groundCheckDistance: 0.1
@@ -928,8 +928,8 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.75, y: 1.3125}
+    pivot: {x: 0.5, y: 0.546875}
+    oldSize: {x: 2, y: 2}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -1048,6 +1048,26 @@ MonoBehaviour:
       NameHash: -357477766
       Synchronize: 1
       ParameterType: 4
+    - name: isCrouching
+      NameHash: 1035320983
+      Synchronize: 1
+      ParameterType: 4
+    - name: isWallSliding
+      NameHash: -1514754429
+      Synchronize: 1
+      ParameterType: 4
+    - name: isDead
+      NameHash: 1276664872
+      Synchronize: 1
+      ParameterType: 4
+    - name: isHit
+      NameHash: -1235987232
+      Synchronize: 1
+      ParameterType: 4
+    - name: isSkill
+      NameHash: 1462408521
+      Synchronize: 1
+      ParameterType: 4
   AnimatorParametersExpanded: 0
 --- !u!95 &381949192463674323
 Animator:
@@ -1071,6 +1091,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &5017492614342648793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1b57c4c3675c854fa28845ddada60ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.CowboySoundManager
 --- !u!1 &2905575713748823423
 GameObject:
   m_ObjectHideFlags: 0

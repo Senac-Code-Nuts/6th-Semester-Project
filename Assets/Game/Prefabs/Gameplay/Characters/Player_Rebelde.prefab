@@ -113,6 +113,7 @@ GameObject:
   - component: {fileID: 750885784796070611}
   - component: {fileID: 381949192463674323}
   - component: {fileID: 6702579707043571864}
+  - component: {fileID: 4024111038610460080}
   m_Layer: 7
   m_Name: Player_Rebelde
   m_TagString: Untagged
@@ -512,6 +513,10 @@ MonoBehaviour:
       NameHash: 1462408521
       Synchronize: 1
       ParameterType: 4
+    - name: skillRelease
+      NameHash: -2021422826
+      Synchronize: 1
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!95 &381949192463674323
 Animator:
@@ -549,6 +554,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.AmmoIndicatorsView
   _indicators:
   - {fileID: 3908607614122648960}
+--- !u!114 &4024111038610460080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb557ab15c050c4408a495ddb3c4dde2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.RebeldeSoundManager
 --- !u!1 &2905575713748823423
 GameObject:
   m_ObjectHideFlags: 0

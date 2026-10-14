@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 3317054087486104629}
   - component: {fileID: 3216733317862606300}
   - component: {fileID: 7423979285644332156}
+  - component: {fileID: 5639254154121186163}
   m_Layer: 7
   m_Name: Player_Clank
   m_TagString: Untagged
@@ -120,7 +121,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1910428715
+  GlobalObjectIdHash: 1453141490
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -336,8 +337,8 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.9375, y: 1.3125}
+    pivot: {x: 0.484375, y: 0.546875}
+    oldSize: {x: 2, y: 2}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -403,6 +404,18 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   _knockbackWireColor: {r: 1, g: 0, b: 0, a: 1}
+--- !u!114 &5639254154121186163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af5c5d8aa6fd56b408c9992bdb255866, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.FumaceiroSoundManager
 --- !u!1 &1364266427991100992
 GameObject:
   m_ObjectHideFlags: 0
