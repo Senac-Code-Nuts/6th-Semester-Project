@@ -56,6 +56,7 @@ namespace PiGame.Gameplay
         private Vector2 _originalColliderOffset;
         private float _horizontalInput;
         private float _facingInput;
+        private Vector2 _lastMovementDirection = Vector2.right;
         private bool _isGrounded;
         private bool _isJumping;
         private bool _isTouchingWall;
@@ -108,6 +109,7 @@ namespace PiGame.Gameplay
             if (!_referencesConfigured) return;
             _isInputBlocked = false;
             _hasHorizontalMovementOverride = false;
+            _lastMovementDirection = Vector2.right;
             _jumpBufferCounter = 0f;
             RestorePlatformCollision();
             if (IsOwner) ResetCrouch();
@@ -120,6 +122,8 @@ namespace PiGame.Gameplay
         {
             if (!isActiveAndEnabled || !IsSpawned || !IsOwner) return;
             _horizontalInput = direction.x;
+            if (Mathf.Abs(_horizontalInput) > 0.01f)
+                _lastMovementDirection = _horizontalInput < 0f ? Vector2.left : Vector2.right;
             _facingInput = 0f;
             UpdatePlatformCollision();
             ApplyMovement(jumpPressed, jumpReleased, crouchRequested, dropRequested, actionHeld);
@@ -173,7 +177,7 @@ namespace PiGame.Gameplay
         {
             float horizontal = _input.Direction.x;
             return Mathf.Abs(horizontal) <= 0.01f
-                ? _presentation.FacingDirection
+                ? _lastMovementDirection
                 : (horizontal < 0f ? Vector2.left : Vector2.right);
         }
 

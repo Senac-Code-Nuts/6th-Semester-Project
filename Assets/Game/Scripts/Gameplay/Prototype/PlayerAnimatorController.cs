@@ -1,8 +1,9 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace PiGame.Gameplay
 {
-    public class PlayerAnimatorController : MonoBehaviour
+    public class PlayerAnimatorController : NetworkBehaviour
     {
         [SerializeField] private SpriteRenderer _spriteRenderer;
         [SerializeField] private bool _useAnimations = true;
@@ -14,7 +15,11 @@ namespace PiGame.Gameplay
         private static readonly int IsCrouching = Animator.StringToHash("isCrouching");
         private static readonly int IsWallSliding = Animator.StringToHash("isWallSliding");
 
-        public Vector2 FacingDirection => _spriteRenderer.flipX ? Vector2.left : Vector2.right;
+        private readonly NetworkVariable<bool> _facingLeft = new(false,
+            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        private float _movementFacingInput;
+        private float _aimFacingInput;
+        private bool _isAiming;
 
         private void Awake()
         {
@@ -26,11 +31,35 @@ namespace PiGame.Gameplay
             }
         }
 
+        public override void OnNetworkSpawn()
+        {
+            if (!enabled) return;
+            _facingLeft.OnValueChanged += OnFacingChanged;
+            OnFacingChanged(false, _facingLeft.Value);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _facingLeft.OnValueChanged -= OnFacingChanged;
+            _isAiming = false;
+            _movementFacingInput = 0f;
+            _aimFacingInput = 0f;
+        }
+
+        public void SetAimFacing(Vector2 direction, bool isAiming)
+        {
+            if (!enabled || !IsSpawned || !IsOwner) return;
+            _isAiming = isAiming;
+            _aimFacingInput = direction.x;
+            UpdateFacing();
+        }
+
         public void UpdateMovement(Vector2 velocity, float facingInput,
             bool isJumping, bool isCrouching, bool isWallSliding)
         {
-            if (!enabled) return;
-            if (Mathf.Abs(facingInput) > 0.01f) _spriteRenderer.flipX = facingInput < 0f;
+            if (!enabled || !IsSpawned || !IsOwner) return;
+            _movementFacingInput = facingInput;
+            UpdateFacing();
             if (!_useAnimations) return;
             _animator.SetFloat(XVelocity, Mathf.Abs(velocity.x));
             _animator.SetFloat(YVelocity, velocity.y);
@@ -43,6 +72,20 @@ namespace PiGame.Gameplay
         {
             if (enabled && _useAnimations)
                 _animator.SetBool(IsCrouching, isCrouching);
+        }
+
+        private void UpdateFacing()
+        {
+            float direction = _isAiming ? _aimFacingInput : _movementFacingInput;
+            // Mira vertical e personagem parado mantêm o último lado visível.
+            if (Mathf.Abs(direction) <= 0.01f) return;
+            bool facingLeft = direction < 0f;
+            if (_facingLeft.Value != facingLeft) _facingLeft.Value = facingLeft;
+        }
+
+        private void OnFacingChanged(bool previousValue, bool facingLeft)
+        {
+            _spriteRenderer.flipX = facingLeft;
         }
     }
 }
