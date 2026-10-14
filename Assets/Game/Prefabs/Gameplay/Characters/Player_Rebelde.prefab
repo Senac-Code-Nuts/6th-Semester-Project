@@ -113,6 +113,8 @@ GameObject:
   - component: {fileID: 750885784796070611}
   - component: {fileID: 381949192463674323}
   - component: {fileID: 6702579707043571864}
+  - component: {fileID: 890000000000000002}
+  - component: {fileID: 890000000000000001}
   m_Layer: 7
   m_Name: Player_Rebelde
   m_TagString: Untagged
@@ -311,14 +313,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerMove
   ShowTopMostFoldoutHeaderGroup: 1
+  _input: {fileID: 890000000000000001}
+  _presentation: {fileID: 890000000000000002}
   _moveSpeed: 7
   _jumpForce: 12
-  _moveAction: {fileID: -1680190386980627800, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  _crouchAction: {fileID: 7040659881675835329, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
-  _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
@@ -334,12 +332,11 @@ MonoBehaviour:
     m_Bits: 64
   _wallStickTime: 0.5
   _wallSlideSpeed: 3
-  _wallCheckXPos: 0
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
-  _colliderShirnkOffset: -0.35
-  _colliderShirnkSize: 0.5
+  _crouchColliderOffset: -0.35
+  _crouchColliderHeightMultiplier: 0.5
 --- !u!61 &1704202820134216821
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -702,3 +699,36 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &890000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b0749bcb3b0ba4459369646a199b8cb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerAnimatorController
+  _spriteRenderer: {fileID: 8241643279142241313}
+  _animator: {fileID: 381949192463674323}
+--- !u!114 &890000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39ba9d74d6c54831a87b21fea219d1e8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerMoveInput
+  _movement: {fileID: 979296920629469349}
+  _moveAction: {fileID: -1680190386980627800, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _crouchAction: {fileID: 7040659881675835329, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
+  _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
