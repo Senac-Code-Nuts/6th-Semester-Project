@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using PiGame.Sound;
 
 namespace PiGame.Gameplay 
 {
@@ -22,6 +23,7 @@ namespace PiGame.Gameplay
         [Header("Referencer")]
         [SerializeField] private Collider2D _solidCollider;
         private Rigidbody2D _rigidbody;
+        private RebeldeSoundManager _ownerSound;
 
         private bool _isStopped;
         private bool _falling;
@@ -42,7 +44,7 @@ namespace PiGame.Gameplay
             _rigidbody.gravityScale = 0f;
         }
 
-        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed)
+        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed, RebeldeSoundManager ownerSound)
         {
             if (!IsServer)
                 return;
@@ -50,6 +52,8 @@ namespace PiGame.Gameplay
             _shooterClientId = shooterClientId;
 
             _damage = definition.Damage;
+
+            _ownerSound = ownerSound;
 
             _direction = direction.sqrMagnitude > 0f
                 ? direction.normalized
@@ -242,6 +246,11 @@ namespace PiGame.Gameplay
             {
                 StartFalling();
                 return;
+            }
+
+            if(_ownerSound != null)
+            {
+                _ownerSound.PlayRebeldeBounce();
             }
 
             _direction =

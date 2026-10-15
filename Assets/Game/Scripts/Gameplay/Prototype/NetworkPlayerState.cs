@@ -3,6 +3,7 @@ using System;
 using PiGame.Lobby;
 using Unity.Netcode;
 using UnityEngine;
+using PiGame.Sound;
 
 namespace PiGame.Gameplay
 {
@@ -26,6 +27,7 @@ namespace PiGame.Gameplay
         private SpriteRenderer _bodySpriteRenderer;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
+        private GeneralPlayerSoundManager _playerSound;
         private Animator _animator;
         private bool _isInvulnerable;
         private Coroutine _knockbackRoutine;
@@ -51,6 +53,7 @@ namespace PiGame.Gameplay
             _colliders = GetComponentsInChildren<Collider2D>(true);
             _rigidbody = GetComponent<Rigidbody2D>();
             _animator = GetComponent<Animator>();
+            _playerSound = GetComponent<GeneralPlayerSoundManager>();
         }
 
         public override void OnNetworkSpawn()
@@ -158,9 +161,20 @@ namespace PiGame.Gameplay
             }
 
             _currentHealth.Value = Mathf.Max(0, _currentHealth.Value - amount);
+
             if (_currentHealth.Value > 0)
             {
+                if(_playerSound != null)
+                {
+                    _playerSound.PlayHit();
+                }
                 return;
+            }
+
+
+            if(_playerSound != null)
+            {
+                _playerSound.PlayDeathHit();
             }
 
             _isAlive.Value = false;
@@ -184,6 +198,11 @@ namespace PiGame.Gameplay
             TeleportOwnerRpc(
                 position,
                 RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
+            
+            if(_playerSound != null)
+            {
+                _playerSound.PlayRespawn();
+            }
 
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace PiGame.Sound
 {
     public class CowboySoundManager : GeneralPlayerSoundManager

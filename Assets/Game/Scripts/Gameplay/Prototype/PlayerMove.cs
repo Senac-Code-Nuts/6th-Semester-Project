@@ -1,3 +1,4 @@
+using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -51,6 +52,7 @@ namespace PiGame.Gameplay
         private Rigidbody2D _rigidbody;
         private BoxCollider2D _bodyCollider;
         private NetworkPlayerState _playerState;
+        private GeneralPlayerSoundManager _playerSound;
         private bool _referencesConfigured;
         private Vector2 _originalColliderSize;
         private Vector2 _originalColliderOffset;
@@ -82,6 +84,7 @@ namespace PiGame.Gameplay
             _rigidbody = GetComponent<Rigidbody2D>();
             _bodyCollider = GetComponent<BoxCollider2D>();
             _playerState = GetComponent<NetworkPlayerState>();
+            _playerSound = GetComponent<GeneralPlayerSoundManager>();
             if (_rigidbody == null || _bodyCollider == null || _playerState == null
                 || _input == null || _presentation == null
                 || _groundCheck == null || _wallCheck == null)
@@ -220,8 +223,14 @@ namespace PiGame.Gameplay
 
             if (_jumpBufferCounter <= 0f) return;
             _jumpBufferCounter -= Time.deltaTime;
+
+
             if (_isWallSliding)
             {
+                if(_playerSound != null)
+                {
+                    _playerSound.PlayWallJump();
+                }
                 _rigidbody.linearVelocity = new Vector2(
                     -_wallDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
                 _wallJumpControlTimer = _wallJumpControlLockTime;
@@ -229,6 +238,10 @@ namespace PiGame.Gameplay
             }
             else if (_coyoteCounter > 0f)
             {
+                if(_playerSound != null)
+                {
+                    _playerSound.PlayJump();
+                }
                 _coyoteCounter = 0f;
                 _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
                 _isGrounded = false;

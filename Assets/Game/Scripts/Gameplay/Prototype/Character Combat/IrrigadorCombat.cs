@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -39,12 +40,14 @@ namespace PiGame.Gameplay
 
         private NetworkPlayerState _playerState;
         private Rigidbody2D _rigidbody;
+        private IrrigadorSoundManager _irrigadorSound;
         private float _nextShotTime;
 
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _rigidbody = GetComponent<Rigidbody2D>();
+            _irrigadorSound = GetComponent<IrrigadorSoundManager>();
             if (_projectile == null || _projectile.Prefab == null)
             {
                 Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
@@ -100,11 +103,19 @@ namespace PiGame.Gameplay
             Vector3 spawnPosition = transform.position
                 + (Vector3)(shotDirection * _projectileSpawnDistance);
 
+            if(_irrigadorSound != null)
+            {
+                _irrigadorSound.PlayNailShoot();
+            }
+
             NetworkProjectile projectile = Instantiate(
                 _projectile.Prefab, spawnPosition, Quaternion.identity);
             projectile.NetworkObject.Spawn(true);
-            projectile.InitializeServer(
-                OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
+
+            IrrigadorProjectile irrigadorProjectile = projectile.GetComponent<IrrigadorProjectile>();
+            
+            irrigadorProjectile.InitializeServer(
+                OwnerClientId, shotDirection, _projectile, _irrigadorSound);
             
             _nails.Value--;
 
@@ -212,6 +223,11 @@ namespace PiGame.Gameplay
         {
             if (!_magnetActive || _magnetTarget == null)
                 return;
+            
+            if(_irrigadorSound != null)
+            {
+                _irrigadorSound.PlayIrrigadorPull();
+            }
 
             Vector2 toTarget =
                 (Vector2)_magnetTarget.transform.position - _rigidbody.position;
@@ -285,6 +301,11 @@ namespace PiGame.Gameplay
         {
             if(!_abilityActive)
                 return;
+
+            if(_irrigadorSound != null)
+            {
+                _irrigadorSound.PlayIrrigadorSkill();
+            }
             
             for(int i = _abilityTargets.Count - 1; i >=0; i--)
             {

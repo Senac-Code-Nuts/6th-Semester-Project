@@ -1,5 +1,6 @@
 using System.Collections;
 using PiGame.Gameplay;
+using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -62,6 +63,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     private PlayerMove _playerMove;
     private Rigidbody2D _rigidbody;
     private Coroutine _knockbackDisableRoutine;
+    private FumaceiroSoundManager _fumaceiroSound;
 
     private float _nextShotAt;
     private float _crouchTimer;
@@ -147,6 +149,10 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             if (_crouchTimer >= _crouchReloadInterval)
             {
                 _ammo.Value = Mathf.Min(_maximumAmmo, _ammo.Value + 1);
+                if(_fumaceiroSound != null)
+                {
+                    _fumaceiroSound.PlayFumaceiroCatch();
+                }
                 _crouchTimer = 0f;
             }
         }
@@ -176,15 +182,30 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     #region Metodo Do ICharacterCombat
     public void ShootServer(Vector2 direction)
     {
-        if (!IsServer || !enabled || !_playerState.CanAct || _ammo.Value <= 0 || Time.time < _nextShotAt)
+        if (!IsServer || !enabled || !_playerState.CanAct ||  Time.time < _nextShotAt)
         {
             return;
         }
+
+        if(_ammo.Value <= 0 )
+        {
+            if(_fumaceiroSound != null)
+            {
+                _fumaceiroSound.PlayFumaceiroEmpty();
+            }
+            return;
+        }
+
 
         Vector2 shotDirection = direction.sqrMagnitude > 0.01f
             ? direction.normalized
             : Vector2.right;
         Vector3 spawnPosition = transform.position + (Vector3)(shotDirection * _projectileSpawnDistance);
+
+        if(_fumaceiroSound != null)
+        {
+            _fumaceiroSound.PlayFumaceiroThrow();
+        }
 
         NetworkProjectile projectile = Instantiate(_projectile.Prefab, spawnPosition, Quaternion.identity);
         projectile.NetworkObject.Spawn(true);
@@ -226,6 +247,11 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         Vector2 launchVelocity = Vector2.up * _hammerLaunchForce;
 
         ApplyImpulseOwnerRpc(launchVelocity);
+
+        if(_fumaceiroSound != null)
+        {
+            _fumaceiroSound.PlayFumaceiroSkill();
+        }
 
         foreach (Collider2D hitCollider in playerHits)
         {
