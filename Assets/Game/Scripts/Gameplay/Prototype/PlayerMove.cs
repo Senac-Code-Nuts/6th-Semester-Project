@@ -31,6 +31,7 @@ namespace PiGame.Gameplay
         [Header("Wall")]
         [SerializeField] private Transform _wallCheck;
         [SerializeField] private float _wallCheckRadius = 0.15f;
+        [SerializeField] private float _wallCheckOffest = 0.25f;
         [SerializeField] private LayerMask _wallLayer;
         [SerializeField] private float _wallStickTime = 0.5f;
         [SerializeField] private float _wallSlideSpeed = 3f;
@@ -281,20 +282,22 @@ namespace PiGame.Gameplay
             UpdateWallCheckPosition();
             Collider2D wall = Physics2D.OverlapCircle(_wallCheck.position, _wallCheckRadius, _wallLayer);
             _isTouchingWall = wall != null && wall != _ignoredPlatform;
-            _wallDirection = wall == null ? 0 : (wall.bounds.center.x >= transform.position.x ? 1 : -1);
+            _wallDirection = wall == null || Mathf.Abs(_horizontalInput) < 0.01f ? 0 : (_horizontalInput > 0f ? 1 : -1);
+
         }
 
         private void UpdateWallCheckPosition()
         {
             if (Mathf.Abs(_horizontalInput) > 0.01f)
                 _wallCheck.position = new Vector2(
-                    transform.position.x + 0.25f * Mathf.Sign(_horizontalInput), transform.position.y);
+                    transform.position.x + _wallCheckOffest * Mathf.Sign(_horizontalInput), transform.position.y);
         }
 
         private void HandleWallSlide()
         {
             if (_wallJumpControlTimer > 0f) return;
             bool pressingWall = _wallDirection * _horizontalInput > 0f;
+
             if (_isDroppingFromWall || _isGrounded || !_isTouchingWall || !pressingWall)
             {
                 _isWallSliding = false;
