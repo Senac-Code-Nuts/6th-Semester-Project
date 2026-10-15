@@ -19,6 +19,7 @@ namespace PiGame.Gameplay
 
         private NetworkPlayerState _playerState;
         private PlayerMove _playerMove;
+        private PlayerAnimatorController _presentation;
         private Animator _animator;
         private ICharacterCombat _characterCombat;
         private Vector2 _aimDirection = Vector2.right;
@@ -34,11 +35,12 @@ namespace PiGame.Gameplay
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _playerMove = GetComponent<PlayerMove>();
+            _presentation = GetComponent<PlayerAnimatorController>();
             _animator = GetComponent<Animator>();
             _characterCombat = GetComponent<ICharacterCombat>();
-            if (_characterCombat == null || _aimIndicator == null)
+            if (_characterCombat == null || _aimIndicator == null || _presentation == null)
             {
-                Debug.LogError("Configure ICharacterCombat e o indicador de mira no prefab do jogador.", this);
+                Debug.LogError("Configure ICharacterCombat, PlayerAnimatorController e o indicador de mira no prefab do jogador.", this);
                 enabled = false;
             }
         }
@@ -50,7 +52,7 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _aimIndicator.gameObject.SetActive(IsOwner);
+            _aimIndicator.gameObject.SetActive(false);
             _aimIndicator.enabled = false;
             if (IsOwner)
             {
@@ -402,10 +404,14 @@ namespace PiGame.Gameplay
 
         private void RefreshAimIndicator()
         {
-            _aimIndicator.enabled = IsOwner && _localAimHeld && _playerState.IsAlive;
-            _aimIndicator.color = _playerState.IndicatorColor;
+            bool isAiming = IsOwner && _localAimHeld && _playerState.CanAct
+                && !_isGameplayInputBlocked;
+            _aimIndicator.enabled = isAiming;
+            _aimIndicator.gameObject.SetActive(isAiming);
+            _aimIndicator.color = Color.white;
             _aimIndicator.transform.localPosition =
                 (Vector3)(_aimDirection * _aimIndicatorDistance);
+            _presentation.SetAimFacing(_aimDirection, isAiming);
         }
         [Rpc(SendTo.Owner)]
         public void ApplyUpwardImpulseRpc( float impulse, RpcParams rpcParams = default)

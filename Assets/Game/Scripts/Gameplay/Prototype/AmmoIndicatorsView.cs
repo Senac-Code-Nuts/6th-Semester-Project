@@ -6,24 +6,24 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private SpriteRenderer[] _indicators;
 
-        private Color[] _colors;
-
         private void Awake()
         {
-            _colors = new Color[_indicators.Length];
             for (int index = 0; index < _indicators.Length; index++)
             {
-                _colors[index] = _indicators[index].color;
                 _indicators[index].enabled = false;
+                _indicators[index].gameObject.SetActive(false);
             }
         }
 
-        public void SetCount(int count, bool visible)
+        public void SetCount(int count, bool visible, Color color)
         {
             for (int index = 0; index < _indicators.Length; index++)
             {
-                _indicators[index].color = _colors[index];
-                _indicators[index].enabled = visible && index < count;
+                bool showIndicator = visible && index < count;
+                _indicators[index].color = color;
+                _indicators[index].enabled = showIndicator;
+                // O contorno serializado é filho do indicador e acompanha sua visibilidade.
+                _indicators[index].gameObject.SetActive(showIndicator);
             }
         }
     }
