@@ -1,3 +1,4 @@
+
 namespace PiGame.Sound
 {
     public class FumaceiroSoundManager : GeneralPlayerSoundManager

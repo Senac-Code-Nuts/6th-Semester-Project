@@ -1121,6 +1121,7 @@ MonoBehaviour:
   _coyoteTimer: 1
   _wallCheck: {fileID: 4427738194939039848}
   _wallCheckRadius: 0.15
+  _wallCheckOffest: 0.35
   _wallLayer:
     serializedVersion: 2
     m_Bits: 72
@@ -1251,7 +1252,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.7, y: 1.2}
   m_EdgeRadius: 0
 --- !u!95 &3216733317862606300
 Animator:
@@ -1756,7 +1757,7 @@ Transform:
   m_GameObject: {fileID: 8066690880541465582}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.35, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

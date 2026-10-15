@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1805117967
+  GlobalObjectIdHash: 4006005954
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -79,7 +79,7 @@ MonoBehaviour:
   ostSource: {fileID: 1418028061783556953}
   sfxList:
   - sfxType: 0
-    clip: {fileID: 8300000, guid: 2adb4d8be30e78949a508206e13cc3da, type: 3}
+    clip: {fileID: 8300000, guid: f46205c5c259b83488f4f34fbdf02216, type: 3}
   - sfxType: 1
     clip: {fileID: 8300000, guid: 6e578c3df76be5a4480982bf8551413e, type: 3}
   - sfxType: 2

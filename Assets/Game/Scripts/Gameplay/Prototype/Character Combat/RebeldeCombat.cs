@@ -61,8 +61,7 @@ namespace PiGame.Gameplay
             }
             public void ShootServer(Vector2 direction)
             {
-                if (!IsServer || !_playerState.CanAct ||  _projectile == null || !_hasShot.Value
-                    || _projectile.Prefab == null || Time.time < _nextShotTime)
+                if (!IsServer || !_playerState.CanAct)   
                 {
                     return;
                 }
@@ -72,7 +71,13 @@ namespace PiGame.Gameplay
                     if(_rebeldeSound != null)
                     {
                         _rebeldeSound.PlayRebeldeEmpty();
+                        return;
                     }
+                }
+
+                if(_projectile == null || !_hasShot.Value || _projectile.Prefab == null || Time.time < _nextShotTime)
+                {
+                    return;
                 }
 
                 _nextShotTime = Time.time + _shotCooldownSeconds;

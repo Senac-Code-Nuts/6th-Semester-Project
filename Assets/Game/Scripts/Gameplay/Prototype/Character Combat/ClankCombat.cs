@@ -74,7 +74,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         _playerState = GetComponent<NetworkPlayerState>();
         _playerMove = GetComponent<PlayerMove>();
         _rigidbody = GetComponent<Rigidbody2D>();
-
+        _fumaceiroSound = GetComponent<FumaceiroSoundManager>();
         if (_projectile == null || _projectile.Prefab == null
             || _ammoIndicators == null || _ammoIndicators.Length != _maximumAmmo)
         {

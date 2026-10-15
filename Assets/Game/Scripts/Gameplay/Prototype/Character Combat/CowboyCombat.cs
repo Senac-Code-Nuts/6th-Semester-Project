@@ -164,8 +164,7 @@ namespace PiGame.Gameplay
 
         public void ShootServer(Vector2 direction)
         {
-            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value
-                || _isReloading || Time.time < _nextShotAt)
+            if (!IsServer || !enabled) 
             {
                 return;
             }
@@ -179,6 +178,11 @@ namespace PiGame.Gameplay
                 }
             }
 
+            if(!_playerState.CanAct || _isRolling.Value || _isReloading || Time.time < _nextShotAt)
+            {
+                return;
+            }
+            
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
                 ? direction.normalized
                 : Vector2.right;
