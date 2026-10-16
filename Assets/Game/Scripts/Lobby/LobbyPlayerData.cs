@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections;
 using Unity.Netcode;
 
 namespace PiGame.Lobby
@@ -10,19 +11,22 @@ namespace PiGame.Lobby
         public LobbyCharacterId CharacterId;
         public LobbyInputDeviceKind InputDevice;
         public bool IsReady;
+        public FixedString64Bytes PlayerName;
 
         public LobbyPlayerData(
             ulong clientId,
             int playerSlot,
             LobbyCharacterId characterId = LobbyCharacterId.None,
             LobbyInputDeviceKind inputDevice = LobbyInputDeviceKind.Unknown,
-            bool isReady = false)
+            bool isReady = false,
+            string playerName = "Jogador")
         {
             ClientId = clientId;
             PlayerSlot = playerSlot;
             CharacterId = characterId;
             InputDevice = inputDevice;
             IsReady = isReady;
+            PlayerName = new FixedString64Bytes(LocalPlayerName.Normalize(playerName));
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer)
@@ -33,6 +37,7 @@ namespace PiGame.Lobby
             serializer.SerializeValue(ref CharacterId);
             serializer.SerializeValue(ref InputDevice);
             serializer.SerializeValue(ref IsReady);
+            serializer.SerializeValue(ref PlayerName);
         }
 
         public bool Equals(LobbyPlayerData other)
@@ -41,7 +46,8 @@ namespace PiGame.Lobby
                 && PlayerSlot == other.PlayerSlot
                 && CharacterId == other.CharacterId
                 && InputDevice == other.InputDevice
-                && IsReady == other.IsReady;
+                && IsReady == other.IsReady
+                && PlayerName.Equals(other.PlayerName);
         }
 
         public override bool Equals(object obj)
@@ -58,6 +64,7 @@ namespace PiGame.Lobby
                 hashCode = (hashCode * 397) ^ (int)CharacterId;
                 hashCode = (hashCode * 397) ^ (int)InputDevice;
                 hashCode = (hashCode * 397) ^ IsReady.GetHashCode();
+                hashCode = (hashCode * 397) ^ PlayerName.GetHashCode();
                 return hashCode;
             }
         }
