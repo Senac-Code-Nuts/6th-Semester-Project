@@ -24,6 +24,8 @@ namespace PiGame.UI
         [SerializeField] private Button _confirmExitButton;
         [SerializeField] private Button _cancelExitButton;
         [SerializeField] private ControlsSettingsUI _controlsView;
+        [Tooltip("Opcional: usado nas opções do menu e do lobby, não no pause da partida.")]
+        [SerializeField] private Button _playerNameButton;
 
         private PauseMenuDefinition _definition;
         private Coroutine _selectionRoutine;
@@ -34,6 +36,7 @@ namespace PiGame.UI
         public event Action ExitConfirmed;
         public event Action ExitCanceled;
         public event Action ControlsClosed;
+        public event Action PlayerNameRequested;
 
         public bool IsVisible => enabled && _root.activeSelf;
         public bool IsConfirmationVisible => enabled && _confirmationRoot.activeSelf;
@@ -153,6 +156,8 @@ namespace PiGame.UI
         {
             SetButtonInteractable(_resumeButton, !isBusy);
             SetButtonInteractable(_controlsButton, !isBusy);
+            if (_playerNameButton != null)
+                _playerNameButton.interactable = !isBusy;
             SetButtonInteractable(_exitButton, !isBusy);
             SetButtonInteractable(_confirmExitButton, !isBusy);
             SetButtonInteractable(_cancelExitButton, !isBusy);
@@ -167,6 +172,7 @@ namespace PiGame.UI
 
             _resumeButton.onClick.AddListener(HandleResumeClicked);
             _controlsButton.onClick.AddListener(ShowControls);
+            _playerNameButton?.onClick.AddListener(HandlePlayerNameClicked);
             _exitButton.onClick.AddListener(HandleExitClicked);
             _confirmExitButton.onClick.AddListener(HandleExitConfirmedClicked);
             _cancelExitButton.onClick.AddListener(HandleExitCanceledClicked);
@@ -182,6 +188,7 @@ namespace PiGame.UI
 
             _resumeButton.onClick.RemoveListener(HandleResumeClicked);
             _controlsButton.onClick.RemoveListener(ShowControls);
+            _playerNameButton?.onClick.RemoveListener(HandlePlayerNameClicked);
             _exitButton.onClick.RemoveListener(HandleExitClicked);
             _confirmExitButton.onClick.RemoveListener(HandleExitConfirmedClicked);
             _cancelExitButton.onClick.RemoveListener(HandleExitCanceledClicked);
@@ -194,6 +201,7 @@ namespace PiGame.UI
         }
 
         private void HandleResumeClicked() => ResumeRequested?.Invoke();
+        private void HandlePlayerNameClicked() => PlayerNameRequested?.Invoke();
         private void HandleExitClicked() => ExitRequested?.Invoke();
         private void HandleExitConfirmedClicked() => ExitConfirmed?.Invoke();
         private void HandleExitCanceledClicked() => ExitCanceled?.Invoke();

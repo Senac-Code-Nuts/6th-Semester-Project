@@ -137,6 +137,7 @@ namespace PiGame.UI
         {
             if (!enabled)
             {
+                _joinCodeInput.interactable = false;
                 _hostButton.interactable = false;
                 _clientButton.interactable = false;
                 _secondaryButton.interactable = false;
