@@ -290,7 +290,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "PROJETO INTEGRADOR • SENAC • 2026"
+  m_text: "PROJETO INTEGRADOR • 6º SEMESTRE • SENAC • 2026"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
   m_sharedMaterial: {fileID: 5376852124497864486, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
