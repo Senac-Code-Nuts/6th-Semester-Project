@@ -12,6 +12,7 @@ namespace PiGame.UI
         private class CharacterPreview
         {
             public string Name;
+            public Color AccentColor = Color.white;
             [TextArea(5, 12)] public string Description;
             public GameObject Visual;
         }
@@ -81,6 +82,7 @@ namespace PiGame.UI
             for (int i = 0; i < _characters.Length; i++)
                 _characters[i].Visual.SetActive(i == _index);
             _name.text = _characters[_index].Name;
+            _name.color = _characters[_index].AccentColor;
             _description.text = _characters[_index].Description;
             _counter.text = $"{_index + 1:00} / {_characters.Length:00}";
             EventSystem.current.SetSelectedGameObject(gameObject);

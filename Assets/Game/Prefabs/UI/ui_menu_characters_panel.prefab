@@ -58,16 +58,20 @@ MonoBehaviour:
   _back: {fileID: 2290000064}
   _characters:
   - Name: COWBOY
+    AccentColor: {r: 0.90588236, g: 0.7294118, b: 0.44313726, a: 1}
     Description: "<color=#E7BA71>ORIGEM</color>\nLíder dos desérticos, usa implantes cibernéticos para sobreviver em um mundo de sucata. Quer deixar a cidade para trás e viver no deserto.\n\n<color=#E7BA71>COMBATE</color>\nRevólver de seis tiros, precisão e mobilidade. Seu rolamento atravessa ameaças, evita dano e recupera parte da munição."
     Visual: {fileID: 2290000340}
   - Name: IRRIGADOR
+    AccentColor: {r: 0.48235294, g: 0.8156863, b: 0.9019608, a: 1}
     Description: "<color=#7BD0E6>ORIGEM</color>\nNerei lidera os irrigadores. Com uma máscara de respiração e um tanque de água, pretende inundar a cidade e construir seu império.\n\n<color=#7BD0E6>COMBATE</color>\nDispara pregos de gelo que ficam presos no cenário. Recupera a munição e usa os pregos para se reposicionar; sua habilidade os atrai de volta."
     Visual: {fileID: 2290000360}
   - Name: CLANK
-    Description: "<color=#EE9D79>ORIGEM</color>\nUma mineradora de ferramentas perigosas e um enorme martelo sônico. Quer transformar a cidade em uma megamina.\n\n<color=#EE9D79>COMBATE</color>\nDispara minérios e se agacha para coletar mais munição. O martelo empurra os adversários e permite impulsos no ar."
+    AccentColor: {r: 0.76862746, g: 0.6392157, b: 0.93333334, a: 1}
+    Description: "<color=#C4A3EE>ORIGEM</color>\nUma mineradora de ferramentas perigosas e um enorme martelo sônico. Quer transformar a cidade em uma megamina.\n\n<color=#C4A3EE>COMBATE</color>\nDispara minérios e se agacha para coletar mais munição. O martelo empurra os adversários e permite impulsos no ar."
     Visual: {fileID: 2290000380}
   - Name: REBELDE
-    Description: "<color=#A9D489>ORIGEM</color>\nUm robô avançado que lidera os rebeldes. Luta para abolir a aristocracia e repartir os recursos da cidade.\n\n<color=#A9D489>COMBATE</color>\nUsa um taco metálico e uma bola que ricocheteia. Rebater a bola fortalece o disparo; a habilidade devolve ameaças e afasta os inimigos."
+    AccentColor: {r: 0.93333334, g: 0.4745098, b: 0.4745098, a: 1}
+    Description: "<color=#EE7979>ORIGEM</color>\nUm robô avançado que lidera os rebeldes. Luta para abolir a aristocracia e repartir os recursos da cidade.\n\n<color=#EE7979>COMBATE</color>\nUsa um taco metálico e uma bola que ricocheteia. Rebater a bola fortalece o disparo; a habilidade devolve ameaças e afasta os inimigos."
     Visual: {fileID: 2290000400}
 --- !u!1 &2290000020
 GameObject:
