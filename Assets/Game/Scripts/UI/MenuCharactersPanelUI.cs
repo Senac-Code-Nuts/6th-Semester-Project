@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace PiGame.UI
 {
-    public class MenuCharactersPanelUI : MonoBehaviour, IMoveHandler
+    public class MenuCharactersPanelUI : MonoBehaviour, IMoveHandler, IPointerClickHandler
     {
         [Serializable]
         private class CharacterPreview
@@ -60,6 +60,14 @@ namespace PiGame.UI
             if (eventData.moveDir == MoveDirection.Up) Browse(-1);
             else if (eventData.moveDir == MoveDirection.Down) Browse(1);
             eventData.Use();
+        }
+
+        // EventTrigger dos botões encaminha Move mesmo após uma seleção com o mouse.
+        public void HandleNavigation(BaseEventData eventData) => OnMove((AxisEventData)eventData);
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (IsVisible) EventSystem.current.SetSelectedGameObject(gameObject);
         }
 
         private void Browse(int step)

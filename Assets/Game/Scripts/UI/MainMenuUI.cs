@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
+using PiGame.Input;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace PiGame.UI
@@ -19,9 +21,13 @@ namespace PiGame.UI
         [SerializeField] private MenuCharactersPanelUI _characters;
         [SerializeField] private GameObject _credits;
         [SerializeField] private Button _creditsBackButton;
+        [Header("Ícones de voltar — catálogo já usado no lobby")]
+        [SerializeField] private InputPromptCatalog _promptCatalog;
+        [SerializeField] private Image[] _backIcons;
 
         private Button _returnButton;
         private Coroutine _focusRoutine;
+        private bool _usesGamepad;
 
         public bool IsHomeVisible => _home.gameObject.activeInHierarchy;
         public bool IsSubpanelVisible => _characters.IsVisible || _credits.activeInHierarchy;
@@ -32,7 +38,9 @@ namespace PiGame.UI
         private void Awake()
         {
             if (!_visuals || !_home || !_playButton || !_charactersButton || !_optionsButton
-                || !_creditsButton || !_quitButton || !_characters || !_credits || !_creditsBackButton)
+                || !_creditsButton || !_quitButton || !_characters || !_credits || !_creditsBackButton
+                || !_promptCatalog || _backIcons == null || _backIcons.Length == 0
+                || Array.Exists(_backIcons, icon => !icon))
             {
                 Debug.LogError("Configure as referências do MainMenuUI no prefab.", this);
                 enabled = false;
@@ -50,6 +58,30 @@ namespace PiGame.UI
             _creditsBackButton.onClick.AddListener(ShowHome);
             _characters.Closed += ShowHome;
             _returnButton = _playButton;
+            RefreshBackIcons();
+        }
+
+        private void Update()
+        {
+            if (!_visuals.activeInHierarchy) return;
+            bool usesGamepad = _usesGamepad;
+            if (Gamepad.current != null && (Gamepad.current.dpad.IsPressed()
+                || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.36f
+                || Gamepad.current.buttonSouth.wasPressedThisFrame
+                || Gamepad.current.buttonNorth.wasPressedThisFrame
+                || Gamepad.current.buttonEast.wasPressedThisFrame)) usesGamepad = true;
+            else if ((Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
+                || (Mouse.current != null && (Mouse.current.leftButton.wasPressedThisFrame
+                    || Mouse.current.delta.ReadValue().sqrMagnitude > 4f))) usesGamepad = false;
+            if (usesGamepad == _usesGamepad) return;
+            _usesGamepad = usesGamepad;
+            RefreshBackIcons();
+        }
+
+        private void RefreshBackIcons()
+        {
+            Sprite sprite = _promptCatalog.GetSprite(_usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/escape");
+            foreach (Image icon in _backIcons) icon.sprite = sprite;
         }
 
         public void ShowHome()
