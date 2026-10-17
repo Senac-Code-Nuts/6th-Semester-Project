@@ -65,7 +65,7 @@ MonoBehaviour:
     AccentColor: {r: 0.48235294, g: 0.8156863, b: 0.9019608, a: 1}
     Description: "<color=#7BD0E6>ORIGEM</color>\nNerei lidera os irrigadores. Com uma máscara de respiração e um tanque de água, pretende inundar a cidade e construir seu império.\n\n<color=#7BD0E6>COMBATE</color>\nDispara pregos de gelo que ficam presos no cenário. Recupera a munição e usa os pregos para se reposicionar; sua habilidade os atrai de volta."
     Visual: {fileID: 2290000360}
-  - Name: CLANK
+  - Name: FUMACEIRO
     AccentColor: {r: 0.76862746, g: 0.6392157, b: 0.93333334, a: 1}
     Description: "<color=#C4A3EE>ORIGEM</color>\nUma mineradora de ferramentas perigosas e um enorme martelo sônico. Quer transformar a cidade em uma megamina.\n\n<color=#C4A3EE>COMBATE</color>\nDispara minérios e se agacha para coletar mais munição. O martelo empurra os adversários e permite impulsos no ar."
     Visual: {fileID: 2290000380}
