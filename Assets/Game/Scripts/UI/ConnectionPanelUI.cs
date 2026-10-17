@@ -29,7 +29,7 @@ namespace PiGame.UI
         public event Action HostRequested;
         public event Action<string> ClientRequested;
         public event Action CancelConnectionRequested;
-        public event Action QuitRequested;
+        public event Action BackRequested;
         public event Action OptionsRequested;
 
         private void Awake()
@@ -86,7 +86,7 @@ namespace PiGame.UI
             SetButtonsInteractable(true);
             RestoreNavigation();
             SetClientButtonLabel("CLIENT");
-            _secondaryButtonLabel.text = "SAIR";
+            _secondaryButtonLabel.text = "VOLTAR";
             SetStatus("ESCOLHA HOST OU CLIENTE");
             FocusDefaultButton();
         }
@@ -123,7 +123,7 @@ namespace PiGame.UI
 
             SetButtonsInteractable(true);
             RestoreNavigation();
-            _secondaryButtonLabel.text = "SAIR";
+            _secondaryButtonLabel.text = "VOLTAR";
             SetStatus(message);
             FocusDefaultButton();
         }
@@ -195,7 +195,7 @@ namespace PiGame.UI
                 return;
             }
 
-            QuitRequested?.Invoke();
+            BackRequested?.Invoke();
         }
 
         private void HandleOptionsClicked()
