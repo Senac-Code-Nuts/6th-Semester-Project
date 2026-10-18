@@ -29,6 +29,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Music_tests/Music.unity
     guid: 7c335fe0e5a6add4dbd6ca79cf2bddba
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Bonanza 2.unity
+    guid: ef6155e01f1024940bdfc77d3313ba32
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Aucuag 1.unity
+    guid: 904db154d29857f4bad86f8a31e58cf9
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Kitezh_1.unity
+    guid: 6ae19e2eddbd4304e96f293baf34acce
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Kitezh_2.unity
+    guid: ba8c4fd72c655ff4dad840f45513fcde
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
