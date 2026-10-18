@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -30,6 +31,7 @@ namespace PiGame.Lobby
             new(InitialMatchSettings);
 
         private Coroutine _matchStartRoutine;
+        private bool _localNameSubmitted;
 
         public event Action PlayersChanged;
         public event Action<int> CharacterReadyRejected;
@@ -113,6 +115,8 @@ namespace PiGame.Lobby
                 return;
             }
 
+            _localNameSubmitted = false;
+            LocalPlayerName.Saved += HandleLocalNameSaved;
             _players.OnListChanged += HandlePlayersChanged;
             _mapVotes.OnListChanged += HandleMapVotesChanged;
             _stage.OnValueChanged += HandleStageChanged;
@@ -149,6 +153,7 @@ namespace PiGame.Lobby
                 }
             }
 
+            SubmitLocalPlayerName();
             PlayersChanged?.Invoke();
             MapVotesChanged?.Invoke();
             StageChanged?.Invoke();
@@ -176,6 +181,7 @@ namespace PiGame.Lobby
             }
 
             _players.OnListChanged -= HandlePlayersChanged;
+            LocalPlayerName.Saved -= HandleLocalNameSaved;
             _mapVotes.OnListChanged -= HandleMapVotesChanged;
             _stage.OnValueChanged -= HandleStageChanged;
             _winningMap.OnValueChanged -= HandleWinningMapChanged;
@@ -347,6 +353,22 @@ namespace PiGame.Lobby
             }
 
             SetMatchSettingsRpc(durationMinutes, mode);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetPlayerNameRpc(FixedString64Bytes name, RpcParams rpcParams = default)
+        {
+            int playerIndex = FindPlayerIndex(rpcParams.Receive.SenderClientId);
+            if (playerIndex < 0)
+                return;
+
+            LobbyPlayerData player = _players[playerIndex];
+            var normalizedName = new FixedString64Bytes(LocalPlayerName.Normalize(name.ToString()));
+            if (player.PlayerName.Equals(normalizedName))
+                return;
+
+            player.PlayerName = normalizedName;
+            _players[playerIndex] = player;
         }
 
         [Rpc(SendTo.Server)]
@@ -541,7 +563,24 @@ namespace PiGame.Lobby
 
         private void HandlePlayersChanged(NetworkListEvent<LobbyPlayerData> changeEvent)
         {
+            SubmitLocalPlayerName();
             PlayersChanged?.Invoke();
+        }
+
+        private void SubmitLocalPlayerName()
+        {
+            // The local entry may arrive after OnNetworkSpawn on a joining client.
+            if (!IsSpawned || !IsClient || _localNameSubmitted || FindPlayerIndex(LocalClientId) < 0)
+                return;
+
+            _localNameSubmitted = true;
+            SetPlayerNameRpc(new FixedString64Bytes(LocalPlayerName.Load()));
+        }
+
+        private void HandleLocalNameSaved()
+        {
+            _localNameSubmitted = false;
+            SubmitLocalPlayerName();
         }
 
         private void HandleMapVotesChanged(NetworkListEvent<LobbyMapVoteData> changeEvent)
@@ -668,7 +707,8 @@ namespace PiGame.Lobby
                 availableSlot,
                 initialCharacter,
                 inputDevice,
-                false));
+                false,
+                hasPreviousPlayer ? previousPlayer.PlayerName.ToString() : "Jogador"));
         }
 
         private static bool TryFindPreviousPlayer(

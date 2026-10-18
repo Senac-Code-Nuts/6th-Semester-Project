@@ -1,6 +1,5 @@
 using UnityEngine;
 using Unity.Netcode;
-using PiGame.Sound;
 
 namespace PiGame.Gameplay 
 {
@@ -23,7 +22,8 @@ namespace PiGame.Gameplay
         [Header("Referencer")]
         [SerializeField] private Collider2D _solidCollider;
         private Rigidbody2D _rigidbody;
-        private RebeldeSoundManager _ownerSound;
+        private BoxCollider2D _collisionBox;
+        private readonly RaycastHit2D[] _flightHits = new RaycastHit2D[16];
 
         private bool _isStopped;
         private bool _falling;
@@ -36,6 +36,7 @@ namespace PiGame.Gameplay
         {
 
             _rigidbody = GetComponent<Rigidbody2D>();
+            _collisionBox = (BoxCollider2D)_solidCollider;
 
             _useLifetime = false;
             _solidCollider.enabled = false;
@@ -44,7 +45,7 @@ namespace PiGame.Gameplay
             _rigidbody.gravityScale = 0f;
         }
 
-        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed, RebeldeSoundManager ownerSound)
+        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed)
         {
             if (!IsServer)
                 return;
@@ -52,8 +53,6 @@ namespace PiGame.Gameplay
             _shooterClientId = shooterClientId;
 
             _damage = definition.Damage;
-
-            _ownerSound = ownerSound;
 
             _direction = direction.sqrMagnitude > 0f
                 ? direction.normalized
@@ -121,8 +120,6 @@ namespace PiGame.Gameplay
 
             float deltaTime = Time.fixedDeltaTime;
 
-            Vector2 startPosition = transform.position;
-
             Vector2 movement =
                 _direction * _speed * deltaTime;
 
@@ -131,14 +128,28 @@ namespace PiGame.Gameplay
             if (distance <= 0f)
                 return;
 
-            RaycastHit2D hit = Physics2D.Raycast(
-                startPosition,
-                movement.normalized,
-                distance,
-                _collisionLayers);
+            // O centro pode estar fora do tile enquanto a borda da bola já entrou nele.
+            Vector2 scale = _collisionBox.transform.lossyScale;
+            Vector2 size = Vector2.Scale(_collisionBox.size,
+                new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            // Reservar a margem de contato da física antes de ativar o collider na queda.
+            size += Vector2.one * (Physics2D.defaultContactOffset * 2f);
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_collisionLayers);
+            filter.useTriggers = true;
+            int hitCount = Physics2D.BoxCast(_collisionBox.transform.TransformPoint(_collisionBox.offset),
+                size, _collisionBox.transform.eulerAngles.z, movement.normalized,
+                filter, _flightHits, distance);
 
-            if (hit.collider != null)
+            for (int i = 0; i < hitCount; i++)
             {
+                RaycastHit2D hit = _flightHits[i];
+                NetworkPlayerState player = hit.collider.GetComponentInParent<NetworkPlayerState>();
+                if (hit.collider.GetComponentInParent<NetworkProjectile>() != null
+                    || (player != null && player.OwnerClientId == _shooterClientId)) continue;
+
+                transform.position += (Vector3)(movement.normalized * hit.distance
+                    + hit.normal * _collisionOffset);
                 HandleCollision(hit);
                 return;
             }
@@ -202,10 +213,6 @@ namespace PiGame.Gameplay
 
         private void HandleEnvironmentCollision(RaycastHit2D hit)
         {
-            transform.position =
-                hit.point +
-                hit.normal * _collisionOffset;
-
             Bounce(
                 hit.normal,
                 _wallBounceSpeedLoss);
@@ -228,10 +235,6 @@ namespace PiGame.Gameplay
                     _shooterClientId);
             }
 
-            transform.position =
-                hit.point +
-                hit.normal * _collisionOffset;
-
             Bounce(
                 hit.normal,
                 _playerBounceSpeedLoss);    
@@ -246,11 +249,6 @@ namespace PiGame.Gameplay
             {
                 StartFalling();
                 return;
-            }
-
-            if(_ownerSound != null)
-            {
-                _ownerSound.PlayRebeldeBounce();
             }
 
             _direction =

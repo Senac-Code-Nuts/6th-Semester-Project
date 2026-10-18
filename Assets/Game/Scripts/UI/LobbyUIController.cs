@@ -18,6 +18,7 @@ namespace PiGame.UI
         }
 
         [Header("Panels")]
+        [SerializeField] private MainMenuUI _mainMenu;
         [SerializeField] private ConnectionPanelUI _connectionPanel;
         [SerializeField] private GameObject _lobbyPanel;
         [SerializeField] private LobbyCharacterSelectionController _characterSelectionController;
@@ -27,12 +28,15 @@ namespace PiGame.UI
         [FormerlySerializedAs("_localNetworkAddressText")]
         [SerializeField] private Text _sessionCodeText;
         [SerializeField] private PauseMenuUI _lobbyPause;
+        [SerializeField] private PlayerNamePanelUI _playerNamePanel;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
 
         private ILobbyConnectionService _connectionServiceContract;
         private ConfirmationAction _pendingConfirmation;
+        private bool _returnToOptionsAfterName;
+        private int _ignoreMenuInputFrame = -1;
 
         private void Awake()
         {
@@ -42,9 +46,9 @@ namespace PiGame.UI
             }
 
             _connectionServiceContract = _connectionService;
-            if (_connectionPanel == null)
+            if (_mainMenu == null || _connectionPanel == null || _playerNamePanel == null)
             {
-                Debug.LogError("LobbyUIController precisa do painel de conexão no Inspector.", this);
+                Debug.LogError("LobbyUIController precisa dos painéis de menu, conexão e nome no Inspector.", this);
                 enabled = false;
                 return;
             }
@@ -63,7 +67,10 @@ namespace PiGame.UI
             _connectionPanel.HostRequested += HandleHostRequested;
             _connectionPanel.ClientRequested += HandleClientRequested;
             _connectionPanel.CancelConnectionRequested += HandleCancelConnectionRequested;
-            _connectionPanel.QuitRequested += HandleQuitRequested;
+            _mainMenu.PlayRequested += HandlePlayRequested;
+            _mainMenu.OptionsRequested += HandleOptionsRequested;
+            _mainMenu.QuitRequested += HandleQuitRequested;
+            _connectionPanel.BackRequested += ShowMainMenu;
             _connectionPanel.OptionsRequested += HandleOptionsRequested;
             _mapVotingController.DisconnectRequested += HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged += HandleMapVotingVisibilityChanged;
@@ -76,6 +83,8 @@ namespace PiGame.UI
             _lobbyPause.ExitConfirmed += HandleLobbyPauseExitConfirmed;
             _lobbyPause.ExitCanceled += _lobbyPause.HideConfirmation;
             _lobbyPause.ControlsClosed += HandleControlsClosed;
+            _lobbyPause.PlayerNameRequested += HandlePlayerNameRequested;
+            _playerNamePanel.Closed += HandlePlayerNameClosed;
             _confirmationPanel.Hide();
 
             if (_connectionServiceContract == null)
@@ -95,8 +104,13 @@ namespace PiGame.UI
                 return;
             }
 
-            ShowConnectionPanel();
-            _connectionPanel.ShowIdle();
+            ShowMainMenu();
+            if (!LocalPlayerName.HasSavedName)
+            {
+                _returnToOptionsAfterName = false;
+                SetOfflineInteractionEnabled(false);
+                _playerNamePanel.Show();
+            }
         }
 
         private void OnDisable()
@@ -104,7 +118,10 @@ namespace PiGame.UI
             _connectionPanel.HostRequested -= HandleHostRequested;
             _connectionPanel.ClientRequested -= HandleClientRequested;
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
-            _connectionPanel.QuitRequested -= HandleQuitRequested;
+            _mainMenu.PlayRequested -= HandlePlayRequested;
+            _mainMenu.OptionsRequested -= HandleOptionsRequested;
+            _mainMenu.QuitRequested -= HandleQuitRequested;
+            _connectionPanel.BackRequested -= ShowMainMenu;
             _connectionPanel.OptionsRequested -= HandleOptionsRequested;
             _mapVotingController.DisconnectRequested -= HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged -= HandleMapVotingVisibilityChanged;
@@ -119,7 +136,9 @@ namespace PiGame.UI
                 _lobbyPause.ExitConfirmed -= HandleLobbyPauseExitConfirmed;
                 _lobbyPause.ExitCanceled -= _lobbyPause.HideConfirmation;
                 _lobbyPause.ControlsClosed -= HandleControlsClosed;
+                _lobbyPause.PlayerNameRequested -= HandlePlayerNameRequested;
             }
+            _playerNamePanel.Closed -= HandlePlayerNameClosed;
 
             if (_connectionServiceContract == null)
             {
@@ -133,7 +152,7 @@ namespace PiGame.UI
 
         private void Update()
         {
-            if (_lobbyPause == null)
+            if (_lobbyPause == null || Time.frameCount == _ignoreMenuInputFrame)
             {
                 return;
             }
@@ -144,6 +163,13 @@ namespace PiGame.UI
                 && Gamepad.current.startButton.wasPressedThisFrame;
             bool gamepadBack = Gamepad.current != null
                 && Gamepad.current.buttonEast.wasPressedThisFrame;
+
+            if (_playerNamePanel.IsVisible)
+            {
+                if (keyboardBack || gamepadMenu || gamepadBack)
+                    _playerNamePanel.HandleBack();
+                return;
+            }
 
             if (_lobbyPause.IsControlsVisible)
             {
@@ -184,6 +210,19 @@ namespace PiGame.UI
                 return;
             }
 
+            if (_pendingConfirmation != ConfirmationAction.None) return;
+            if ((_connectionServiceContract == null || !_connectionServiceContract.IsConnected)
+                && (keyboardBack || gamepadMenu || gamepadBack))
+            {
+                if (_mainMenu.IsSubpanelVisible)
+                {
+                    _mainMenu.HandleBack();
+                    _ignoreMenuInputFrame = Time.frameCount;
+                }
+                else if (_mainMenu.IsHomeVisible) HandleQuitRequested();
+                return;
+            }
+
             bool keyboardSettings = Keyboard.current != null
                 && Keyboard.current.tabKey.wasPressedThisFrame;
             bool gamepadSettings = Gamepad.current != null
@@ -217,6 +256,40 @@ namespace PiGame.UI
             }
         }
 
+        private void HandlePlayRequested()
+        {
+            ShowConnectionPanel();
+            _connectionPanel.ShowIdle();
+        }
+
+        private void ShowMainMenu()
+        {
+            _playerNamePanel.Hide();
+            _lobbyPause.SetVisible(false);
+            _confirmationPanel.Hide();
+            _pendingConfirmation = ConfirmationAction.None;
+            _matchSettingsPanel.ResetView();
+            _connectionPanel.gameObject.SetActive(false);
+            _lobbyPanel.SetActive(false);
+            _mainMenu.ShowHome();
+            _ignoreMenuInputFrame = Time.frameCount;
+        }
+
+        private void SetOfflineInteractionEnabled(bool value)
+        {
+            _connectionPanel.SetInteractionEnabled(value);
+            _mainMenu.SetInteractionEnabled(value);
+        }
+
+        private void RestoreOfflineInteraction()
+        {
+            SetOfflineInteractionEnabled(true);
+            if (_connectionPanel.gameObject.activeInHierarchy)
+                _connectionPanel.FocusDefaultButton();
+            else
+                _mainMenu.FocusDefaultButton();
+        }
+
         private async void HandleHostRequested()
         {
             if (_connectionServiceContract == null)
@@ -248,6 +321,7 @@ namespace PiGame.UI
                 await _connectionServiceContract.ShutdownAsync();
             }
 
+            ShowConnectionPanel();
             _connectionPanel.ShowIdle();
         }
 
@@ -258,8 +332,26 @@ namespace PiGame.UI
 
         private void HandleOptionsRequested()
         {
-            _connectionPanel.SetInteractionEnabled(false);
-            _lobbyPause.ShowControls();
+            OpenLobbyPause();
+        }
+
+        private void HandlePlayerNameRequested()
+        {
+            _returnToOptionsAfterName = true;
+            _lobbyPause.SetVisible(false);
+            _playerNamePanel.Show();
+        }
+
+        private void HandlePlayerNameClosed()
+        {
+            _ignoreMenuInputFrame = Time.frameCount;
+            if (_returnToOptionsAfterName)
+            {
+                OpenLobbyPause();
+                return;
+            }
+
+            RestoreOfflineInteraction();
         }
 
         private void HandleDisconnectRequested()
@@ -294,7 +386,7 @@ namespace PiGame.UI
                 await _connectionServiceContract.ShutdownAsync();
             }
 
-            _connectionPanel.ShowIdle();
+            ShowMainMenu();
         }
 
         private static void QuitApplication()
@@ -308,6 +400,7 @@ namespace PiGame.UI
 
         private void HandleConfirmationCanceled()
         {
+            _ignoreMenuInputFrame = Time.frameCount;
             ConfirmationAction canceledAction = _pendingConfirmation;
             _pendingConfirmation = ConfirmationAction.None;
             _confirmationPanel.Hide();
@@ -318,8 +411,7 @@ namespace PiGame.UI
                 return;
             }
 
-            _connectionPanel.SetInteractionEnabled(true);
-            _connectionPanel.FocusDefaultButton();
+            RestoreOfflineInteraction();
         }
 
         private void HandleConnected()
@@ -329,7 +421,7 @@ namespace PiGame.UI
 
         private void HandleDisconnected()
         {
-            ShowConnectionError("CONEXÃO ENCERRADA");
+            ShowMainMenu();
         }
 
         private void HandleConnectionFailed(LobbyConnectionFailure failure)
@@ -353,9 +445,12 @@ namespace PiGame.UI
 
         private void ShowConnectionPanel()
         {
+            _playerNamePanel.Hide();
+            _lobbyPause.SetVisible(false);
             _pendingConfirmation = ConfirmationAction.None;
             _confirmationPanel.Hide();
             _matchSettingsPanel.ResetView();
+            _mainMenu.ShowConnection();
             _connectionPanel.gameObject.SetActive(true);
             _connectionPanel.SetInteractionEnabled(true);
             _lobbyPanel.SetActive(false);
@@ -365,6 +460,7 @@ namespace PiGame.UI
         {
             _pendingConfirmation = ConfirmationAction.None;
             _confirmationPanel.Hide();
+            _mainMenu.Hide();
             _connectionPanel.gameObject.SetActive(false);
             _lobbyPanel.SetActive(true);
             _matchSettingsPanel.ResetView();
@@ -427,7 +523,7 @@ namespace PiGame.UI
             }
             else
             {
-                _connectionPanel.SetInteractionEnabled(false);
+                SetOfflineInteractionEnabled(false);
             }
 
             _confirmationPanel.Show(message);
@@ -452,12 +548,13 @@ namespace PiGame.UI
             }
 
             InputActionAsset actions = FindFirstObjectByType<InputSystemUIInputModule>()?.actionsAsset;
+            bool inLobby = _connectionServiceContract != null && _connectionServiceContract.IsConnected;
             if (!_lobbyPause.Initialize(
                 actions,
-                "PAUSE",
+                inLobby ? "PAUSE" : "OPÇÕES",
                 "VOLTAR",
-                "DESCONECTAR",
-                "DESCONECTAR DO LOBBY?"))
+                inLobby ? "DESCONECTAR" : "SAIR DO JOGO",
+                inLobby ? "DESCONECTAR DO LOBBY?" : "DESEJA SAIR DO JOGO?"))
             {
                 enabled = false;
                 return;
@@ -468,7 +565,11 @@ namespace PiGame.UI
 
         private void OpenLobbyPause()
         {
-            SetLobbyInteractionEnabled(false);
+            InitializeLobbyPause();
+            if (_connectionServiceContract != null && _connectionServiceContract.IsConnected)
+                SetLobbyInteractionEnabled(false);
+            else
+                SetOfflineInteractionEnabled(false);
             _lobbyPause.SetVisible(true);
         }
 
@@ -481,11 +582,22 @@ namespace PiGame.UI
             }
 
             _lobbyPause.SetVisible(false);
-            SetLobbyInteractionEnabled(true);
+            _ignoreMenuInputFrame = Time.frameCount;
+            if (_connectionServiceContract != null && _connectionServiceContract.IsConnected)
+                SetLobbyInteractionEnabled(true);
+            else
+            {
+                RestoreOfflineInteraction();
+            }
         }
 
         private async void HandleLobbyPauseExitConfirmed()
         {
+            if (_connectionServiceContract == null || !_connectionServiceContract.IsConnected)
+            {
+                QuitApplication();
+                return;
+            }
             _lobbyPause.SetBusy(true);
             _lobbyPause.SetVisible(false);
             ShowConnectionPanel();
@@ -496,7 +608,7 @@ namespace PiGame.UI
             }
 
             _lobbyPause.SetBusy(false);
-            _connectionPanel.ShowIdle();
+            ShowMainMenu();
         }
 
         private void HandleControlsClosed()
@@ -511,9 +623,7 @@ namespace PiGame.UI
                 return;
             }
 
-            _lobbyPause.SetVisible(false);
-            _connectionPanel.SetInteractionEnabled(true);
-            _connectionPanel.FocusDefaultButton();
+            SetOfflineInteractionEnabled(!_lobbyPause.IsVisible);
         }
     }
 }

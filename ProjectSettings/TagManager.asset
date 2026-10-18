@@ -65,5 +65,8 @@ TagManager:
   - name: Bullet
     uniqueID: 3427290921
     locked: 0
+  - name: UI
+    uniqueID: 1379240151
+    locked: 0
   m_RenderingLayers:
   - Default

@@ -14,20 +14,20 @@ using UnityEngine.UI;
 namespace PiGame.UI
 {
     public class MapVotingPanelUI : MonoBehaviour,
+        IMoveHandler,
         ISubmitHandler,
         ICancelHandler,
         IPointerEnterHandler,
         IPointerMoveHandler
     {
-        private const float NavigationRepeatDelay = 0.4f;
-        private const float NavigationRepeatRate = 0.12f;
-
         [Header("Maps")]
         [SerializeField] private LobbyMapDefinition[] _maps;
         [SerializeField] private Button[] _optionButtons;
         [SerializeField] private Image[] _previewImages;
         [SerializeField] private Text[] _optionLabels;
         [SerializeField] private Text[] _voterLabels;
+
+        [SerializeField, Min(1)] private int _columns = 5;
 
         [Header("Status")]
         [SerializeField] private Text _statusText;
@@ -63,8 +63,6 @@ namespace PiGame.UI
         private Coroutine _randomDrawRoutine;
         private bool _interactionEnabled = true;
         private bool _localVoteConfirmed;
-        private int _heldNavigationDirection;
-        private float _nextNavigationTime;
         private UnityAction[] _optionButtonActions;
 
         private void Awake()
@@ -104,7 +102,6 @@ namespace PiGame.UI
             }
 
             _optionButtonActions = null;
-            ResetNavigationInput();
         }
 
         private void Update()
@@ -121,7 +118,6 @@ namespace PiGame.UI
                 SetLastInputDevice(detectedDevice);
             }
 
-            ProcessNavigationInput();
             AnimateSelectedCard();
         }
 
@@ -516,109 +512,28 @@ namespace PiGame.UI
             }
         }
 
-        private void ProcessNavigationInput()
+        public void OnMove(AxisEventData eventData)
         {
-            if (!_interactionEnabled
-                || _stage != LobbyStage.MapVoting
-                || _localVoteConfirmed)
-            {
-                ResetNavigationInput();
-                return;
-            }
-
-            int direction = ReadHorizontalNavigationDirection(out LobbyInputDeviceKind inputDevice);
-            if (direction == 0)
-            {
-                ResetNavigationInput();
-                return;
-            }
-
-            bool directionChanged = direction != _heldNavigationDirection;
-            if (!directionChanged && Time.unscaledTime < _nextNavigationTime)
+            if (!_interactionEnabled || _stage != LobbyStage.MapVoting || _localVoteConfirmed)
             {
                 return;
             }
 
-            _heldNavigationDirection = direction;
-            _nextNavigationTime = Time.unscaledTime
-                + (directionChanged ? NavigationRepeatDelay : NavigationRepeatRate);
+            // The existing Input System UI module handles keyboard/gamepad navigation and repeat.
+            int offset = eventData.moveDir switch
+            {
+                MoveDirection.Left => -1,
+                MoveDirection.Right => 1,
+                MoveDirection.Up => -_columns,
+                MoveDirection.Down => _columns,
+                _ => 0
+            };
+            if (offset == 0) return;
+
+            LobbyInputDeviceKind inputDevice = ResolveInputDevice();
             SetLastInputDevice(inputDevice);
-            Focus();
-            MoveSelection(direction, inputDevice);
-        }
-
-        private static int ReadHorizontalNavigationDirection(out LobbyInputDeviceKind inputDevice)
-        {
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.leftArrowKey.wasPressedThisFrame
-                    || Keyboard.current.aKey.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Keyboard;
-                    return -1;
-                }
-
-                if (Keyboard.current.rightArrowKey.wasPressedThisFrame
-                    || Keyboard.current.dKey.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Keyboard;
-                    return 1;
-                }
-            }
-
-            if (Gamepad.current != null)
-            {
-                if (Gamepad.current.dpad.left.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return -1;
-                }
-
-                if (Gamepad.current.dpad.right.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return 1;
-                }
-            }
-
-            if (Keyboard.current != null
-                && (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed))
-            {
-                inputDevice = LobbyInputDeviceKind.Keyboard;
-                return -1;
-            }
-
-            if (Keyboard.current != null
-                && (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed))
-            {
-                inputDevice = LobbyInputDeviceKind.Keyboard;
-                return 1;
-            }
-
-            if (Gamepad.current != null)
-            {
-                float horizontalInput = Gamepad.current.leftStick.x.ReadValue();
-                if (Gamepad.current.dpad.left.isPressed || horizontalInput < -0.65f)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return -1;
-                }
-
-                if (Gamepad.current.dpad.right.isPressed || horizontalInput > 0.65f)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return 1;
-                }
-            }
-
-            inputDevice = LobbyInputDeviceKind.Unknown;
-            return 0;
-        }
-
-        private void ResetNavigationInput()
-        {
-            _heldNavigationDirection = 0;
-            _nextNavigationTime = 0f;
+            MoveSelection(offset, inputDevice);
+            eventData.Use();
         }
 
         private static void DisableAutomaticNavigation(Selectable selectable)
@@ -701,7 +616,8 @@ namespace PiGame.UI
                 && (Gamepad.current.buttonSouth.wasPressedThisFrame
                     || Gamepad.current.buttonEast.wasPressedThisFrame
                     || Gamepad.current.dpad.IsPressed()
-                    || Mathf.Abs(Gamepad.current.leftStick.x.ReadValue()) > 0.5f))
+                    || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.25f
+                    || Gamepad.current.rightStick.ReadValue().sqrMagnitude > 0.25f))
             {
                 return LobbyInputDeviceKind.Gamepad;
             }
@@ -715,7 +631,8 @@ namespace PiGame.UI
                 && (Gamepad.current.buttonSouth.wasPressedThisFrame
                     || Gamepad.current.buttonEast.wasPressedThisFrame
                     || Gamepad.current.dpad.IsPressed()
-                    || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.36f))
+                    || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.36f
+                    || Gamepad.current.rightStick.ReadValue().sqrMagnitude > 0.36f))
             {
                 return LobbyInputDeviceKind.Gamepad;
             }

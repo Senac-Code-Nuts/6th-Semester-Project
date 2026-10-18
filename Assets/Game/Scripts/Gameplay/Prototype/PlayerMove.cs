@@ -2,6 +2,7 @@ using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.Tilemaps;
 
 namespace PiGame.Gameplay
 {
@@ -75,8 +76,12 @@ namespace PiGame.Gameplay
         private float _horizontalMovementOverrideSpeed;
         private RaycastHit2D _groundHit;
         private Collider2D _ignoredPlatform;
-        private float _dropThroughSurfaceY;
+        private float _dropThroughBottomY;
+        private float _passThroughTopY;
+        private bool _passingPlatformUpwards;
         private float _dropThroughEndsAt;
+        private readonly RaycastHit2D[] _platformHits = new RaycastHit2D[8];
+        private readonly ContactPoint2D[] _wallContacts = new ContactPoint2D[8];
 
         public bool IsCrouching => _crouching.Value;
 
@@ -187,7 +192,19 @@ namespace PiGame.Gameplay
 
         public bool CanBeginWallRestrictedAbility()
         {
-            return !_bodyCollider.IsTouchingLayers(_wallLayer) && _wallJumpControlTimer <= 0f;
+            if (_wallJumpControlTimer > 0f) return false;
+
+            // Ground também está na máscara: apoio no piso não é contato lateral de parede.
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_wallLayer);
+            filter.useTriggers = false;
+            int count = _bodyCollider.GetContacts(filter, _wallContacts);
+            for (int i = 0; i < count; i++)
+            {
+                if (Mathf.Abs(_wallContacts[i].normal.x) > 0.5f) return false;
+            }
+
+            return true;
         }
 
         public void BeginHorizontalMovementOverride(float speed)
@@ -349,14 +366,11 @@ namespace PiGame.Gameplay
         {
             if (!_isGrounded || _ignoredPlatform != null) return;
             Collider2D platform = _groundHit.collider;
-            if (!platform.usedByEffector || !platform.TryGetComponent(out PlatformEffector2D effector)
-                || !effector.isActiveAndEnabled || !effector.useOneWay) return;
+            if (!IsOneWayPlatform(platform)) return;
 
             ResetCrouch();
-            _ignoredPlatform = platform;
-            _dropThroughSurfaceY = _groundHit.point.y;
-            _dropThroughEndsAt = Time.time + _dropThroughTimeoutSeconds;
-            Physics2D.IgnoreCollision(_bodyCollider, platform, true);
+            BeginPlatformPassThrough(platform,
+                _groundHit.point + Vector2.down * Physics2D.defaultContactOffset, false);
             _isGrounded = false;
             _coyoteCounter = 0f;
             _jumpBufferCounter = 0f;
@@ -370,8 +384,72 @@ namespace PiGame.Gameplay
         private void UpdatePlatformCollision()
         {
             if (_ignoredPlatform != null
-                && (_bodyCollider.bounds.max.y < _dropThroughSurfaceY - Physics2D.defaultContactOffset
-                    || Time.time >= _dropThroughEndsAt)) RestorePlatformCollision();
+                && (_bodyCollider.bounds.max.y < _dropThroughBottomY - Physics2D.defaultContactOffset
+                    || (_passingPlatformUpwards
+                        && _bodyCollider.bounds.min.y > _passThroughTopY + Physics2D.defaultContactOffset)
+                    || (Time.time >= _dropThroughEndsAt
+                        && !_bodyCollider.bounds.Intersects(_ignoredPlatform.bounds)))) RestorePlatformCollision();
+
+            if (_ignoredPlatform != null || _rigidbody.linearVelocity.y <= 0f) return;
+
+            // Ignorar desde a subida até sair por cima OU cair de volta por baixo.
+            // Assim o pulo curto não aterrissa na borda inferior de um contorno fechado.
+            Bounds bounds = _bodyCollider.bounds;
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_groundLayer);
+            filter.useTriggers = false;
+            float distance = _rigidbody.linearVelocity.y * Mathf.Max(Time.deltaTime, Time.fixedDeltaTime)
+                + Physics2D.defaultContactOffset;
+            int count = Physics2D.BoxCast(bounds.center, bounds.size, 0f, Vector2.up,
+                filter, _platformHits, distance);
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit2D hit = _platformHits[i];
+                if (hit.normal.y >= -0.5f || !IsOneWayPlatform(hit.collider)) continue;
+                BeginPlatformPassThrough(hit.collider,
+                    hit.point + Vector2.up * Physics2D.defaultContactOffset, true);
+                break;
+            }
+        }
+
+        private static bool IsOneWayPlatform(Collider2D platform)
+        {
+            return platform.usedByEffector && platform.TryGetComponent(out PlatformEffector2D effector)
+                && effector.isActiveAndEnabled && effector.useOneWay;
+        }
+
+        private void BeginPlatformPassThrough(Collider2D platform, Vector2 point, bool upwards)
+        {
+            _ignoredPlatform = platform;
+            _passingPlatformUpwards = upwards;
+            _dropThroughBottomY = platform.bounds.min.y;
+            _passThroughTopY = platform.bounds.max.y;
+            _dropThroughEndsAt = Time.time + _dropThroughTimeoutSeconds;
+            Physics2D.IgnoreCollision(_bodyCollider, platform, true);
+            if (!platform.TryGetComponent(out Tilemap tiles)) return;
+
+            // Um CompositeCollider pode reunir várias plataformas: procurar a base
+            // dos tiles sob o jogador, não a base do collider do mapa inteiro.
+            var bounds = _bodyCollider.bounds;
+            var left = tiles.WorldToCell(new Vector3(bounds.min.x, point.y));
+            var right = tiles.WorldToCell(new Vector3(bounds.max.x, point.y));
+            float bottom = float.PositiveInfinity;
+            float top = float.NegativeInfinity;
+            for (int x = left.x; x <= right.x; x++)
+            {
+                var cell = new Vector3Int(x, left.y, left.z);
+                if (tiles.GetColliderType(cell) == Tile.ColliderType.None) continue;
+                while (cell.y >= tiles.cellBounds.yMin
+                    && tiles.GetColliderType(cell) != Tile.ColliderType.None) cell.y--;
+                bottom = Mathf.Min(bottom, tiles.CellToWorld(cell + Vector3Int.up).y);
+                cell.y = left.y;
+                while (cell.y < tiles.cellBounds.yMax
+                    && tiles.GetColliderType(cell) != Tile.ColliderType.None) cell.y++;
+                top = Mathf.Max(top, tiles.CellToWorld(cell).y);
+            }
+            if (float.IsPositiveInfinity(bottom)) return;
+            _dropThroughBottomY = bottom;
+            _passThroughTopY = top;
         }
 
         private void RestorePlatformCollision()
