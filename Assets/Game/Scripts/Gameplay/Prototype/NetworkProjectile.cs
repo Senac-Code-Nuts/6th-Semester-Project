@@ -37,6 +37,26 @@ namespace PiGame.Gameplay
             _color.OnValueChanged -= HandleColorChanged;
         }
 
+        // Chamar antes do Spawn: a distância da boca do tiro não pode pular uma superfície.
+        public void PlaceAtMuzzle(Vector2 direction, float distance)
+        {
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(LayerMask.GetMask("Ground", "Wall"));
+            // Os colliders de voo dos dois projéteis são triggers.
+            filter.useTriggers = true;
+            var hits = new RaycastHit2D[8];
+            Physics2D.SyncTransforms();
+            int count = GetComponent<Rigidbody2D>().Cast(direction, filter, hits, distance);
+            for (int i = 0; i < count; i++)
+            {
+                float approach = Mathf.Max(0.01f, -Vector2.Dot(direction, hits[i].normal));
+                distance = Mathf.Min(distance,
+                    Mathf.Max(0f, hits[i].distance - Physics2D.defaultContactOffset * 2f / approach));
+            }
+
+            transform.position += (Vector3)(direction * distance);
+        }
+
         public virtual void InitializeServer(
             ulong shooterClientId,
             Vector2 direction,
