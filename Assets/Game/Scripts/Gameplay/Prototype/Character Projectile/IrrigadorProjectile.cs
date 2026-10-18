@@ -27,6 +27,7 @@ namespace PiGame.Gameplay
         public bool IsStuck => _IsStuck;
 
         private Collider2D _projectileCollider;
+        private BoxCollider2D _tipBox;
         private readonly Collider2D[] _collectionHits = new Collider2D[8];
 
         public bool _abilityPull;
@@ -44,25 +45,22 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _projectileCollider = GetComponent<Collider2D>();
+            _tipBox = (BoxCollider2D)_tipCollider;
             _useLifetime = false;
             UpdateColliders();
         }
 
-        public void InitializeServer(
+        public override void InitializeServer(
             ulong shooterClientId,
             Vector2 direction,
+            Color color,
             ProjectileDefinition definition)
         {
             if (!IsServer)
                 return;
 
-            _shooterClientId = shooterClientId;
-            _speed = definition.Speed;
-            _damage = definition.Damage;
-
-            _direction = direction.sqrMagnitude > 0f ? direction.normalized : Vector2.right;
-
-            _despawnAt = Time.time + definition.LifetimeSeconds;
+            base.InitializeServer(shooterClientId, direction, color, definition);
+            transform.rotation = Quaternion.FromToRotation(Vector2.right, _direction);
 
             _IsStuck = false;
             _hasHitPlayer = false;
@@ -97,14 +95,18 @@ namespace PiGame.Gameplay
 
             }
 
-            Vector2 previousTipPosition = _tip.position;
             Vector2 movement = direction * speed * Time.deltaTime;
 
             if (_beingPulled && TryCollectOwner())
                 return;
 
-            RaycastHit2D hit = Physics2D.Raycast(
-                previousTipPosition,
+            Vector2 scale = _tipBox.transform.lossyScale;
+            Vector2 tipSize = Vector2.Scale(_tipBox.size,
+                new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            RaycastHit2D hit = Physics2D.BoxCast(
+                _tip.TransformPoint(_tipBox.offset),
+                tipSize,
+                _tip.eulerAngles.z,
                 movement.normalized,
                 movement.magnitude,
                 _surfaceLayer
@@ -114,6 +116,8 @@ namespace PiGame.Gameplay
             {
                 if (!_beingPulled || hit.collider != _stuckSurface)
                 {
+                    transform.position += (Vector3)(movement.normalized * hit.distance
+                        + hit.normal * Physics2D.defaultContactOffset);
                     HandleTipSurfaceContact(hit.collider);
                     return;
                 }
@@ -151,11 +155,13 @@ namespace PiGame.Gameplay
             _abilityPull = false;
             _stuckSurface = surface;
 
+            // O trigger também pode avisar depois de um passo da física. Só despenetrar:
+            // aproximar colliders já separados puxava o prego para dentro das bordas.
+            Physics2D.SyncTransforms();
             ColliderDistance2D distance = _tipCollider.Distance(surface);
-
-            Vector2 correction = distance.pointB - distance.pointA;
-
-            transform.position += (Vector3)correction;
+            if (distance.isValid && distance.isOverlapped)
+                transform.position += (Vector3)(distance.normal
+                    * (distance.distance - Physics2D.defaultContactOffset));
 
             UpdateColliders();
         }

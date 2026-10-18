@@ -69,11 +69,9 @@ namespace PiGame.Gameplay
                     ? direction.normalized
                     : Vector2.right;
                     
-                Vector3 spawnPosition = transform.position
-                    + (Vector3)(shotDirection * _projectileSpawnDistance);
-
                 NetworkProjectile projectile = Instantiate(
-                    _projectile.Prefab, spawnPosition, Quaternion.identity);
+                    _projectile.Prefab, transform.position, Quaternion.identity);
+                projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
 
                 projectile.NetworkObject.Spawn(true);
 
