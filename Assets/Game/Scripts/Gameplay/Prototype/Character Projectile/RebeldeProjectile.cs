@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using PiGame.Sound;
 
 namespace PiGame.Gameplay 
 {
@@ -23,6 +24,7 @@ namespace PiGame.Gameplay
         [SerializeField] private Collider2D _solidCollider;
         private Rigidbody2D _rigidbody;
         private BoxCollider2D _collisionBox;
+        private RebeldeSoundManager _ownerSound;
         private readonly RaycastHit2D[] _flightHits = new RaycastHit2D[16];
 
         private bool _isStopped;
@@ -45,7 +47,7 @@ namespace PiGame.Gameplay
             _rigidbody.gravityScale = 0f;
         }
 
-        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed)
+        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed, RebeldeSoundManager ownerSound)
         {
             if (!IsServer)
                 return;
@@ -61,7 +63,8 @@ namespace PiGame.Gameplay
             _speed = speed;
 
             _isStopped = false;
-            _falling = false;      
+            _falling = false; 
+            _ownerSound = ownerSound;     
 
         }
 
@@ -249,6 +252,11 @@ namespace PiGame.Gameplay
             {
                 StartFalling();
                 return;
+            }
+
+            if(_ownerSound != null)
+            {
+                _ownerSound.PlayRebeldeBounce();
             }
 
             _direction =

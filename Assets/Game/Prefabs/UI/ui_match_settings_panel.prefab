@@ -11,8 +11,9 @@ GameObject:
   - component: {fileID: 2130000001}
   - component: {fileID: 2130000002}
   - component: {fileID: 2130000003}
+  - component: {fileID: 6190764764641340536}
   m_Layer: 0
-  m_Name: MatchSettingsUI
+  m_Name: ui_match_settings_panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -71,7 +72,7 @@ MonoBehaviour:
   _selectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
   _normalTextColor: {r: 0.96, g: 0.94, b: 0.86, a: 1}
   _selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
-  _unavailableColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+  _unavailableColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
   _unavailableTextColor: {r: 0.45, g: 0.47, b: 0.48, a: 1}
   _selectedScale: 1.15
 --- !u!114 &2130000003
@@ -88,6 +89,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _view: {fileID: 2130000002}
   _lobbyState: {fileID: 0}
+--- !u!114 &6190764764641340536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2130000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f258f69a598222e4f96a82ccd08b4e1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.UiAudioManager
 --- !u!1 &2130000010
 GameObject:
   m_ObjectHideFlags: 0
@@ -191,7 +204,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -209,7 +222,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000013}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000020
 GameObject:
   m_ObjectHideFlags: 0
@@ -712,7 +737,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -730,7 +755,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000213}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000220
 GameObject:
   m_ObjectHideFlags: 0
@@ -912,7 +949,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -930,7 +967,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000233}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000240
 GameObject:
   m_ObjectHideFlags: 0
@@ -1112,7 +1161,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -1130,7 +1179,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000253}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000260
 GameObject:
   m_ObjectHideFlags: 0
@@ -1312,7 +1373,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -1330,7 +1391,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000273}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000280
 GameObject:
   m_ObjectHideFlags: 0
@@ -1591,7 +1664,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -1609,7 +1682,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000313}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000320
 GameObject:
   m_ObjectHideFlags: 0
@@ -1791,7 +1876,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -1809,7 +1894,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000333}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000340
 GameObject:
   m_ObjectHideFlags: 0
@@ -2070,7 +2167,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -2088,7 +2185,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000503}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000510
 GameObject:
   m_ObjectHideFlags: 0
@@ -2270,7 +2379,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -2288,7 +2397,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2130000523}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6190764764641340536}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2130000530
 GameObject:
   m_ObjectHideFlags: 0

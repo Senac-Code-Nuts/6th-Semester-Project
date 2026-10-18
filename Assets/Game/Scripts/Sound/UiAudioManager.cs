@@ -6,22 +6,22 @@ namespace PiGame.Sound
     {
         public void PlayDrawRoullete()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.DrawRoulette);
+            NetworkSoundManager.Instance.LocalSFX(SFXList.DrawRoulette);
         }
 
         public void PlayVolumeScroll()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.VolumeScroll);
+            NetworkSoundManager.Instance.LocalSFX(SFXList.VolumeScroll);
         }
 
         public void PlayLevelSelect()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.LevelSelect);
+            NetworkSoundManager.Instance.LocalSFX(SFXList.LevelSelect);
         }
 
-        public void PlayButtonSound()
+        public void PlayLocalButtonSound()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.UiButton);
+           NetworkSoundManager.Instance.LocalSFX(SFXList.UiButton); 
         }
     }
 }

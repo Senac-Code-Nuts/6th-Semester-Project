@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using PiGame.Sound;
 
 namespace PiGame.Gameplay
 {
@@ -28,6 +29,7 @@ namespace PiGame.Gameplay
 
         private Collider2D _projectileCollider;
         private BoxCollider2D _tipBox;
+        private IrrigadorSoundManager _ownerSound;
         private readonly Collider2D[] _collectionHits = new Collider2D[8];
 
         public bool _abilityPull;
@@ -50,11 +52,11 @@ namespace PiGame.Gameplay
             UpdateColliders();
         }
 
-        public override void InitializeServer(
+        public void InitializeServer(
             ulong shooterClientId,
             Vector2 direction,
             Color color,
-            ProjectileDefinition definition)
+            ProjectileDefinition definition, IrrigadorSoundManager ownerSound)
         {
             if (!IsServer)
                 return;
@@ -65,6 +67,8 @@ namespace PiGame.Gameplay
             _IsStuck = false;
             _hasHitPlayer = false;
             _lastHitClientId = ulong.MaxValue;
+
+            _ownerSound = ownerSound;
 
             UpdateColliders();
         }
@@ -146,6 +150,11 @@ namespace PiGame.Gameplay
                 Vector2 stickDirection = _beingPulled ? _pullDirection : _direction;
 
                 transform.rotation = Quaternion.FromToRotation(Vector2.right,stickDirection);
+            }
+
+            if(_ownerSound != null)
+            {
+                _ownerSound.PlayStuckNail();
             }
 
 
