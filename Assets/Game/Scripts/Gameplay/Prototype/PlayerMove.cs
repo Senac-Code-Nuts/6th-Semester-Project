@@ -76,6 +76,7 @@ namespace PiGame.Gameplay
         private float _dropThroughSurfaceY;
         private float _dropThroughEndsAt;
 
+        private readonly ContactPoint2D[] _wallContacts = new ContactPoint2D[8];
         public bool IsCrouching => _crouching.Value;
 
         private void Awake()
@@ -184,7 +185,19 @@ namespace PiGame.Gameplay
 
         public bool CanBeginWallRestrictedAbility()
         {
-            return !_bodyCollider.IsTouchingLayers(_wallLayer) && _wallJumpControlTimer <= 0f;
+            if (_wallJumpControlTimer > 0f) return false;
+
+            // Ground também está na máscara: apoio no piso não é contato lateral de parede.
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_wallLayer);
+            filter.useTriggers = false;
+            int count = _bodyCollider.GetContacts(filter, _wallContacts);
+            for (int i = 0; i < count; i++)
+            {
+                if (Mathf.Abs(_wallContacts[i].normal.x) > 0.5f) return false;
+            }
+
+            return true;
         }
 
         public void BeginHorizontalMovementOverride(float speed)
