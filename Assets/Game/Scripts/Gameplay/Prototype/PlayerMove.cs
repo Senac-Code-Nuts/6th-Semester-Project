@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.Tilemaps;
 
 namespace PiGame.Gameplay
 {
@@ -73,10 +74,10 @@ namespace PiGame.Gameplay
         private float _horizontalMovementOverrideSpeed;
         private RaycastHit2D _groundHit;
         private Collider2D _ignoredPlatform;
-        private float _dropThroughSurfaceY;
+        private float _dropThroughBottomY;
         private float _dropThroughEndsAt;
-
         private readonly ContactPoint2D[] _wallContacts = new ContactPoint2D[8];
+
         public bool IsCrouching => _crouching.Value;
 
         private void Awake()
@@ -354,7 +355,7 @@ namespace PiGame.Gameplay
 
             ResetCrouch();
             _ignoredPlatform = platform;
-            _dropThroughSurfaceY = _groundHit.point.y;
+            _dropThroughBottomY = GetPlatformBottom(platform);
             _dropThroughEndsAt = Time.time + _dropThroughTimeoutSeconds;
             Physics2D.IgnoreCollision(_bodyCollider, platform, true);
             _isGrounded = false;
@@ -370,8 +371,30 @@ namespace PiGame.Gameplay
         private void UpdatePlatformCollision()
         {
             if (_ignoredPlatform != null
-                && (_bodyCollider.bounds.max.y < _dropThroughSurfaceY - Physics2D.defaultContactOffset
-                    || Time.time >= _dropThroughEndsAt)) RestorePlatformCollision();
+                && (_bodyCollider.bounds.max.y < _dropThroughBottomY - Physics2D.defaultContactOffset
+                    || (Time.time >= _dropThroughEndsAt
+                        && !_bodyCollider.bounds.Intersects(_ignoredPlatform.bounds)))) RestorePlatformCollision();
+        }
+
+        private float GetPlatformBottom(Collider2D platform)
+        {
+            if (!platform.TryGetComponent(out Tilemap tiles)) return platform.bounds.min.y;
+
+            // Um CompositeCollider pode reunir várias plataformas: procurar a base
+            // dos tiles sob o jogador, não a base do collider do mapa inteiro.
+            var bounds = _bodyCollider.bounds;
+            float surfaceY = _groundHit.point.y - Physics2D.defaultContactOffset;
+            var left = tiles.WorldToCell(new Vector3(bounds.min.x, surfaceY));
+            var right = tiles.WorldToCell(new Vector3(bounds.max.x, surfaceY));
+            float bottom = _groundHit.point.y;
+            for (int x = left.x; x <= right.x; x++)
+            {
+                var cell = new Vector3Int(x, left.y, left.z);
+                while (cell.y >= tiles.cellBounds.yMin
+                    && tiles.GetColliderType(cell) != Tile.ColliderType.None) cell.y--;
+                bottom = Mathf.Min(bottom, tiles.CellToWorld(cell + Vector3Int.up).y);
+            }
+            return bottom;
         }
 
         private void RestorePlatformCollision()
