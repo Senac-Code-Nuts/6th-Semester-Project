@@ -41,6 +41,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Maps/Kitezh_2.unity
     guid: ba8c4fd72c655ff4dad840f45513fcde
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Aucuag 2.unity
+    guid: cf9d6bd91bd6f1b459f430e7cb03eea8
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Bonanza 1.unity
+    guid: 3a2230175bb14a54c8191c8d5622d5ee
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Buraco 1.unity
+    guid: 83c08eda56f13074bacfc6357c1b92d3
+  - enabled: 1
+    path: Assets/Game/Scenes/Maps/Buraco 2.unity
+    guid: 755fb27ad072813478441d0ee14e6150
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
