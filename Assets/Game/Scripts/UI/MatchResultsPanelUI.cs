@@ -98,7 +98,8 @@ namespace PiGame.UI
                 MatchPlayerScoreData score = _scores[i];
                 if (i == 0 || score.Kills != _scores[i - 1].Kills
                     || _scores[i - 1].PlayerSlot == winner) place = i + 1;
-                _players[i].Show(score, place, score.PlayerSlot == winner);
+                bool animate = opening || !_players[i].gameObject.activeSelf;
+                _players[i].Show(score, place, score.PlayerSlot == winner, animate);
                 if (score.PlayerSlot == winner) _heading.text = $"{score.PlayerName} VENCEU!";
             }
 

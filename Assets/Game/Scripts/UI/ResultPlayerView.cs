@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using PiGame.Gameplay;
 using PiGame.Lobby;
 using TMPro;
@@ -31,6 +32,17 @@ namespace PiGame.UI
         [SerializeField] private float _otherHeight = 270f;
         [SerializeField] private float _lowerPlaceHeight = 240f;
 
+        [Header("Entrada dos pilares")]
+        [SerializeField, Min(0f)] private float _riseDuration = 2.6f;
+        [SerializeField, Min(0f)] private float _riseDistance = 650f;
+        [SerializeField] private AnimationCurve _riseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [Tooltip("Tremor em pixels da UI durante a subida. Zero desativa o efeito.")]
+        [SerializeField, Range(0f, 10f)] private float _shakeAmplitude = 2.5f;
+        [SerializeField, Min(0f)] private float _shakeFrequency = 18f;
+
+        private Vector2 _restPosition;
+        private Coroutine _rise;
+
         private void Awake()
         {
             if (!_podium || !_frame || !_place || !_playerTag || !_playerName
@@ -39,10 +51,20 @@ namespace PiGame.UI
             {
                 Debug.LogError("Configure os textos, pódio e animações do ResultPlayerView no prefab.", this);
                 enabled = false;
+                return;
             }
+            _restPosition = _podium.anchoredPosition;
         }
 
-        public void Show(MatchPlayerScoreData player, int place, bool winner)
+        private void OnDisable()
+        {
+            if (_rise == null) return;
+            StopCoroutine(_rise);
+            _rise = null;
+            _podium.anchoredPosition = _restPosition;
+        }
+
+        public void Show(MatchPlayerScoreData player, int place, bool winner, bool animate)
         {
             gameObject.SetActive(true);
             if (!enabled) return;
@@ -71,6 +93,33 @@ namespace PiGame.UI
                 _character.Rebind();
                 _character.Update(0f);
             }
+            // Atualizações do placar não reiniciam a entrada que já está acontecendo.
+            if (!animate) return;
+            if (_rise != null) StopCoroutine(_rise);
+            _rise = null;
+            _podium.anchoredPosition = _restPosition;
+            if (_riseDuration > 0f) _rise = StartCoroutine(Rise(player.PlayerSlot));
+        }
+
+        private IEnumerator Rise(int playerSlot)
+        {
+            Vector2 start = _restPosition + Vector2.down * _riseDistance;
+            float phase = playerSlot * 13.37f;
+            for (float elapsed = 0f; elapsed < _riseDuration; elapsed += Time.unscaledDeltaTime)
+            {
+                float time = elapsed / _riseDuration;
+                float progress = Mathf.Clamp01(_riseCurve.Evaluate(time));
+                // Ruído suave por jogador: esforço durante a subida, sem deslocamento residual ao parar.
+                float strength = _shakeAmplitude * Mathf.Sin(Mathf.PI * time);
+                float noiseTime = elapsed * _shakeFrequency;
+                Vector2 shake = new Vector2(
+                    Mathf.PerlinNoise(noiseTime, phase) * 2f - 1f,
+                    (Mathf.PerlinNoise(phase, noiseTime + 37f) * 2f - 1f) * 0.35f) * strength;
+                _podium.anchoredPosition = Vector2.LerpUnclamped(start, _restPosition, progress) + shake;
+                yield return null;
+            }
+            _podium.anchoredPosition = _restPosition;
+            _rise = null;
         }
     }
 }
