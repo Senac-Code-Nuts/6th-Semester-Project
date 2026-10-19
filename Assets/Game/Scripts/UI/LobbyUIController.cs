@@ -171,6 +171,12 @@ namespace PiGame.UI
                 return;
             }
 
+            if (_lobbyPause.IsInlineControlsBusy && (keyboardBack || gamepadMenu || gamepadBack))
+            {
+                _lobbyPause.HandleControlsBack();
+                return;
+            }
+
             if (_lobbyPause.IsControlsVisible)
             {
                 if ((keyboardBack || gamepadMenu || gamepadBack)
