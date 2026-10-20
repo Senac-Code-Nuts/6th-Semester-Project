@@ -179,6 +179,10 @@ namespace PiGame.Gameplay
 
             _isAlive.Value = false;
             _matchActive.Value = false;
+            if (TryGetComponent<ICharacterCombat>(out var characterCombat))
+            {
+                characterCombat.ClearProjectilesServer();
+            }
             Died?.Invoke(this, attackerClientId);
         }
 

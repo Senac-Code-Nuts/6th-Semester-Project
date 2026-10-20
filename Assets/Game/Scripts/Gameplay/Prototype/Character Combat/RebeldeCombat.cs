@@ -112,6 +112,19 @@ namespace PiGame.Gameplay
             _ammo.Value = 1;
             _hasShot.Value = true;
         }
+
+        public void ClearProjectilesServer()
+        {
+            if (!IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                return;
+
+            if (_activeRebeldeProjectile != null && _activeRebeldeProjectile.IsSpawned)
+            {
+                _activeRebeldeProjectile.NetworkObject.Despawn(true);
+            }
+            _activeRebeldeProjectile = null;
+        }
+
         private void Update()
         {
             if (!IsServer)
@@ -153,9 +166,8 @@ namespace PiGame.Gameplay
         {
             _ammo.OnValueChanged -= HandleAmmoChanged;
             _playerState.StateChanged -= RefreshAmmoIndicators;
-            if (IsServer && _activeRebeldeProjectile != null && _activeRebeldeProjectile.IsSpawned)
+            if (IsServer)
             {
-                _activeRebeldeProjectile.NetworkObject.Despawn(true);
                 _activeRebeldeProjectile = null;
             }
         }

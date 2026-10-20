@@ -74,15 +74,9 @@ namespace PiGame.Gameplay
             _playerState.StateChanged -= RefreshNailIndicators;
             _nailIndicators.SetCount(0, false, _playerState.IndicatorColor);
 
+            //Limpa quando o jogador desconectar do jogo
             if (IsServer)
             {
-                foreach (var proj in _activeProjectiles)
-                {
-                    if (proj != null && proj.IsSpawned)
-                    {
-                        proj.NetworkObject.Despawn(true);
-                    }
-                }
                 _activeProjectiles.Clear();
             }
         }
@@ -148,6 +142,23 @@ namespace PiGame.Gameplay
         {
             if (!IsServer) return;
             _nails.Value = _maxNails;
+        }
+
+        public void ClearProjectilesServer()
+        {
+            if (!IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                return;
+
+            _activeProjectiles.RemoveAll(p => p == null || !p.IsSpawned);
+
+            foreach (var proj in _activeProjectiles)
+            {
+                if (proj != null && proj.IsSpawned)
+                {
+                    proj.NetworkObject.Despawn(true);
+                }
+            }
+            _activeProjectiles.Clear();
         }
         public void AddNailServer()
         {

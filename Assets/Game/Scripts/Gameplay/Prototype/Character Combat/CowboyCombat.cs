@@ -67,7 +67,7 @@ namespace PiGame.Gameplay
                 return;
             }
         }
-
+        public void ClearProjectilesServer() { }
         public override void OnNetworkSpawn()
         {
             if (!enabled)

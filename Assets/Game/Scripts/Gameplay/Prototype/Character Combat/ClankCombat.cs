@@ -281,7 +281,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     {
     }
     #endregion
-
+    public void ClearProjectilesServer() { }
     private bool IsGroundedRaycast()
     {
         Collider2D col = GetComponent<Collider2D>();
