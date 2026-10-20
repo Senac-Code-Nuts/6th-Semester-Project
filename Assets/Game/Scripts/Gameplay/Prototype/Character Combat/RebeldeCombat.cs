@@ -25,6 +25,11 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0.1f)] private float _maxAbilityHoldSeconds = 1.5f;
         [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 4f;
         [SerializeField, Min(0f)] private float _playerUpwardImpulse = 3f;
+        [SerializeField, Min(0f)] private float _abilityGraceSeconds = 0.12f;
+
+        private bool _abilityHitWindowActive;
+        private float _abilityHitWindowUntil;
+        private readonly HashSet<NetworkObject> _abilityProcessedTargets = new();
         private bool _abilityActive;
         private Vector2 _abilityForward = Vector2.right;
         private float _abilityStartedAt;
@@ -61,7 +66,7 @@ namespace PiGame.Gameplay
         }
         public void ShootServer(Vector2 direction)
         {
-            if (!IsServer || !_playerState.CanAct)   
+            if (!IsServer || !_playerState.CanAct)
             {
                 return;
             }
@@ -138,6 +143,21 @@ namespace PiGame.Gameplay
                 {
                     _abilityActive = false;
                     _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                }
+
+
+            }
+            if (_abilityHitWindowActive)
+            {
+                if (Time.time <= _abilityHitWindowUntil)
+                {
+                    // Continua verificando o cone durante a janela adicional.
+                    ExecuteAbilityCone();
+                }
+                else
+                {
+                    // A janela expirou; não processa mais alvos.
+                    _abilityHitWindowActive = false;
                 }
             }
 
@@ -226,19 +246,21 @@ namespace PiGame.Gameplay
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if (!IsServer || !_playerState.CanAct || _abilityActive)
+            if (!IsServer || !_playerState.CanAct || _abilityActive ||  _abilityHitWindowActive)
                 return;
 
             if (Time.time < _abilityCooldownUntil)
             {
                 return;
             }
+            _abilityProcessedTargets.Clear();
 
             _abilityActive = true;
             _abilityStartedAt = Time.time;
 
             _rebeldeSound.PlayRebeldeSkill();
-
+            Debug.Log($"[Rebelde] Skill iniciada em {Time.time}");
+            
             _abilityForward = GetFacingDirection(aimDirection, moveDirection);
         }
         public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
@@ -263,6 +285,12 @@ namespace PiGame.Gameplay
 
                 return;
             }
+
+            _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+            _abilityForward = GetFacingDirection(aimDirection, moveDirection);
+
+            _abilityHitWindowActive = true;
+            _abilityHitWindowUntil = Time.time + _abilityGraceSeconds;
 
             ExecuteAbilityCone();
         }
@@ -292,50 +320,47 @@ namespace PiGame.Gameplay
         }
         private void ExecuteAbilityCone()
         {
-            Collider2D[] hits = Physics2D.OverlapCircleAll(
+                Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
                 _coneDistance);
 
-            HashSet<NetworkObject> processed = new HashSet<NetworkObject>();
-
             foreach (Collider2D hit in hits)
             {
-
                 if (!IsInsideAbilityCone(hit.bounds.center, _abilityForward))
-                {
                     continue;
-                }
 
+                // Primeiro, verifica se o alvo é um projétil.
                 NetworkProjectile projectile =
                     hit.GetComponentInParent<NetworkProjectile>();
 
                 if (projectile != null)
                 {
+                    // Não reflete projéteis disparados pelo próprio Rebelde.
                     if (projectile.ShooterClientId == OwnerClientId)
-                    {
                         continue;
-                    }
 
-                    if (!processed.Add(projectile.NetworkObject))
+                    // Impede refletir o mesmo projétil em vários frames da janela.
+                    if (!_abilityProcessedTargets.Add(projectile.NetworkObject))
                         continue;
 
                     projectile.ReflectServer(_projectileReflectMinimumSpeed);
-
                     continue;
                 }
 
+                // Se não for projétil, verifica se é um jogador.
                 NetworkPlayerState player =
                     hit.GetComponentInParent<NetworkPlayerState>();
 
                 if (player == null)
-                {
                     continue;
-                }
 
+                // Não afeta o próprio Rebelde.
                 if (player.OwnerClientId == OwnerClientId)
-                {
                     continue;
-                }
+
+                // Impede aplicar o impulso repetidamente ao mesmo jogador.
+                if (!_abilityProcessedTargets.Add(player.NetworkObject))
+                    continue;
 
                 ApplyUpwardImpulse(player);
             }
