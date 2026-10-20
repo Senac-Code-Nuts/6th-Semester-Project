@@ -161,7 +161,12 @@ namespace PiGame.Gameplay
                 _isReloading = false;
             }
         }
-
+        public void RefillAmmoServer()
+        {
+            if (!IsServer) return;
+            _ammo.Value = _maximumAmmo;
+            _isReloading = false;
+        }
         public void ShootServer(Vector2 direction)
         {
             if (!IsServer || !enabled) 

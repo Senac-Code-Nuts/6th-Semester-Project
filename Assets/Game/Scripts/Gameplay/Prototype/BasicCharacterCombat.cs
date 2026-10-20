@@ -62,5 +62,9 @@ namespace PiGame.Gameplay
         {
             
         }
+
+        public void RefillAmmoServer()
+        {
+        }
     }
 }

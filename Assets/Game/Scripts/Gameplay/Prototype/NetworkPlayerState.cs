@@ -208,6 +208,10 @@ namespace PiGame.Gameplay
             _isAlive.Value = true;
             _matchActive.Value = true;
             _isInvulnerable = false;
+            if (TryGetComponent<ICharacterCombat>(out var characterCombat))
+            {
+                characterCombat.RefillAmmoServer();
+            }
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

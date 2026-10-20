@@ -43,6 +43,7 @@ namespace PiGame.Gameplay
         private IrrigadorSoundManager _irrigadorSound;
 
         private float _nextShotTime;
+        private readonly List<IrrigadorProjectile> _activeProjectiles = new();
 
         private void Awake()
         {
@@ -72,6 +73,18 @@ namespace PiGame.Gameplay
             _nails.OnValueChanged -= HandleNailsChanged;
             _playerState.StateChanged -= RefreshNailIndicators;
             _nailIndicators.SetCount(0, false, _playerState.IndicatorColor);
+
+            if (IsServer)
+            {
+                foreach (var proj in _activeProjectiles)
+                {
+                    if (proj != null && proj.IsSpawned)
+                    {
+                        proj.NetworkObject.Despawn(true);
+                    }
+                }
+                _activeProjectiles.Clear();
+            }
         }
 
         private void HandleNailsChanged(int previousValue, int currentValue)
@@ -114,6 +127,8 @@ namespace PiGame.Gameplay
             if(irrigadorProjectile != null)
             {
                 irrigadorProjectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile, _irrigadorSound);
+                _activeProjectiles.RemoveAll(p => p == null || !p.IsSpawned);
+                _activeProjectiles.Add(irrigadorProjectile);
             }
             else
             {
@@ -129,7 +144,11 @@ namespace PiGame.Gameplay
                 StopMagnetServer();
             }
         }
-
+        public void RefillAmmoServer()
+        {
+            if (!IsServer) return;
+            _nails.Value = _maxNails;
+        }
         public void AddNailServer()
         {
             if(!IsServer)
