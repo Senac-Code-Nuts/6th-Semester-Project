@@ -243,6 +243,8 @@ namespace PiGame.Gameplay
                 _rigidbody.linearVelocity = new Vector2(
                     -_wallDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
                 _wallJumpControlTimer = _wallJumpControlLockTime;
+                _isWallSliding = false;
+                _coyoteCounter = 0f;
                 _stickTimer = 0f;
             }
             else if (_coyoteCounter > 0f)
@@ -299,7 +301,11 @@ namespace PiGame.Gameplay
 
         private void HandleWallSlide()
         {
-            if (_wallJumpControlTimer > 0f) return;
+            if (_wallJumpControlTimer > 0f)
+            {
+                _isWallSliding = false;
+                return;
+            }
             bool pressingWall = _wallDirection * _horizontalInput > 0f;
 
             if (_isDroppingFromWall || _isGrounded || !_isTouchingWall || !pressingWall)
