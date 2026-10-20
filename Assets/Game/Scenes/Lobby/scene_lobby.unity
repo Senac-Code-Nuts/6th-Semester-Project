@@ -977,7 +977,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _rules: {fileID: 11400000, guid: c0400000000000000000000000000006, type: 2}
   _maps:
-  - {fileID: 11400000, guid: aafc2f31babd7f84483ba6e71cc0254c, type: 2}
   - {fileID: 11400000, guid: 8539b9abd1c509e48a7fecfd33628ebc, type: 2}
   - {fileID: 11400000, guid: a88e337868d7a0d45ae7904de6d1d44c, type: 2}
   - {fileID: 11400000, guid: 462b984ef039a05ea17b4847a3700715, type: 2}
