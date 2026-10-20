@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1805117967
+  GlobalObjectIdHash: 4006005954
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -194,7 +194,35 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 743aaa31e9f4a964d845d75997fd602a, type: 3}
     fadeInSeconds: 0
     fadeOutSeconds: 0
-  ostList: []
+  ostList:
+  - ostType: 0
+    clip: {fileID: 8300000, guid: 89d5b3c7f9a780e418da875a1051741a, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 1
+    clip: {fileID: 8300000, guid: a1c81b1d9e79aa44b87cb1b7bc521452, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 2
+    clip: {fileID: 8300000, guid: 5a3217d896743c64ea2c20e6f5e381c6, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 3
+    clip: {fileID: 8300000, guid: fd61bb041d6fed142808428762b3044e, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 4
+    clip: {fileID: 8300000, guid: b495180f74d4c314fa5e1df3589d8ec0, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 5
+    clip: {fileID: 8300000, guid: eb651f18e17c7fe4eb5f699ef7921cb7, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 6
+    clip: {fileID: 8300000, guid: 1fb72e4f142119b46ae716e873f616ec, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
 --- !u!1 &412281090290135861
 GameObject:
   m_ObjectHideFlags: 0
