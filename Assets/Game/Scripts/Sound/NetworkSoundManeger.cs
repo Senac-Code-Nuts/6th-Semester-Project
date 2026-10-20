@@ -89,27 +89,31 @@ namespace PiGame.Sound
                 ? ostSource.outputAudioMixerGroup?.audioMixer : null);
         }
 
-        public void PlaySFX(SFXList sfx)
+        public void PlaySFX(SFXList sfx, float volume = 0.2f)
         {
             if (Instance == null) return;
+            sfxSource.volume = volume;
             Instance.SendSFXServerRpc(sfx);
         }
 
-        public void LocalSFX(SFXList sfx)
+        public void LocalSFX(SFXList sfx, float volume = 0.2f)
         {
             if(Instance == null) return;
+            sfxSource.volume = volume;
             Instance.PlaySFXLocal(sfx);
         }
 
-        public void PlayOST(OSTList ost)
+        public void PlayOST(OSTList ost, float volume = 0.5f)
         {
             if (Instance == null) return;
+            ostSource.volume = volume;
             Instance.SendOSTServerRpc(ost);
         }
 
-        public void LocalOST(OSTList ost)
+        public void LocalOST(OSTList ost, float volume = 0.5f)
         {
             if(Instance == null) return;
+            ostSource.volume = volume;
             Instance.PlayOSTLocal(ost);
         }
 
