@@ -200,7 +200,7 @@ GameObject:
   - component: {fileID: 889257818657329603}
   - component: {fileID: 2354500378569476871}
   m_Layer: 0
-  m_Name: Map 4 pallete
+  m_Name: Rebelde Tile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

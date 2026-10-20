@@ -270,7 +270,7 @@ GameObject:
   - component: {fileID: 4955276274097694473}
   - component: {fileID: 350179658556473106}
   m_Layer: 0
-  m_Name: Map 2 Pallete
+  m_Name: Irrigador Tile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

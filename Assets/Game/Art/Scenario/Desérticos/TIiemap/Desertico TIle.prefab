@@ -214,7 +214,7 @@ GameObject:
   - component: {fileID: 1650570382590268467}
   - component: {fileID: 2336071792676779493}
   m_Layer: 0
-  m_Name: Mapa 1 Pallete
+  m_Name: Desertico TIle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
