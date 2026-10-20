@@ -124,12 +124,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_0
       rect:
         serializedVersion: 2
-        x: 10
-        y: 7
-        width: 12
-        height: 21
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 0
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -146,12 +146,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_1
       rect:
         serializedVersion: 2
-        x: 43
-        y: 7
-        width: 12
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 32
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -168,12 +168,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_2
       rect:
         serializedVersion: 2
-        x: 75
-        y: 7
-        width: 12
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 64
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -190,12 +190,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_3
       rect:
         serializedVersion: 2
-        x: 106
-        y: 7
-        width: 12
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 96
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -212,12 +212,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_4
       rect:
         serializedVersion: 2
-        x: 138
-        y: 7
-        width: 12
-        height: 21
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 128
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -234,12 +234,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_5
       rect:
         serializedVersion: 2
-        x: 171
-        y: 7
-        width: 12
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 160
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -256,12 +256,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_6
       rect:
         serializedVersion: 2
-        x: 203
-        y: 7
-        width: 12
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 192
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -278,12 +278,12 @@ TextureImporter:
       name: Art_Anim_Char_Desertico_Idle_V1.01_7
       rect:
         serializedVersion: 2
-        x: 234
-        y: 7
-        width: 12
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 224
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.50000000, y: 0.54687500}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []

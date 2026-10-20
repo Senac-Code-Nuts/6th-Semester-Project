@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using PiGame.Gameplay;
+using PiGame.Input;
 using PiGame.Lobby;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,6 +29,7 @@ namespace PiGame.UI
         [SerializeField] private Image[] _characterPortraits;
         [SerializeField] private Image[] _deviceIcons;
         [SerializeField] private Text[] _slotLabels;
+        [SerializeField] private Text[] _playerNameTexts;
         [SerializeField] private Text[] _statusTexts;
 
         [Header("Character navigation")]
@@ -40,10 +42,7 @@ namespace PiGame.UI
         [SerializeField] private Sprite _gamepadDeviceSprite;
         [SerializeField] private Image _confirmLegendIcon;
         [SerializeField] private Image _backLegendIcon;
-        [SerializeField] private Sprite _keyboardConfirmSprite;
-        [SerializeField] private Sprite _keyboardBackSprite;
-        [SerializeField] private Sprite _gamepadConfirmSprite;
-        [SerializeField] private Sprite _gamepadBackSprite;
+        [SerializeField] private InputPromptCatalog _promptCatalog;
         [SerializeField] private Text _instructionText;
 
         public event Action<int, LobbyInputDeviceKind> BrowseRequested;
@@ -51,6 +50,7 @@ namespace PiGame.UI
         public event Action BackRequested;
 
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
+        private Gamepad _lastGamepad;
         private bool _interactionEnabled = true;
         private int _localPlayerSlot = -1;
         private bool _localPlayerIsReady = true;
@@ -86,6 +86,12 @@ namespace PiGame.UI
 
         private void Update()
         {
+            if (_lastGamepad != Gamepad.current)
+            {
+                _lastGamepad = Gamepad.current;
+                RefreshLegend();
+            }
+
             LobbyInputDeviceKind detectedDevice = DetectRecentlyUsedDevice();
             if (detectedDevice != LobbyInputDeviceKind.Unknown)
             {
@@ -111,6 +117,11 @@ namespace PiGame.UI
         public void OnCancel(BaseEventData eventData)
         {
             if (!_interactionEnabled)
+            {
+                return;
+            }
+
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 return;
             }
@@ -271,8 +282,9 @@ namespace PiGame.UI
             bool isCharacterLocked)
         {
             LobbyCharacterDefinition character = FindCharacter(player.CharacterId);
+            _playerNameTexts[slot].text = player.PlayerName.ToString();
             _slotRoots[slot].localScale = isLocalPlayer && !player.IsReady
-                ? Vector3.one * 1.08f
+                ? Vector3.one * 1.03f
                 : Vector3.one;
 
             Color slotColor = PlayerSlotColors.Get(slot);
@@ -302,7 +314,7 @@ namespace PiGame.UI
             Text statusText = _statusTexts[slot];
             if (player.IsReady)
             {
-                statusText.text = $"<size=15>{GetColoredPlayerLabel(slot)}</size>\nPRONTO";
+                statusText.text = "PRONTO";
                 statusText.fontSize = 28;
                 statusText.color = new Color(0.42f, 1f, 0.58f, 1f);
             }
@@ -319,6 +331,7 @@ namespace PiGame.UI
 
         private void RenderEmptySlot(int slot)
         {
+            _playerNameTexts[slot].text = string.Empty;
             _slotRoots[slot].localScale = Vector3.one;
             Color emptyColor = PlayerSlotColors.Get(slot);
             emptyColor.a = 0.28f;
@@ -327,8 +340,7 @@ namespace PiGame.UI
             _deviceIcons[slot].gameObject.SetActive(false);
             _slotLabels[slot].text = "AGUARDANDO";
             _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
-            _statusTexts[slot].text =
-                $"<size=14>{GetColoredPlayerLabel(slot)}</size>\nAGUARDANDO";
+            _statusTexts[slot].text = "AGUARDANDO";
             _statusTexts[slot].fontSize = 16;
             _statusTexts[slot].color = new Color(0.58f, 0.58f, 0.64f, 1f);
         }
@@ -336,8 +348,7 @@ namespace PiGame.UI
         private void RenderChoosingStatus(int slot, bool isLocalPlayer)
         {
             Text statusText = _statusTexts[slot];
-            statusText.text =
-                $"<size=14>{GetColoredPlayerLabel(slot)}</size>\nESCOLHENDO...";
+            statusText.text = "ESCOLHENDO...";
             statusText.fontSize = isLocalPlayer ? 18 : 16;
             statusText.color = isLocalPlayer
                 ? Color.white
@@ -347,9 +358,7 @@ namespace PiGame.UI
         private void RenderBlockedStatus(int slot, int lockingPlayerSlot)
         {
             Text statusText = _statusTexts[slot];
-            statusText.text =
-                $"<size=14>{GetColoredPlayerLabel(slot)}</size>\n"
-                + $"BLOQUEADO - {GetColoredPlayerLabel(lockingPlayerSlot)}";
+            statusText.text = $"BLOQUEADO - {GetColoredPlayerLabel(lockingPlayerSlot)}";
             statusText.fontSize = 18;
             statusText.color = new Color(1f, 0.42f, 0.38f, 1f);
         }
@@ -548,17 +557,19 @@ namespace PiGame.UI
             bool usesGamepad = _lastInputDevice == LobbyInputDeviceKind.Gamepad;
             if (_confirmLegendIcon != null)
             {
-                _confirmLegendIcon.sprite = usesGamepad ? _gamepadConfirmSprite : _keyboardConfirmSprite;
+                _confirmLegendIcon.sprite = _promptCatalog.GetSprite(
+                    usesGamepad ? "<Gamepad>/buttonSouth" : "<Keyboard>/enter");
             }
 
             if (_backLegendIcon != null)
             {
-                _backLegendIcon.sprite = usesGamepad ? _gamepadBackSprite : _keyboardBackSprite;
+                _backLegendIcon.sprite = _promptCatalog.GetSprite(
+                    usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/escape");
             }
 
             if (_instructionText != null)
             {
-                _instructionText.text = "CONFIRMAR / PRONTO                 VOLTAR";
+                _instructionText.text = "CONFIRMAR / PRONTO";
             }
         }
 

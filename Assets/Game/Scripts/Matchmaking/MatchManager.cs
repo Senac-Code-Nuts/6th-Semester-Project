@@ -98,7 +98,7 @@ namespace PiGame.Gameplay
                 playerState.InitializeServer(
                     playerData,
                     PlayerSlotColors.Get(playerData.PlayerSlot));
-                _matchController.RegisterPlayer(playerState, spawnPoint.position);
+                _matchController.RegisterPlayer(playerState, spawnPoint.position, playerData);
             }
         }
 

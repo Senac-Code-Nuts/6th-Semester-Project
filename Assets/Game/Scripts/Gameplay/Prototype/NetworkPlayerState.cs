@@ -1,11 +1,13 @@
+using System.Collections;
 using System;
 using PiGame.Lobby;
 using Unity.Netcode;
 using UnityEngine;
+using PiGame.Sound;
 
 namespace PiGame.Gameplay
 {
-    [RequireComponent(typeof(NetworkObject))]
+    [RequireComponent(typeof(NetworkObject), typeof(SpriteRenderer))]
     public class NetworkPlayerState : NetworkBehaviour
     {
         [SerializeField] private int _maximumHealth = 3;
@@ -18,12 +20,18 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<Color> _indicatorColor =
             new NetworkVariable<Color>(Color.white);
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
-        private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>();
-        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>();
+        private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(true);
 
         private SpriteRenderer[] _spriteRenderers;
+        private SpriteRenderer _bodySpriteRenderer;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
+        private GeneralPlayerSoundManager _playerSound;
+        private Animator _animator;
+        private bool _isInvulnerable;
+        private Coroutine _knockbackRoutine;
+        private Coroutine _hitAnimationRoutine;
 
         public event Action StateChanged;
         public event Action<NetworkPlayerState, ulong> Died;
@@ -36,12 +44,16 @@ namespace PiGame.Gameplay
         public int MaximumHealth => _maximumHealth;
         public bool IsAlive => _isAlive.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
+        public bool IsInvulnerable => _isInvulnerable;
 
         private void Awake()
         {
+            _bodySpriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
             _colliders = GetComponentsInChildren<Collider2D>(true);
             _rigidbody = GetComponent<Rigidbody2D>();
+            _animator = GetComponent<Animator>();
+            _playerSound = GetComponent<GeneralPlayerSoundManager>();
         }
 
         public override void OnNetworkSpawn()
@@ -56,6 +68,7 @@ namespace PiGame.Gameplay
 
             ApplyAlivePresentation(_isAlive.Value);
             ApplyHealthPresentation();
+            UpdateDeathAnimation(_isAlive.Value);
             StateChanged?.Invoke();
         }
 
@@ -84,6 +97,46 @@ namespace PiGame.Gameplay
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
             _matchActive.Value = true;
+            _isInvulnerable = false;
+        }
+
+        public void SetInvulnerableServer(bool isInvulnerable)
+        {
+            if (IsServer)
+            {
+                _isInvulnerable = isInvulnerable;
+            }
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ApplyKnockbackOwnerRpc(Vector2 velocity)
+        {
+            if (!IsOwner || _rigidbody == null)
+            {
+                return;
+            }
+
+            _rigidbody.linearVelocity = velocity;
+            if (_knockbackRoutine != null)
+            {
+                StopCoroutine(_knockbackRoutine);
+            }
+
+            _knockbackRoutine = StartCoroutine(DisableMovementRoutine(0.25f));
+        }
+
+        private IEnumerator DisableMovementRoutine(float duration)
+        {
+            PlayerMove playerMove = GetComponent<PlayerMove>();
+            if (playerMove == null)
+            {
+                yield break;
+            }
+
+            playerMove.enabled = false;
+            yield return new WaitForSeconds(duration);
+            playerMove.enabled = true;
+            _knockbackRoutine = null;
         }
 
         public void SetMatchActiveServer(bool isActive)
@@ -102,15 +155,26 @@ namespace PiGame.Gameplay
 
         public void ApplyDamageServer(int amount, ulong attackerClientId)
         {
-            if (!IsServer || !CanAct || amount <= 0)
+            if (!IsServer || !CanAct || _isInvulnerable || amount <= 0)
             {
                 return;
             }
 
             _currentHealth.Value = Mathf.Max(0, _currentHealth.Value - amount);
+
             if (_currentHealth.Value > 0)
             {
+                if(_playerSound != null)
+                {
+                    _playerSound.PlayHit();
+                }
                 return;
+            }
+
+
+            if(_playerSound != null)
+            {
+                _playerSound.PlayDeathHit();
             }
 
             _isAlive.Value = false;
@@ -134,10 +198,16 @@ namespace PiGame.Gameplay
             TeleportOwnerRpc(
                 position,
                 RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
+            
+            if(_playerSound != null)
+            {
+                _playerSound.PlayRespawn();
+            }
 
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
             _matchActive.Value = true;
+            _isInvulnerable = false;
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
@@ -153,7 +223,16 @@ namespace PiGame.Gameplay
         private void HandleAliveChanged(bool previousValue, bool currentValue)
         {
             ApplyAlivePresentation(currentValue);
+            UpdateDeathAnimation(currentValue);
             StateChanged?.Invoke();
+        }
+
+        private void UpdateDeathAnimation(bool isAlive)
+        {
+            if (_animator != null && _animator.runtimeAnimatorController != null)
+            {
+                _animator.SetBool("isDead", !isAlive);
+            }
         }
 
         private void ApplyAlivePresentation(bool isAlive)
@@ -177,7 +256,38 @@ namespace PiGame.Gameplay
         private void HandleIntChanged(int previousValue, int currentValue)
         {
             ApplyHealthPresentation();
+            if (currentValue < previousValue && IsAlive)
+            {
+                PlayHitAnimation();
+            }
             StateChanged?.Invoke();
+        }
+
+        private void PlayHitAnimation()
+        {
+            if (_animator == null || _animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            _animator.SetBool("isHit", true);
+            if (_hitAnimationRoutine != null)
+            {
+                StopCoroutine(_hitAnimationRoutine);
+            }
+
+            _hitAnimationRoutine = StartCoroutine(ResetHitAnimationRoutine());
+        }
+
+        private IEnumerator ResetHitAnimationRoutine()
+        {
+            yield return null;
+            if (_animator != null)
+            {
+                _animator.SetBool("isHit", false);
+            }
+
+            _hitAnimationRoutine = null;
         }
 
         private void ApplyHealthPresentation()
@@ -188,10 +298,7 @@ namespace PiGame.Gameplay
             Color damageColor = new Color(0.55f, 0.18f, 0.18f, 1f);
             Color playerColor = Color.Lerp(damageColor, Color.white, healthRatio);
 
-            foreach (SpriteRenderer spriteRenderer in _spriteRenderers)
-            {
-                spriteRenderer.color = playerColor;
-            }
+            _bodySpriteRenderer.color = playerColor;
         }
 
         private void HandleCharacterChanged(

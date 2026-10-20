@@ -7,17 +7,19 @@ namespace PiGame.Gameplay
     [RequireComponent(typeof(Collider2D))]
     public class NetworkProjectile : NetworkBehaviour
     {
-        [SerializeField] private float _speed = 16f;
-        [SerializeField] private float _lifetimeSeconds = 3f;
-        [SerializeField] private int _damage = 1;
-
         private readonly NetworkVariable<Color> _color =
             new NetworkVariable<Color>(Color.white);
 
         private SpriteRenderer _spriteRenderer;
-        private Vector2 _direction;
-        private ulong _shooterClientId;
-        private float _despawnAt;
+        protected Vector2 _direction;
+        protected ulong _shooterClientId;
+        public ulong ShooterClientId => _shooterClientId;
+        protected float _despawnAt;
+        protected float _speed;
+        protected int _damage;
+
+        protected bool _useLifetime = true;
+        protected bool _canDoSelfDamage = false;
 
         private void Awake()
         {
@@ -35,10 +37,31 @@ namespace PiGame.Gameplay
             _color.OnValueChanged -= HandleColorChanged;
         }
 
-        public void InitializeServer(
+        // Chamar antes do Spawn: a distância da boca do tiro não pode pular uma superfície.
+        public void PlaceAtMuzzle(Vector2 direction, float distance)
+        {
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(LayerMask.GetMask("Ground", "Wall"));
+            // Os colliders de voo dos dois projéteis são triggers.
+            filter.useTriggers = true;
+            var hits = new RaycastHit2D[8];
+            Physics2D.SyncTransforms();
+            int count = GetComponent<Rigidbody2D>().Cast(direction, filter, hits, distance);
+            for (int i = 0; i < count; i++)
+            {
+                float approach = Mathf.Max(0.01f, -Vector2.Dot(direction, hits[i].normal));
+                distance = Mathf.Min(distance,
+                    Mathf.Max(0f, hits[i].distance - Physics2D.defaultContactOffset * 2f / approach));
+            }
+
+            transform.position += (Vector3)(direction * distance);
+        }
+
+        public virtual void InitializeServer(
             ulong shooterClientId,
             Vector2 direction,
-            Color color)
+            Color color,
+            ProjectileDefinition definition)
         {
             if (!IsServer)
             {
@@ -46,14 +69,18 @@ namespace PiGame.Gameplay
             }
 
             _shooterClientId = shooterClientId;
+            _speed = definition.Speed;
+            _damage = definition.Damage;
             _direction = direction.sqrMagnitude > 0f
                 ? direction.normalized
                 : Vector2.right;
             _color.Value = color;
-            _despawnAt = Time.time + _lifetimeSeconds;
+            _despawnAt = Time.time + definition.LifetimeSeconds;
+
+            _canDoSelfDamage = false;
         }
 
-        private void Update()
+        protected virtual void Update()
         {
             if (!IsServer || !IsSpawned)
             {
@@ -61,15 +88,20 @@ namespace PiGame.Gameplay
             }
 
             transform.position += (Vector3)(_direction * _speed * Time.deltaTime);
-            if (Time.time >= _despawnAt)
+            if (_useLifetime && Time.time >= _despawnAt)
             {
                 NetworkObject.Despawn();
             }
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
+        protected virtual void OnTriggerEnter2D(Collider2D other)
         {
             if (!IsServer || !IsSpawned)
+            {
+                return;
+            }
+
+            if (other.GetComponentInParent<NetworkProjectile>() != null)
             {
                 return;
             }
@@ -77,7 +109,12 @@ namespace PiGame.Gameplay
             NetworkPlayerState playerState = other.GetComponentInParent<NetworkPlayerState>();
             if (playerState != null)
             {
-                if (playerState.OwnerClientId == _shooterClientId)
+                if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
+                {
+                    return;
+                }
+
+                if (playerState.IsInvulnerable)
                 {
                     return;
                 }
@@ -99,6 +136,21 @@ namespace PiGame.Gameplay
             {
                 _spriteRenderer.color = color;
             }
+        }
+
+        public virtual void ReflectServer(float minimumSpeed)
+        {
+            if (!IsServer || !IsSpawned)
+                return;
+            
+            _direction = -_direction;
+
+            _speed = Mathf.Max(_speed, minimumSpeed);
+            _canDoSelfDamage = true;
+
+            float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+
+            transform.rotation = Quaternion.Euler(0f,0f,angle);
         }
     }
 }

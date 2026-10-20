@@ -1,0 +1,102 @@
+fileFormatVersion: 2
+guid: 5a41bd2b68db4c809ad47035be720105
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 21300000
+    second: Art_Anim_Weap_Fumaceiro_Bullet_V1.01_0
+  - first:
+      213: 21300002
+    second: Art_Anim_Weap_Fumaceiro_Bullet_V1.01_1
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    enableMipMap: 0
+    sRGBTexture: 1
+  isReadable: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  spritePivot: {x: 0.453125, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteGenerateFallbackPhysicsShape: 0
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  textureType: 8
+  textureShape: 1
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 100
+    overridden: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Art_Anim_Weap_Fumaceiro_Bullet_V1.01_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.453125, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      bones: []
+      spriteID: 5a41bd2b68db4c809ad47035be720105
+      internalID: 21300000
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_Anim_Weap_Fumaceiro_Bullet_V1.01_1
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.453125, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      bones: []
+      spriteID: 6a41bd2b68db4c809ad47035be720105
+      internalID: 21300002
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      Art_Anim_Weap_Fumaceiro_Bullet_V1.01_0: 21300000
+      Art_Anim_Weap_Fumaceiro_Bullet_V1.01_1: 21300002
+  userData:
+  assetBundleName:
+  assetBundleVariant:

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using PiGame.Input;
 using PiGame.Lobby;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -9,18 +10,17 @@ using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using PiGame.Sound;
 
 namespace PiGame.UI
 {
     public class MapVotingPanelUI : MonoBehaviour,
+        IMoveHandler,
         ISubmitHandler,
         ICancelHandler,
         IPointerEnterHandler,
         IPointerMoveHandler
     {
-        private const float NavigationRepeatDelay = 0.4f;
-        private const float NavigationRepeatRate = 0.12f;
-
         [Header("Maps")]
         [SerializeField] private LobbyMapDefinition[] _maps;
         [SerializeField] private Button[] _optionButtons;
@@ -28,16 +28,15 @@ namespace PiGame.UI
         [SerializeField] private Text[] _optionLabels;
         [SerializeField] private Text[] _voterLabels;
 
+        [SerializeField, Min(1)] private int _columns = 5;
+
         [Header("Status")]
         [SerializeField] private Text _statusText;
 
         [Header("Input icons")]
         [SerializeField] private Image _confirmLegendIcon;
         [SerializeField] private Image _backLegendIcon;
-        [SerializeField] private Sprite _keyboardConfirmSprite;
-        [SerializeField] private Sprite _keyboardBackSprite;
-        [SerializeField] private Sprite _gamepadConfirmSprite;
-        [SerializeField] private Sprite _gamepadBackSprite;
+        [SerializeField] private InputPromptCatalog _promptCatalog;
         [FormerlySerializedAs("_instructionText")]
         [SerializeField] private Text _confirmLegendText;
         [SerializeField] private Text _backLegendText;
@@ -47,19 +46,25 @@ namespace PiGame.UI
         [SerializeField] private Color _selectedColor = new(0.98f, 0.72f, 0.18f, 1f);
         [SerializeField] private Color _winnerColor = new(0.3f, 0.9f, 0.5f, 1f);
         [SerializeField, Min(1f)] private float _selectedScale = 1.12f;
+        [SerializeField, Range(0f, 0.05f)] private float _selectedPulseAmount = 0.015f;
+        [SerializeField, Min(0.1f)] private float _selectedPulseSpeed = 2f;
 
         public event Action<LobbyMapId, LobbyInputDeviceKind> VoteRequested;
         public event Action<LobbyInputDeviceKind> ConfirmRequested;
         public event Action BackRequested;
 
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
+        private Gamepad _lastGamepad;
         private LobbyMapId _selectedMapId = LobbyMapId.Random;
         private LobbyStage _stage;
+        private UiAudioManager _uiAudioManager;
         private LobbyMapId _winningMap = LobbyMapId.None;
+        private LobbyMapId _displayedResultMap = LobbyMapId.None;
+        private bool _isRandomMapResult;
+        private bool _isDrawingRandomMap;
+        private Coroutine _randomDrawRoutine;
         private bool _interactionEnabled = true;
         private bool _localVoteConfirmed;
-        private int _heldNavigationDirection;
-        private float _nextNavigationTime;
         private UnityAction[] _optionButtonActions;
 
         private void Awake()
@@ -72,6 +77,8 @@ namespace PiGame.UI
             ConfigureMapCards();
             RefreshLegend();
             RefreshSelectionVisuals();
+
+            _uiAudioManager = GetComponent<UiAudioManager>();
         }
 
         private void OnEnable()
@@ -89,6 +96,7 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
+            StopRandomDraw();
             for (int i = 0; i < _optionButtons.Length; i++)
             {
                 if (_optionButtonActions != null && i < _optionButtonActions.Length)
@@ -98,18 +106,23 @@ namespace PiGame.UI
             }
 
             _optionButtonActions = null;
-            ResetNavigationInput();
         }
 
         private void Update()
         {
+            if (_lastGamepad != Gamepad.current)
+            {
+                _lastGamepad = Gamepad.current;
+                RefreshLegend();
+            }
+
             LobbyInputDeviceKind detectedDevice = DetectRecentlyUsedDevice();
             if (detectedDevice != LobbyInputDeviceKind.Unknown)
             {
                 SetLastInputDevice(detectedDevice);
             }
 
-            ProcessNavigationInput();
+            AnimateSelectedCard();
         }
 
         public void OnSubmit(BaseEventData eventData)
@@ -128,6 +141,11 @@ namespace PiGame.UI
         public void OnCancel(BaseEventData eventData)
         {
             if (!_interactionEnabled || _stage != LobbyStage.MapVoting)
+            {
+                return;
+            }
+
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 return;
             }
@@ -154,11 +172,30 @@ namespace PiGame.UI
             IReadOnlyList<LobbyMapVoteData> votes,
             ulong localClientId,
             LobbyStage stage,
-            LobbyMapId winningMap)
+            LobbyMapId winningMap,
+            bool isRandomMapResult)
         {
+            bool startRandomDraw = stage == LobbyStage.MatchStarting
+                && isRandomMapResult
+                && (_stage != LobbyStage.MatchStarting
+                    || !_isRandomMapResult
+                    || _winningMap != winningMap);
+
             _stage = stage;
             _winningMap = winningMap;
+            _isRandomMapResult = isRandomMapResult;
             _localVoteConfirmed = false;
+
+            if (stage != LobbyStage.MatchStarting || !isRandomMapResult)
+            {
+                StopRandomDraw();
+            }
+            else if (startRandomDraw)
+            {
+                StopRandomDraw();
+                _isDrawingRandomMap = true;
+                _randomDrawRoutine = StartCoroutine(AnimateRandomDraw());
+            }
 
             if (TryFindVote(votes, localClientId, out LobbyMapVoteData localVote))
             {
@@ -294,7 +331,7 @@ namespace PiGame.UI
 
                 if (labels[optionIndex].Length > 0)
                 {
-                    labels[optionIndex].Append("   ");
+                    labels[optionIndex].Append("  ");
                 }
 
                 string playerLabel = $"P{player.PlayerSlot + 1}";
@@ -315,7 +352,9 @@ namespace PiGame.UI
         {
             if (_stage == LobbyStage.MatchStarting)
             {
-                _statusText.text = $"MAPA ESCOLHIDO: {GetMapDisplayName(_winningMap)}\nINICIANDO PARTIDA...";
+                _statusText.text = _isDrawingRandomMap
+                    ? "SORTEANDO MAPA..."
+                    : $"MAPA ESCOLHIDO: {GetMapDisplayName(_winningMap)}\nINICIANDO PARTIDA...";
                 _statusText.color = _winnerColor;
                 return;
             }
@@ -336,7 +375,8 @@ namespace PiGame.UI
             for (int i = 0; i < _optionButtons.Length; i++)
             {
                 LobbyMapId optionMapId = GetOptionMapId(i);
-                bool isWinner = _stage == LobbyStage.MatchStarting && optionMapId == _winningMap;
+                bool isWinner = _stage == LobbyStage.MatchStarting
+                    && optionMapId == (_isDrawingRandomMap ? _displayedResultMap : _winningMap);
                 bool isSelected = _stage == LobbyStage.MapVoting && optionMapId == _selectedMapId;
                 Button button = _optionButtons[i];
 
@@ -350,6 +390,104 @@ namespace PiGame.UI
                     ? _winnerColor
                     : isSelected ? _selectedColor : _normalColor;
             }
+        }
+
+        private void AnimateSelectedCard()
+        {
+            float pulse = 1f
+                + Mathf.Sin(Time.unscaledTime * Mathf.PI * _selectedPulseSpeed)
+                    * _selectedPulseAmount;
+
+            for (int i = 0; i < _optionButtons.Length; i++)
+            {
+                LobbyMapId optionMapId = GetOptionMapId(i);
+                bool isWinner = _stage == LobbyStage.MatchStarting
+                    && optionMapId == (_isDrawingRandomMap ? _displayedResultMap : _winningMap);
+                bool isSelected = _stage == LobbyStage.MapVoting
+                    && optionMapId == _selectedMapId;
+                _optionButtons[i].transform.localScale = isSelected || isWinner
+                    ? Vector3.one * (_selectedScale * pulse)
+                    : Vector3.one;
+            }
+        }
+
+        private IEnumerator AnimateRandomDraw()
+        {
+            if(_uiAudioManager != null)
+            {
+                _uiAudioManager.PlayDrawRoullete();
+            }
+            List<LobbyMapId> availableMaps = new();
+            for (int i = 1; i < _optionButtons.Length; i++)
+            {
+                LobbyMapId mapId = GetOptionMapId(i);
+                if (mapId != LobbyMapId.None)
+                {
+                    availableMaps.Add(mapId);
+                }
+            }
+
+            int winningIndex = availableMaps.IndexOf(_winningMap);
+            if (winningIndex < 0)
+            {
+                Debug.LogError($"O mapa sorteado {_winningMap} não está nos cards da votação.", this);
+                yield return null;
+            }
+            else if (availableMaps.Count > 1)
+            {
+                int currentIndex = 0;
+                int steps = availableMaps.Count * 2 + winningIndex;
+                float totalWeight = 0f;
+                for (int step = 1; step <= steps; step++)
+                {
+                    float progress = (float)(step - 1) / (steps - 1);
+                    totalWeight += 1f + 2f * progress * progress;
+                }
+
+                _displayedResultMap = availableMaps[currentIndex];
+                RefreshSelectionVisuals();
+
+                float drawDuration = NetworkLobbyState.RandomMapDrawSeconds * 0.8f;
+                float nextStepTime = Time.realtimeSinceStartup;
+                for (int step = 1; step <= steps; step++)
+                {
+                    float progress = (float)(step - 1) / (steps - 1);
+                    float weight = 1f + 2f * progress * progress;
+                    nextStepTime += drawDuration * weight / totalWeight;
+                    while (Time.realtimeSinceStartup < nextStepTime)
+                    {
+                        yield return null;
+                    }
+
+                    currentIndex = (currentIndex + 1) % availableMaps.Count;
+                    _displayedResultMap = availableMaps[currentIndex];
+                    RefreshSelectionVisuals();
+                }
+            }
+            else
+            {
+                _displayedResultMap = _winningMap;
+                RefreshSelectionVisuals();
+                yield return null;
+            }
+
+            _displayedResultMap = _winningMap;
+            _isDrawingRandomMap = false;
+            _randomDrawRoutine = null;
+            RefreshStatus();
+            RefreshSelectionVisuals();
+        }
+
+        private void StopRandomDraw()
+        {
+            if (_randomDrawRoutine != null)
+            {
+                StopCoroutine(_randomDrawRoutine);
+                _randomDrawRoutine = null;
+            }
+
+            _isDrawingRandomMap = false;
+            _displayedResultMap = LobbyMapId.None;
         }
 
         private void SetLastInputDevice(LobbyInputDeviceKind inputDevice)
@@ -366,8 +504,10 @@ namespace PiGame.UI
         private void RefreshLegend()
         {
             bool usesGamepad = _lastInputDevice == LobbyInputDeviceKind.Gamepad;
-            _confirmLegendIcon.sprite = usesGamepad ? _gamepadConfirmSprite : _keyboardConfirmSprite;
-            _backLegendIcon.sprite = usesGamepad ? _gamepadBackSprite : _keyboardBackSprite;
+            _confirmLegendIcon.sprite = _promptCatalog.GetSprite(
+                usesGamepad ? "<Gamepad>/buttonSouth" : "<Keyboard>/enter");
+            _backLegendIcon.sprite = _promptCatalog.GetSprite(
+                usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/escape");
             _confirmLegendText.text = "CONFIRMAR VOTO";
             _backLegendText.text = "VOLTAR";
         }
@@ -380,109 +520,28 @@ namespace PiGame.UI
             }
         }
 
-        private void ProcessNavigationInput()
+        public void OnMove(AxisEventData eventData)
         {
-            if (!_interactionEnabled
-                || _stage != LobbyStage.MapVoting
-                || _localVoteConfirmed)
-            {
-                ResetNavigationInput();
-                return;
-            }
-
-            int direction = ReadHorizontalNavigationDirection(out LobbyInputDeviceKind inputDevice);
-            if (direction == 0)
-            {
-                ResetNavigationInput();
-                return;
-            }
-
-            bool directionChanged = direction != _heldNavigationDirection;
-            if (!directionChanged && Time.unscaledTime < _nextNavigationTime)
+            if (!_interactionEnabled || _stage != LobbyStage.MapVoting || _localVoteConfirmed)
             {
                 return;
             }
 
-            _heldNavigationDirection = direction;
-            _nextNavigationTime = Time.unscaledTime
-                + (directionChanged ? NavigationRepeatDelay : NavigationRepeatRate);
+            // The existing Input System UI module handles keyboard/gamepad navigation and repeat.
+            int offset = eventData.moveDir switch
+            {
+                MoveDirection.Left => -1,
+                MoveDirection.Right => 1,
+                MoveDirection.Up => -_columns,
+                MoveDirection.Down => _columns,
+                _ => 0
+            };
+            if (offset == 0) return;
+
+            LobbyInputDeviceKind inputDevice = ResolveInputDevice();
             SetLastInputDevice(inputDevice);
-            Focus();
-            MoveSelection(direction, inputDevice);
-        }
-
-        private static int ReadHorizontalNavigationDirection(out LobbyInputDeviceKind inputDevice)
-        {
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.leftArrowKey.wasPressedThisFrame
-                    || Keyboard.current.aKey.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Keyboard;
-                    return -1;
-                }
-
-                if (Keyboard.current.rightArrowKey.wasPressedThisFrame
-                    || Keyboard.current.dKey.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Keyboard;
-                    return 1;
-                }
-            }
-
-            if (Gamepad.current != null)
-            {
-                if (Gamepad.current.dpad.left.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return -1;
-                }
-
-                if (Gamepad.current.dpad.right.wasPressedThisFrame)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return 1;
-                }
-            }
-
-            if (Keyboard.current != null
-                && (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed))
-            {
-                inputDevice = LobbyInputDeviceKind.Keyboard;
-                return -1;
-            }
-
-            if (Keyboard.current != null
-                && (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed))
-            {
-                inputDevice = LobbyInputDeviceKind.Keyboard;
-                return 1;
-            }
-
-            if (Gamepad.current != null)
-            {
-                float horizontalInput = Gamepad.current.leftStick.x.ReadValue();
-                if (Gamepad.current.dpad.left.isPressed || horizontalInput < -0.65f)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return -1;
-                }
-
-                if (Gamepad.current.dpad.right.isPressed || horizontalInput > 0.65f)
-                {
-                    inputDevice = LobbyInputDeviceKind.Gamepad;
-                    return 1;
-                }
-            }
-
-            inputDevice = LobbyInputDeviceKind.Unknown;
-            return 0;
-        }
-
-        private void ResetNavigationInput()
-        {
-            _heldNavigationDirection = 0;
-            _nextNavigationTime = 0f;
+            MoveSelection(offset, inputDevice);
+            eventData.Use();
         }
 
         private static void DisableAutomaticNavigation(Selectable selectable)
@@ -565,7 +624,8 @@ namespace PiGame.UI
                 && (Gamepad.current.buttonSouth.wasPressedThisFrame
                     || Gamepad.current.buttonEast.wasPressedThisFrame
                     || Gamepad.current.dpad.IsPressed()
-                    || Mathf.Abs(Gamepad.current.leftStick.x.ReadValue()) > 0.5f))
+                    || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.25f
+                    || Gamepad.current.rightStick.ReadValue().sqrMagnitude > 0.25f))
             {
                 return LobbyInputDeviceKind.Gamepad;
             }
@@ -579,7 +639,8 @@ namespace PiGame.UI
                 && (Gamepad.current.buttonSouth.wasPressedThisFrame
                     || Gamepad.current.buttonEast.wasPressedThisFrame
                     || Gamepad.current.dpad.IsPressed()
-                    || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.36f))
+                    || Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.36f
+                    || Gamepad.current.rightStick.ReadValue().sqrMagnitude > 0.36f))
             {
                 return LobbyInputDeviceKind.Gamepad;
             }

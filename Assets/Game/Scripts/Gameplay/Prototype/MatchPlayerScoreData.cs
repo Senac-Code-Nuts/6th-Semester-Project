@@ -1,4 +1,6 @@
 using System;
+using PiGame.Lobby;
+using Unity.Collections;
 using Unity.Netcode;
 
 namespace PiGame.Gameplay
@@ -10,12 +12,16 @@ namespace PiGame.Gameplay
         public ulong ClientId;
         public int PlayerSlot;
         public int Kills;
+        public LobbyCharacterId CharacterId;
+        public FixedString64Bytes PlayerName;
 
-        public MatchPlayerScoreData(ulong clientId, int playerSlot, int kills = 0)
+        public MatchPlayerScoreData(LobbyPlayerData player)
         {
-            ClientId = clientId;
-            PlayerSlot = playerSlot;
-            Kills = kills;
+            ClientId = player.ClientId;
+            PlayerSlot = player.PlayerSlot;
+            Kills = 0;
+            CharacterId = player.CharacterId;
+            PlayerName = player.PlayerName;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer)
@@ -24,13 +30,17 @@ namespace PiGame.Gameplay
             serializer.SerializeValue(ref ClientId);
             serializer.SerializeValue(ref PlayerSlot);
             serializer.SerializeValue(ref Kills);
+            serializer.SerializeValue(ref CharacterId);
+            serializer.SerializeValue(ref PlayerName);
         }
 
         public bool Equals(MatchPlayerScoreData other)
         {
             return ClientId == other.ClientId
                 && PlayerSlot == other.PlayerSlot
-                && Kills == other.Kills;
+                && Kills == other.Kills
+                && CharacterId == other.CharacterId
+                && PlayerName.Equals(other.PlayerName);
         }
 
         public override bool Equals(object obj)
@@ -45,6 +55,8 @@ namespace PiGame.Gameplay
                 int hashCode = ClientId.GetHashCode();
                 hashCode = (hashCode * 397) ^ PlayerSlot;
                 hashCode = (hashCode * 397) ^ Kills;
+                hashCode = (hashCode * 397) ^ (int)CharacterId;
+                hashCode = (hashCode * 397) ^ PlayerName.GetHashCode();
                 return hashCode;
             }
         }
