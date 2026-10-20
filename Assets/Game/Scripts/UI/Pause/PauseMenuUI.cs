@@ -23,6 +23,8 @@ namespace PiGame.UI
         [SerializeField] private GameObject _confirmationRoot;
         [SerializeField] private Button _resumeButton;
         [SerializeField] private Button _controlsButton;
+        [Tooltip("Opcional: botão SAIR do pause da partida.")]
+        [SerializeField] private Button _exitButton;
         [SerializeField] private Button _confirmExitButton;
         [SerializeField] private Button _cancelExitButton;
         [SerializeField] private ControlsSettingsUI _controlsView;
@@ -156,6 +158,8 @@ namespace PiGame.UI
             _confirmationText.text = confirmationMessage;
             SetButtonLabel(_resumeButton, resumeLabel);
             SetButtonLabel(_controlsButton, "CONTROLES");
+            if (_exitButton != null)
+                SetButtonLabel(_exitButton, exitLabel);
             ConfigureActions(true);
             ConfigureControlsView(actions);
             return true;
@@ -223,6 +227,8 @@ namespace PiGame.UI
         {
             SetButtonInteractable(_resumeButton, !isBusy);
             SetButtonInteractable(_controlsButton, !isBusy);
+            if (_exitButton != null)
+                SetButtonInteractable(_exitButton, !isBusy);
             if (_playerNameButton != null)
                 _playerNameButton.interactable = !isBusy;
             SetButtonInteractable(_confirmExitButton, !isBusy);
@@ -242,6 +248,7 @@ namespace PiGame.UI
                 _playerNameButton?.onClick.AddListener(ShowInlinePlayer);
             else
                 _playerNameButton?.onClick.AddListener(HandlePlayerNameClicked);
+            _exitButton?.onClick.AddListener(HandleExitClicked);
             _confirmExitButton.onClick.AddListener(HandleExitConfirmedClicked);
             _cancelExitButton.onClick.AddListener(HandleExitCanceledClicked);
             _buttonsBound = true;
@@ -260,6 +267,7 @@ namespace PiGame.UI
                 _playerNameButton?.onClick.RemoveListener(ShowInlinePlayer);
             else
                 _playerNameButton?.onClick.RemoveListener(HandlePlayerNameClicked);
+            _exitButton?.onClick.RemoveListener(HandleExitClicked);
             _confirmExitButton.onClick.RemoveListener(HandleExitConfirmedClicked);
             _cancelExitButton.onClick.RemoveListener(HandleExitCanceledClicked);
             if (_controlsView != null)
@@ -330,6 +338,8 @@ namespace PiGame.UI
             _confirmationText.text = _definition.ExitConfirmationMessage;
             SetButtonLabel(_resumeButton, _definition.ResumeLabel);
             SetButtonLabel(_controlsButton, _definition.ControlsLabel);
+            if (_exitButton != null)
+                SetButtonLabel(_exitButton, _definition.ExitLabel);
             ConfigureActions(_definition.ShowControlsButton);
         }
 
