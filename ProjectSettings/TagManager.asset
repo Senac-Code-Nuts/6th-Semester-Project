@@ -47,6 +47,18 @@ TagManager:
   - name: Background
     uniqueID: 3416620517
     locked: 0
+  - name: sky
+    uniqueID: 3147662043
+    locked: 0
+  - name: parallax
+    uniqueID: 2730359907
+    locked: 0
+  - name: base
+    uniqueID: 2825461111
+    locked: 0
+  - name: front
+    uniqueID: 2055424727
+    locked: 0
   - name: VFX
     uniqueID: 4168872145
     locked: 0
@@ -64,6 +76,9 @@ TagManager:
     locked: 0
   - name: Bullet
     uniqueID: 3427290921
+    locked: 0
+  - name: UI
+    uniqueID: 1379240151
     locked: 0
   m_RenderingLayers:
   - Default

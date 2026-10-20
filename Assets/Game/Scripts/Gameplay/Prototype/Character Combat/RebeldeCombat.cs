@@ -1,6 +1,7 @@
     using UnityEngine;
     using Unity.Netcode;
 using System.Collections.Generic;
+using PiGame.Sound;
 
 
 namespace PiGame.Gameplay
@@ -29,6 +30,7 @@ namespace PiGame.Gameplay
             private float _abilityStartedAt;
             private float _abilityCooldownUntil;
             private SpriteRenderer _facingSprite;
+            private RebeldeSoundManager _rebeldeSound;
 
             private float _projectileVelocity;
             private int _projectileVelocityPointer = 0;
@@ -46,6 +48,8 @@ namespace PiGame.Gameplay
             public void Awake()
             {
                 _playerState = GetComponent<NetworkPlayerState>();
+                _rebeldeSound = GetComponent<RebeldeSoundManager>();
+
                 if (_projectile == null || _projectile.Prefab == null)
                 {
                     Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
@@ -57,8 +61,21 @@ namespace PiGame.Gameplay
             }
             public void ShootServer(Vector2 direction)
             {
-                if (!IsServer || !_playerState.CanAct || _ammo.Value <= 0 || _projectile == null || !_hasShot.Value
-                    || _projectile.Prefab == null || Time.time < _nextShotTime)
+                if (!IsServer || !_playerState.CanAct)   
+                {
+                    return;
+                }
+
+                if(_ammo.Value <= 0)
+                {
+                    if(_rebeldeSound != null)
+                    {
+                        _rebeldeSound.PlayRebeldeEmpty();
+                        return;
+                    }
+                }
+
+                if(_projectile == null || !_hasShot.Value || _projectile.Prefab == null || Time.time < _nextShotTime)
                 {
                     return;
                 }
@@ -69,18 +86,20 @@ namespace PiGame.Gameplay
                     ? direction.normalized
                     : Vector2.right;
                     
-                Vector3 spawnPosition = transform.position
-                    + (Vector3)(shotDirection * _projectileSpawnDistance);
-
                 NetworkProjectile projectile = Instantiate(
-                    _projectile.Prefab, spawnPosition, Quaternion.identity);
+                    _projectile.Prefab, transform.position, Quaternion.identity);
+                projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
 
                 projectile.NetworkObject.Spawn(true);
 
                 RebeldeProjectile rebeldeProjectile = projectile.GetComponent<RebeldeProjectile>();
                 if(rebeldeProjectile != null)
                 {
-                    rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile,_projectileVelocity);
+                    if(_rebeldeSound != null)
+                    {
+                        _rebeldeSound.PlayRebeldeShot();
+                    }
+                    rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile,_projectileVelocity, _rebeldeSound);
                     _hasShot.Value = false;
                 }
                 _ammo.Value = 0;
@@ -145,191 +164,197 @@ namespace PiGame.Gameplay
             );
         }
         public void AddShotServer()
+        {
+            if (!IsServer)
+                return;
+            
+            if(_rebeldeSound != null)
             {
-                if (!IsServer)
-                    return;
-
-                _hasShot.Value = true;
-
-                _ammo.Value = 1;
+                _rebeldeSound.PlayRebeldeCatch();
             }
-            private void GetNextShot()
+
+            _hasShot.Value = true;
+
+            _ammo.Value = 1;
+        }
+        private void GetNextShot()
+        {
+            _projectileVelocityPointer++;
+            if(_projectileVelocityPointer >= _projectileVelocityStack.Length)
             {
-                _projectileVelocityPointer++;
-                if(_projectileVelocityPointer >= _projectileVelocityStack.Length)
+                _projectileVelocityPointer = 0;
+            }
+
+            _projectileVelocity = _projectileVelocityStack[_projectileVelocityPointer];
+        }
+
+        //Esse personagem não precisa destes métodos, mas estão aqui pela implementação da interface
+        public void ShootReleaseServer()
+        {
+
+        }
+        public void UpdateShootAimServer(Vector2 direction)
+        {
+
+        }
+
+
+        public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
+        {
+            if (!IsServer || !_playerState.CanAct || _abilityActive)
+                return;
+
+            if (Time.time < _abilityCooldownUntil)
+            {
+                return;
+            }
+
+            _abilityActive = true;
+            _abilityStartedAt = Time.time;
+
+            _rebeldeSound.PlayRebeldeSkill();
+
+            _abilityForward = GetFacingDirection(aimDirection, moveDirection);
+        }
+        public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
+        {
+            if (!IsServer)
+                return;
+
+            if (!_abilityActive)
+            {
+                return;
+            }
+
+                Debug.Log(
+    $"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
+);
+
+            float heldTime = Time.time - _abilityStartedAt;
+
+            _abilityActive = false;
+
+            if (heldTime >= _maxAbilityHoldSeconds)
+            {
+                _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+
+                return;
+            }
+
+            ExecuteAbilityCone();
+        }
+
+        private bool IsInsideAbilityCone(Vector2 targetPosition, Vector2 forward)
+        {
+            Vector2 toTarget = targetPosition - (Vector2)transform.position;
+
+            float distance = toTarget.magnitude;
+
+            if(distance > _coneDistance)
+            {
+                return false;
+            }
+
+            if(distance <= 0.001f)
+            {
+                return true;
+            }
+
+            float angle =
+                Vector2.Angle(
+                    forward,
+                    toTarget.normalized);
+
+            return angle <= _coneAngle;
+        }
+        private void ExecuteAbilityCone()
+        {
+            Collider2D[] hits = Physics2D.OverlapCircleAll(
+                transform.position,
+                _coneDistance);
+
+            HashSet<NetworkObject> processed = new HashSet<NetworkObject>();
+
+            foreach (Collider2D hit in hits)
+            {
+
+                if (!IsInsideAbilityCone(hit.bounds.center, _abilityForward))
                 {
-                    _projectileVelocityPointer = 0;
+                    continue;
                 }
 
-                _projectileVelocity = _projectileVelocityStack[_projectileVelocityPointer];
-            }
+                NetworkProjectile projectile =
+                    hit.GetComponentInParent<NetworkProjectile>();
 
-            //Esse personagem não precisa destes métodos, mas estão aqui pela implementação da interface
-            public void ShootReleaseServer()
-            {
-
-            }
-            public void UpdateShootAimServer(Vector2 direction)
-            {
-
-            }
-
-
-            public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
-            {
-                if (!IsServer || !_playerState.CanAct || _abilityActive)
-                    return;
-                Debug.Log( $"[Rebelde] Begin | IsServer={IsServer} | Time={Time.time}");
-
-                if (Time.time < _abilityCooldownUntil)
+                if (projectile != null)
                 {
-                    return;
-                }
-
-                _abilityActive = true;
-                _abilityStartedAt = Time.time;
-
-                _abilityForward = GetFacingDirection(aimDirection, moveDirection);
-            }
-            public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
-            {
-                if (!IsServer)
-                    return;
-
-                if (!_abilityActive)
-                {
-                    return;
-                }
-
-                    Debug.Log(
-        $"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
-    );
-
-                float heldTime = Time.time - _abilityStartedAt;
-
-                _abilityActive = false;
-
-                if (heldTime >= _maxAbilityHoldSeconds)
-                {
-                    _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-
-                    return;
-                }
-
-                ExecuteAbilityCone();
-            }
-
-            private bool IsInsideAbilityCone(Vector2 targetPosition, Vector2 forward)
-            {
-                Vector2 toTarget = targetPosition - (Vector2)transform.position;
-
-                float distance = toTarget.magnitude;
-
-                if(distance > _coneDistance)
-                {
-                    return false;
-                }
-
-                if(distance <= 0.001f)
-                {
-                    return true;
-                }
-
-                float angle =
-                    Vector2.Angle(
-                        forward,
-                        toTarget.normalized);
-
-                return angle <= _coneAngle;
-            }
-            private void ExecuteAbilityCone()
-            {
-                Collider2D[] hits = Physics2D.OverlapCircleAll(
-                    transform.position,
-                    _coneDistance);
-
-                HashSet<NetworkObject> processed = new HashSet<NetworkObject>();
-
-                foreach (Collider2D hit in hits)
-                {
-
-                    if (!IsInsideAbilityCone(hit.bounds.center, _abilityForward))
+                    if (projectile.ShooterClientId == OwnerClientId)
                     {
                         continue;
                     }
 
-                    NetworkProjectile projectile =
-                        hit.GetComponentInParent<NetworkProjectile>();
-
-                    if (projectile != null)
-                    {
-                        if (projectile.ShooterClientId == OwnerClientId)
-                        {
-                            continue;
-                        }
-
-                        if (!processed.Add(projectile.NetworkObject))
-                            continue;
-
-                        projectile.ReflectServer(_projectileReflectMinimumSpeed);
-
+                    if (!processed.Add(projectile.NetworkObject))
                         continue;
-                    }
 
-                    NetworkPlayerState player =
-                        hit.GetComponentInParent<NetworkPlayerState>();
+                    projectile.ReflectServer(_projectileReflectMinimumSpeed);
 
-                    if (player == null)
-                    {
-                        continue;
-                    }
-
-                    if (player.OwnerClientId == OwnerClientId)
-                    {
-                        continue;
-                    }
-
-                    ApplyUpwardImpulse(player);
+                    continue;
                 }
-            }
 
-            private void ApplyUpwardImpulse(NetworkPlayerState targetPlayer)
-            {
-                if (!IsServer || targetPlayer == null)
-                    return;
+                NetworkPlayerState player =
+                    hit.GetComponentInParent<NetworkPlayerState>();
 
-                NetworkPlayerCombat targetCombat =
-                    targetPlayer.GetComponent<NetworkPlayerCombat>();
-
-                if (targetCombat == null)
+                if (player == null)
                 {
-                    Debug.LogWarning(
-                        $"[Impulse] RebeldeCombat não encontrado em {targetPlayer.name}.",
-                        targetPlayer);
-                    return;
+                    continue;
                 }
 
-                targetCombat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
-            }
-
-            private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
-            {
-                if(Mathf.Abs(aimDirection.x) > 0.01f)
+                if (player.OwnerClientId == OwnerClientId)
                 {
-                    return aimDirection.x < 0f ? Vector2.left : Vector2.right;
-                }
-                else if(Mathf.Abs(moveDirection.x) > 0.01f)
-                {
-                    return moveDirection.x < 0f ?Vector2.left : Vector2.right;
+                    continue;
                 }
 
-                if(_facingSprite != null)
-                {
-                    return _facingSprite.flipX ? Vector2.left : Vector2.right;
-                }
-
-                return _abilityForward;
+                ApplyUpwardImpulse(player);
             }
         }
 
+        private void ApplyUpwardImpulse(NetworkPlayerState targetPlayer)
+        {
+            if (!IsServer || targetPlayer == null)
+                return;
+
+            NetworkPlayerCombat targetCombat =
+                targetPlayer.GetComponent<NetworkPlayerCombat>();
+
+            if (targetCombat == null)
+            {
+                Debug.LogWarning(
+                    $"[Impulse] RebeldeCombat não encontrado em {targetPlayer.name}.",
+                    targetPlayer);
+                return;
+            }
+
+            targetCombat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
+        }
+
+        private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
+        {
+            if(Mathf.Abs(aimDirection.x) > 0.01f)
+            {
+                return aimDirection.x < 0f ? Vector2.left : Vector2.right;
+            }
+            else if(Mathf.Abs(moveDirection.x) > 0.01f)
+            {
+                return moveDirection.x < 0f ?Vector2.left : Vector2.right;
+            }
+
+            if(_facingSprite != null)
+            {
+                return _facingSprite.flipX ? Vector2.left : Vector2.right;
+            }
+
+            return _abilityForward;
+        }
     }
+
+}

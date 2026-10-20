@@ -79,10 +79,150 @@ MonoBehaviour:
   ostSource: {fileID: 1418028061783556953}
   sfxList:
   - sfxType: 0
-    clip: {fileID: 8300000, guid: f5b4e14a182a34047aa1dd1e3d9c25d9, type: 3}
+    clip: {fileID: 8300000, guid: f46205c5c259b83488f4f34fbdf02216, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 1
+    clip: {fileID: 8300000, guid: 6e578c3df76be5a4480982bf8551413e, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 2
+    clip: {fileID: 8300000, guid: f54357dda48e6664d8f6f0e0a18ee964, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 3
+    clip: {fileID: 8300000, guid: a10dbeb976ea394428b0883ebfbe2cfc, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 4
+    clip: {fileID: 8300000, guid: 97e23a2f07a09954cbffc31a7ce521f8, type: 3}
+    fadeInSeconds: 1
+    fadeOutSeconds: 1
+  - sfxType: 5
+    clip: {fileID: 8300000, guid: 468e4358c264d44429bd7fd6c9ea8ad3, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 6
+    clip: {fileID: 8300000, guid: 5844e319cbfeb7a48ae0ef204f51e2a4, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 7
+    clip: {fileID: 8300000, guid: 33f9e7505575f784d8d2702381c9097f, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 8
+    clip: {fileID: 8300000, guid: b072f4f61b6237147bb188a1be1d5629, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 9
+    clip: {fileID: 8300000, guid: b79445db20c0d354690d488fcc36ae6d, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 10
+    clip: {fileID: 8300000, guid: 32478a308d3905a4cba99ae556fdfec2, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 11
+    clip: {fileID: 8300000, guid: bc9412e8358bb52428e3f70d921bd3ca, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 12
+    clip: {fileID: 8300000, guid: 7116a2c1b925f1a4aa2fccc01f1fe61b, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 13
+    clip: {fileID: 8300000, guid: 5f7f2f15649943347a41ad5283a14906, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 14
+    clip: {fileID: 8300000, guid: 4dbd52f11d936ed43a9b92c312fde333, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 15
+    clip: {fileID: 8300000, guid: e606d76147a333b4bac80b02f9cd5506, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 16
+    clip: {fileID: 8300000, guid: 8349e585ed00d714a8db44380d54aaae, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 17
+    clip: {fileID: 8300000, guid: b08dd53650ff1d544990899cdc595224, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 18
+    clip: {fileID: 8300000, guid: c8cc86df91cb4ad44a5265ea76f3dae3, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 19
+    clip: {fileID: 8300000, guid: 791afc516d7ba7643afb1c250e66c506, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 20
+    clip: {fileID: 8300000, guid: 52ed1174d713dbc418f0cf3efbf0bf21, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 21
+    clip: {fileID: 8300000, guid: 45e1362ab5c6857468106767046394fd, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 22
+    clip: {fileID: 8300000, guid: c700966677d7cdb41ba435739f457db9, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 23
+    clip: {fileID: 8300000, guid: 12087aed9b8836c4f8933f44aad87994, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 24
+    clip: {fileID: 8300000, guid: 74677f19fcd53464a907943b5b74c748, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 25
+    clip: {fileID: 8300000, guid: e112f8e62ba5cdd47b9a994ee983a7da, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 26
+    clip: {fileID: 8300000, guid: 56bc77dc31697134fbe3d0a2dacddc89, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 27
+    clip: {fileID: 8300000, guid: c642804941e385e4cb19a674f784ae8a, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - sfxType: 28
+    clip: {fileID: 8300000, guid: 743aaa31e9f4a964d845d75997fd602a, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
   ostList:
   - ostType: 0
-    clip: {fileID: 8300000, guid: 902e173127cc8f54aace6a39e1cc1818, type: 3}
+    clip: {fileID: 8300000, guid: 89d5b3c7f9a780e418da875a1051741a, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 1
+    clip: {fileID: 8300000, guid: a1c81b1d9e79aa44b87cb1b7bc521452, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 2
+    clip: {fileID: 8300000, guid: 5a3217d896743c64ea2c20e6f5e381c6, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 3
+    clip: {fileID: 8300000, guid: fd61bb041d6fed142808428762b3044e, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 4
+    clip: {fileID: 8300000, guid: b495180f74d4c314fa5e1df3589d8ec0, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 5
+    clip: {fileID: 8300000, guid: eb651f18e17c7fe4eb5f699ef7921cb7, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
+  - ostType: 6
+    clip: {fileID: 8300000, guid: 1fb72e4f142119b46ae716e873f616ec, type: 3}
+    fadeInSeconds: 0
+    fadeOutSeconds: 0
 --- !u!1 &412281090290135861
 GameObject:
   m_ObjectHideFlags: 0
@@ -124,7 +264,7 @@ AudioSource:
   m_GameObject: {fileID: 412281090290135861}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -1413005156277966302, guid: dda0e4d327f0fc64397261236807c135, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
@@ -253,7 +393,7 @@ AudioSource:
   m_GameObject: {fileID: 4319769177872208304}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -3714648151151691987, guid: dda0e4d327f0fc64397261236807c135, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1

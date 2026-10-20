@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using PiGame.Sound;
 
 namespace PiGame.Gameplay
 {
@@ -39,12 +40,15 @@ namespace PiGame.Gameplay
 
         private NetworkPlayerState _playerState;
         private Rigidbody2D _rigidbody;
+        private IrrigadorSoundManager _irrigadorSound;
+
         private float _nextShotTime;
 
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _rigidbody = GetComponent<Rigidbody2D>();
+            _irrigadorSound = GetComponent<IrrigadorSoundManager>();
             if (_projectile == null || _projectile.Prefab == null)
             {
                 Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
@@ -97,15 +101,26 @@ namespace PiGame.Gameplay
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
                 ? direction.normalized
                 : Vector2.right;
-            Vector3 spawnPosition = transform.position
-                + (Vector3)(shotDirection * _projectileSpawnDistance);
-
             NetworkProjectile projectile = Instantiate(
-                _projectile.Prefab, spawnPosition, Quaternion.identity);
+                _projectile.Prefab, transform.position,
+                Quaternion.FromToRotation(Vector2.right, shotDirection));
+            if(_irrigadorSound != null)
+            {
+                _irrigadorSound.PlayNailShoot();
+            }
+            projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
             projectile.NetworkObject.Spawn(true);
-            projectile.InitializeServer(
-                OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
-            
+            IrrigadorProjectile irrigadorProjectile = projectile.GetComponent<IrrigadorProjectile>();
+            if(irrigadorProjectile != null)
+            {
+                irrigadorProjectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile, _irrigadorSound);
+            }
+            else
+            {
+                projectile.InitializeServer(
+                    OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);           
+            }
+        
             _nails.Value--;
 
             if(_nails.Value <= 0)
@@ -213,6 +228,11 @@ namespace PiGame.Gameplay
             if (!_magnetActive || _magnetTarget == null)
                 return;
 
+            if(_irrigadorSound != null)
+            {
+                _irrigadorSound.PlayIrrigadorPull();
+            }
+
             Vector2 toTarget =
                 (Vector2)_magnetTarget.transform.position - _rigidbody.position;
 
@@ -285,6 +305,11 @@ namespace PiGame.Gameplay
         {
             if(!_abilityActive)
                 return;
+
+            if(_irrigadorSound != null)
+            {
+                _irrigadorSound.PlayIrrigadorSkill();
+            }
             
             for(int i = _abilityTargets.Count - 1; i >=0; i--)
             {

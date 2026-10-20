@@ -1,8 +1,11 @@
 using System;
 using System.Collections;
+using PiGame.Lobby;
+using PiGame.Sound;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Audio;
 using UnityEngine.UI;
 
 namespace PiGame.UI
@@ -20,12 +23,29 @@ namespace PiGame.UI
         [SerializeField] private GameObject _confirmationRoot;
         [SerializeField] private Button _resumeButton;
         [SerializeField] private Button _controlsButton;
-        [SerializeField] private Button _exitButton;
         [SerializeField] private Button _confirmExitButton;
         [SerializeField] private Button _cancelExitButton;
         [SerializeField] private ControlsSettingsUI _controlsView;
         [Tooltip("Opcional: usado nas opções do menu e do lobby, não no pause da partida.")]
         [SerializeField] private Button _playerNameButton;
+
+        [Header("Opções na mesma tela (opcional)")]
+        [SerializeField] private Button _audioCategoryButton;
+        [SerializeField] private GameObject _audioContent;
+        [SerializeField] private GameObject _controlsContent;
+        [SerializeField] private GameObject _playerContent;
+        [SerializeField] private Slider _masterVolume;
+        [SerializeField] private AudioMixer _audioMixer;
+        [SerializeField] private TMP_Text _masterVolumeValue;
+        [SerializeField] private Slider _musicVolume;
+        [SerializeField] private TMP_Text _musicVolumeValue;
+        [SerializeField] private Slider _sfxVolume;
+        [SerializeField] private TMP_Text _sfxVolumeValue;
+        [SerializeField] private InputField _inlinePlayerName;
+        [SerializeField] private Button _saveNameButton;
+
+        private bool HasInlineOptions => _audioCategoryButton != null && _audioContent != null
+            && _controlsContent != null && _playerContent != null;
 
         private PauseMenuDefinition _definition;
         private Coroutine _selectionRoutine;
@@ -40,8 +60,10 @@ namespace PiGame.UI
 
         public bool IsVisible => enabled && _root.activeSelf;
         public bool IsConfirmationVisible => enabled && _confirmationRoot.activeSelf;
-        public bool IsControlsVisible => _controlsView != null && _controlsView.IsVisible;
+        public bool IsControlsVisible => !HasInlineOptions && _controlsView != null && _controlsView.IsVisible;
         public bool BlocksControlsBackShortcut => IsControlsVisible && _controlsView.BlocksBackShortcut;
+        public bool IsInlineControlsBusy => HasInlineOptions && _controlsView != null
+            && _controlsView.IsVisible && _controlsView.BlocksBackShortcut;
 
         private void Awake()
         {
@@ -53,11 +75,47 @@ namespace PiGame.UI
 
             ConfigureConfirmationNavigation();
             BindButtons();
+            if (HasInlineOptions)
+            {
+                if (_controlsView == null || _masterVolume == null || _masterVolumeValue == null
+                    || _musicVolume == null || _musicVolumeValue == null
+                    || _sfxVolume == null || _sfxVolumeValue == null
+                    || _inlinePlayerName == null || _saveNameButton == null)
+                {
+                    Debug.LogError("Configure as referências das opções no prefab do lobby.", this);
+                    enabled = false;
+                    return;
+                }
+
+                _audioCategoryButton.onClick.AddListener(ShowInlineAudio);
+                GameAudioSettings.UseMixer(_audioMixer);
+                _saveNameButton.onClick.AddListener(SaveInlineName);
+                _inlinePlayerName.onSubmit.AddListener(HandleInlineNameSubmitted);
+                _inlinePlayerName.characterLimit = LocalPlayerName.MaximumLength;
+                _masterVolume.SetValueWithoutNotify(GameAudioSettings.Master);
+                _musicVolume.SetValueWithoutNotify(GameAudioSettings.Music);
+                _sfxVolume.SetValueWithoutNotify(GameAudioSettings.Sfx);
+                RefreshVolumeLabels();
+                _masterVolume.onValueChanged.AddListener(HandleMasterVolumeChanged);
+                _musicVolume.onValueChanged.AddListener(HandleMusicVolumeChanged);
+                _sfxVolume.onValueChanged.AddListener(HandleSfxVolumeChanged);
+            }
         }
 
         private void OnDestroy()
         {
             UnbindButtons();
+            if (HasInlineOptions && _masterVolume != null && _saveNameButton != null)
+            {
+                _audioCategoryButton.onClick.RemoveListener(ShowInlineAudio);
+                _saveNameButton.onClick.RemoveListener(SaveInlineName);
+                _inlinePlayerName.onSubmit.RemoveListener(HandleInlineNameSubmitted);
+                _masterVolume.onValueChanged.RemoveListener(HandleMasterVolumeChanged);
+                if (_musicVolume != null)
+                    _musicVolume.onValueChanged.RemoveListener(HandleMusicVolumeChanged);
+                if (_sfxVolume != null)
+                    _sfxVolume.onValueChanged.RemoveListener(HandleSfxVolumeChanged);
+            }
         }
 
         private void OnDisable()
@@ -98,7 +156,6 @@ namespace PiGame.UI
             _confirmationText.text = confirmationMessage;
             SetButtonLabel(_resumeButton, resumeLabel);
             SetButtonLabel(_controlsButton, "CONTROLES");
-            SetButtonLabel(_exitButton, exitLabel);
             ConfigureActions(true);
             ConfigureControlsView(actions);
             return true;
@@ -117,12 +174,21 @@ namespace PiGame.UI
                 return;
             }
 
+            if (HasInlineOptions) GameAudioSettings.UseMixer(_audioMixer);
             HideConfirmation();
-            QueueSelection(_resumeButton);
+            if (HasInlineOptions) ShowInlineAudio();
+            QueueSelection(HasInlineOptions ? _audioCategoryButton : _resumeButton);
         }
 
         public void ShowControls()
         {
+            if (HasInlineOptions)
+            {
+                ShowInlineContent(_controlsContent);
+                _controlsView.Show();
+                return;
+            }
+
             _actionsRoot.SetActive(false);
             _controlsView.Show();
             _root.SetActive(false);
@@ -148,7 +214,8 @@ namespace PiGame.UI
             _actionsRoot.SetActive(true);
             if (IsVisible)
             {
-                QueueSelection(_resumeButton);
+                if (HasInlineOptions) ShowInlineAudio();
+                QueueSelection(HasInlineOptions ? _audioCategoryButton : _resumeButton);
             }
         }
 
@@ -158,7 +225,6 @@ namespace PiGame.UI
             SetButtonInteractable(_controlsButton, !isBusy);
             if (_playerNameButton != null)
                 _playerNameButton.interactable = !isBusy;
-            SetButtonInteractable(_exitButton, !isBusy);
             SetButtonInteractable(_confirmExitButton, !isBusy);
             SetButtonInteractable(_cancelExitButton, !isBusy);
         }
@@ -172,8 +238,10 @@ namespace PiGame.UI
 
             _resumeButton.onClick.AddListener(HandleResumeClicked);
             _controlsButton.onClick.AddListener(ShowControls);
-            _playerNameButton?.onClick.AddListener(HandlePlayerNameClicked);
-            _exitButton.onClick.AddListener(HandleExitClicked);
+            if (HasInlineOptions)
+                _playerNameButton?.onClick.AddListener(ShowInlinePlayer);
+            else
+                _playerNameButton?.onClick.AddListener(HandlePlayerNameClicked);
             _confirmExitButton.onClick.AddListener(HandleExitConfirmedClicked);
             _cancelExitButton.onClick.AddListener(HandleExitCanceledClicked);
             _buttonsBound = true;
@@ -188,8 +256,10 @@ namespace PiGame.UI
 
             _resumeButton.onClick.RemoveListener(HandleResumeClicked);
             _controlsButton.onClick.RemoveListener(ShowControls);
-            _playerNameButton?.onClick.RemoveListener(HandlePlayerNameClicked);
-            _exitButton.onClick.RemoveListener(HandleExitClicked);
+            if (HasInlineOptions)
+                _playerNameButton?.onClick.RemoveListener(ShowInlinePlayer);
+            else
+                _playerNameButton?.onClick.RemoveListener(HandlePlayerNameClicked);
             _confirmExitButton.onClick.RemoveListener(HandleExitConfirmedClicked);
             _cancelExitButton.onClick.RemoveListener(HandleExitCanceledClicked);
             if (_controlsView != null)
@@ -202,6 +272,54 @@ namespace PiGame.UI
 
         private void HandleResumeClicked() => ResumeRequested?.Invoke();
         private void HandlePlayerNameClicked() => PlayerNameRequested?.Invoke();
+        private void HandleInlineNameSubmitted(string _) => SaveInlineName();
+        private void ShowInlineAudio() => ShowInlineContent(_audioContent);
+        private void ShowInlinePlayer()
+        {
+            _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Load());
+            ShowInlineContent(_playerContent);
+            QueueSelection(_inlinePlayerName);
+        }
+
+        private void ShowInlineContent(GameObject content)
+        {
+            if (_controlsView != null && _controlsView.IsVisible && content != _controlsContent)
+                _controlsView.Hide(false);
+            _audioContent.SetActive(content == _audioContent);
+            _controlsContent.SetActive(content == _controlsContent);
+            _playerContent.SetActive(content == _playerContent);
+        }
+
+        private void SaveInlineName()
+        {
+            _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Save(_inlinePlayerName.text));
+            QueueSelection(_saveNameButton);
+        }
+
+        private void HandleMasterVolumeChanged(float value)
+        {
+            GameAudioSettings.SetMaster(value);
+            RefreshVolumeLabels();
+        }
+
+        private void HandleMusicVolumeChanged(float value)
+        {
+            GameAudioSettings.SetMusic(value);
+            RefreshVolumeLabels();
+        }
+
+        private void HandleSfxVolumeChanged(float value)
+        {
+            GameAudioSettings.SetSfx(value);
+            RefreshVolumeLabels();
+        }
+
+        private void RefreshVolumeLabels()
+        {
+            _masterVolumeValue.text = $"{Mathf.RoundToInt(_masterVolume.value * 100)}%";
+            _musicVolumeValue.text = $"{Mathf.RoundToInt(_musicVolume.value * 100)}%";
+            _sfxVolumeValue.text = $"{Mathf.RoundToInt(_sfxVolume.value * 100)}%";
+        }
         private void HandleExitClicked() => ExitRequested?.Invoke();
         private void HandleExitConfirmedClicked() => ExitConfirmed?.Invoke();
         private void HandleExitCanceledClicked() => ExitCanceled?.Invoke();
@@ -212,7 +330,6 @@ namespace PiGame.UI
             _confirmationText.text = _definition.ExitConfirmationMessage;
             SetButtonLabel(_resumeButton, _definition.ResumeLabel);
             SetButtonLabel(_controlsButton, _definition.ControlsLabel);
-            SetButtonLabel(_exitButton, _definition.ExitLabel);
             ConfigureActions(_definition.ShowControlsButton);
         }
 
@@ -261,6 +378,14 @@ namespace PiGame.UI
 
         private void HandleControlsClosed()
         {
+            if (HasInlineOptions)
+            {
+                ShowInlineAudio();
+                QueueSelection(_controlsButton);
+                ControlsClosed?.Invoke();
+                return;
+            }
+
             _root.SetActive(true);
             _actionsRoot.SetActive(true);
             QueueSelection(_controlsButton);
@@ -276,7 +401,6 @@ namespace PiGame.UI
                 && _confirmationRoot != null
                 && _resumeButton != null
                 && _controlsButton != null
-                && _exitButton != null
                 && _confirmExitButton != null
                 && _cancelExitButton != null;
             if (!valid)
@@ -289,7 +413,7 @@ namespace PiGame.UI
             return valid;
         }
 
-        private void QueueSelection(Button button)
+        private void QueueSelection(Selectable button)
         {
             StopSelectionRoutine();
             if (gameObject.activeInHierarchy)
@@ -298,7 +422,7 @@ namespace PiGame.UI
             }
         }
 
-        private IEnumerator SelectNextFrame(Button button)
+        private IEnumerator SelectNextFrame(Selectable button)
         {
             yield return null;
             _selectionRoutine = null;

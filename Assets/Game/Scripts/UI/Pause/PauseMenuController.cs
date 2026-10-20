@@ -149,7 +149,7 @@ namespace PiGame.UI
             _view.SetVisible(true);
         }
 
-        private void ClosePause()
+        public void ClosePause()
         {
             if (!_isOpen || _isExiting)
             {
