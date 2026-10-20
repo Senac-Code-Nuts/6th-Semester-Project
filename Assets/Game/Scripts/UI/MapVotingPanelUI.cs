@@ -331,7 +331,7 @@ namespace PiGame.UI
 
                 if (labels[optionIndex].Length > 0)
                 {
-                    labels[optionIndex].Append("   ");
+                    labels[optionIndex].Append("  ");
                 }
 
                 string playerLabel = $"P{player.PlayerSlot + 1}";
