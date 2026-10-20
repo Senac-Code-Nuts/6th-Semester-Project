@@ -932,6 +932,7 @@ GameObject:
   - component: {fileID: 7423979285644332156}
   - component: {fileID: 890000000000000002}
   - component: {fileID: 890000000000000001}
+  - component: {fileID: -1174058076107968862}
   m_Layer: 7
   m_Name: Player_Clank
   m_TagString: Untagged
@@ -1114,14 +1115,14 @@ MonoBehaviour:
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 72
+    m_Bits: 8
   _groundCheck: {fileID: 1201417585810588438}
   _dropThroughTimeoutSeconds: 1
   _jumpBufferTime: 2
   _coyoteTimer: 1
   _wallCheck: {fileID: 4427738194939039848}
   _wallCheckRadius: 0.15
-  _wallCheckOffest: 0.55
+  _wallCheckOffest: 0.35
   _wallLayer:
     serializedVersion: 2
     m_Bits: 72
@@ -1252,7 +1253,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.75, y: 1.15}
+  m_Size: {x: 0.7, y: 1.2}
   m_EdgeRadius: 0
 --- !u!95 &3216733317862606300
 Animator:
@@ -1352,6 +1353,18 @@ MonoBehaviour:
   _dropThroughAction: {fileID: 11400000, guid: c9e63558422848c4ba26cc2f15e201be, type: 2}
   _aimFireAction: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _abilityAction: {fileID: -4061502912813408513, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+--- !u!114 &-1174058076107968862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af5c5d8aa6fd56b408c9992bdb255866, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.FumaceiroSoundManager
 --- !u!1 &1364266427991100992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1749,7 +1762,7 @@ Transform:
   m_GameObject: {fileID: 8066690880541465582}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.423, y: 0, z: 0}
+  m_LocalPosition: {x: 0.35, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

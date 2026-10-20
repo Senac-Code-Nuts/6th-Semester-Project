@@ -12,8 +12,9 @@ GameObject:
   - component: {fileID: 2140000102}
   - component: {fileID: 2140000103}
   - component: {fileID: 2140000104}
+  - component: {fileID: 5942186210232504683}
   m_Layer: 0
-  m_Name: MapVotingPanel
+  m_Name: ui_map_voting_panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -176,6 +177,18 @@ MonoBehaviour:
   _selectedScale: 1.08
   _selectedPulseAmount: 0.015
   _selectedPulseSpeed: 2
+--- !u!114 &5942186210232504683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2140000100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f258f69a598222e4f96a82ccd08b4e1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.UiAudioManager
 --- !u!1 &2140000200
 GameObject:
   m_ObjectHideFlags: 0
@@ -377,7 +390,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140000303}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140000310
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,7 +757,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140000403}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140000410
 GameObject:
   m_ObjectHideFlags: 0
@@ -1474,7 +1511,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001003}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001010
 GameObject:
   m_ObjectHideFlags: 0
@@ -1829,7 +1878,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001103}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001110
 GameObject:
   m_ObjectHideFlags: 0
@@ -2184,7 +2245,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001203}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001210
 GameObject:
   m_ObjectHideFlags: 0
@@ -2539,7 +2612,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001303}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001310
 GameObject:
   m_ObjectHideFlags: 0
@@ -2894,7 +2979,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001403}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001410
 GameObject:
   m_ObjectHideFlags: 0
@@ -3249,7 +3346,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001503}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001510
 GameObject:
   m_ObjectHideFlags: 0
@@ -3604,7 +3713,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001603}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001610
 GameObject:
   m_ObjectHideFlags: 0
@@ -3959,7 +4080,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2140001703}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5942186210232504683}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLevelSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2140001710
 GameObject:
   m_ObjectHideFlags: 0
@@ -4271,4 +4404,4 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "?"
+  m_Text: '?'

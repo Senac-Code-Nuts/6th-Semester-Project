@@ -10,6 +10,7 @@ using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using PiGame.Sound;
 
 namespace PiGame.UI
 {
@@ -56,6 +57,7 @@ namespace PiGame.UI
         private Gamepad _lastGamepad;
         private LobbyMapId _selectedMapId = LobbyMapId.Random;
         private LobbyStage _stage;
+        private UiAudioManager _uiAudioManager;
         private LobbyMapId _winningMap = LobbyMapId.None;
         private LobbyMapId _displayedResultMap = LobbyMapId.None;
         private bool _isRandomMapResult;
@@ -75,6 +77,8 @@ namespace PiGame.UI
             ConfigureMapCards();
             RefreshLegend();
             RefreshSelectionVisuals();
+
+            _uiAudioManager = GetComponent<UiAudioManager>();
         }
 
         private void OnEnable()
@@ -409,6 +413,10 @@ namespace PiGame.UI
 
         private IEnumerator AnimateRandomDraw()
         {
+            if(_uiAudioManager != null)
+            {
+                _uiAudioManager.PlayDrawRoullete();
+            }
             List<LobbyMapId> availableMaps = new();
             for (int i = 1; i < _optionButtons.Length; i++)
             {

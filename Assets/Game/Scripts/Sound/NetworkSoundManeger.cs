@@ -1,11 +1,15 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace PiGame.Sound
 {
-    public enum SFXList { SFX1, SFX2, SFX3 }
-    public enum OSTList { OST1, OST2, OST3 }
+    public enum SFXList { WallJump, PlayerJump, Hit, DeathHit, DrawRoulette, VolumeScroll, LevelSelect, UiButton, DownPlatform, UpPlatform, WhirlPlatform,
+    StuckNail, ShootNail, IrrigadorPull, IrrigadorSkill, DeserticoRoll, DeserticoShot, DeserticoEmpty, DeserticoReload, RebeldeBounce, RebeldeCatch, RebeldeEmpty, RebeldeSkill,
+    RebeldeShot, FumaceiroEmpty, FumaceiroCatch, FumaceiroThrow, FumaceiroSkill, PlayerRespawn
+        }
+    public enum OSTList { Battle_Desertico, Battle_Fumaceiro, Battle_Irrigador, Battle_Rebelde, Battle_Vitoria, Menu_Titulo, Menu_Screens }
 
     public class NetworkSoundManager : NetworkBehaviour
     {
@@ -16,6 +20,9 @@ namespace PiGame.Sound
         {
             public SFXList sfxType;
             public AudioClip clip;
+
+            [Min(0f)] public float fadeInSeconds;
+            [Min(0f)] public float fadeOutSeconds;
         }
 
         [System.Serializable]
@@ -23,6 +30,9 @@ namespace PiGame.Sound
         {
             public OSTList ostType;
             public AudioClip clip;
+
+            [Min(0f)] public float fadeInSeconds;
+            [Min(0f)] public float fadeOutSeconds;
         }
 
         [Header("Componentes de �udio")]
@@ -33,8 +43,14 @@ namespace PiGame.Sound
         [SerializeField] private List<SoundData> sfxList = new();
         [SerializeField] private List<MusicData> ostList = new();
 
-        private Dictionary<SFXList, AudioClip> _sfxDict = new();
-        private Dictionary<OSTList, AudioClip> _ostDict = new();
+        private Dictionary<SFXList, SoundData> _sfxDict = new();
+        private Dictionary<OSTList, MusicData> _ostDict = new();
+
+        private Coroutine _sfxFadeRoutine;
+        private Coroutine _ostFadeRoutine;
+
+        private float _sfxBaseVolume;
+        private float _ostBaseVolume;
 
         private void Awake()
         {
@@ -44,18 +60,20 @@ namespace PiGame.Sound
                 return;
             }
             Instance = this;
+            _sfxBaseVolume = sfxSource.volume;
+            _ostBaseVolume = ostSource.volume;
             RegisterMixer();
 
             foreach (var item in sfxList)
             {
                 if (!_sfxDict.ContainsKey(item.sfxType))
-                    _sfxDict.Add(item.sfxType, item.clip);
+                    _sfxDict.Add(item.sfxType, item);
             }
 
             foreach (var item in ostList)
             {
                 if (!_ostDict.ContainsKey(item.ostType))
-                    _ostDict.Add(item.ostType, item.clip);
+                    _ostDict.Add(item.ostType, item);
             }
         }
 
@@ -77,10 +95,22 @@ namespace PiGame.Sound
             Instance.SendSFXServerRpc(sfx);
         }
 
+        public void LocalSFX(SFXList sfx)
+        {
+            if(Instance == null) return;
+            Instance.PlaySFXLocal(sfx);
+        }
+
         public void PlayOST(OSTList ost)
         {
             if (Instance == null) return;
             Instance.SendOSTServerRpc(ost);
+        }
+
+        public void LocalOST(OSTList ost)
+        {
+            if(Instance == null) return;
+            Instance.PlayOSTLocal(ost);
         }
 
         #region RPC do SFX
@@ -114,9 +144,15 @@ namespace PiGame.Sound
         #region Execu��o Local
         private void PlaySFXLocal(SFXList sfx)
         {
-            if (_sfxDict.TryGetValue(sfx, out AudioClip clip))
+            if (_sfxDict.TryGetValue(sfx, out SoundData clip))
             {
-                sfxSource.PlayOneShot(clip);
+                //sfxSource.PlayOneShot(clip);
+                if(_sfxFadeRoutine != null)
+                {
+                    StopCoroutine(_sfxFadeRoutine);
+                }
+
+                _sfxFadeRoutine = StartCoroutine(PlaySFXWithFade(clip));
             }
             else
             {
@@ -126,11 +162,14 @@ namespace PiGame.Sound
 
         private void PlayOSTLocal(OSTList ost)
         {
-            if (_ostDict.TryGetValue(ost, out AudioClip clip))
+            if (_ostDict.TryGetValue(ost, out MusicData clip))
             {
-                ostSource.clip = clip;
-                ostSource.loop = true;
-                ostSource.Play();
+                if(_ostFadeRoutine != null)
+                {
+                    StopCoroutine(_ostFadeRoutine);
+                }
+
+                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(clip));
             }
             else
             {
@@ -138,6 +177,68 @@ namespace PiGame.Sound
             }
         }
 
+        private IEnumerator PlaySFXWithFade(SoundData sound)
+        {
+            sfxSource.volume = 0f;
+            sfxSource.PlayOneShot(sound.clip);
+
+            yield return FadeVolume(sfxSource, 0f,_sfxBaseVolume, sound.fadeInSeconds);
+
+            float remainingTime = Mathf.Max(0f, sound.clip.length - sound.fadeInSeconds - sound.fadeOutSeconds);
+
+            yield return new WaitForSeconds(remainingTime);
+
+            yield return FadeVolume(sfxSource, _sfxBaseVolume, 0f, sound.fadeOutSeconds);
+
+            sfxSource.volume = _sfxBaseVolume;
+            _sfxFadeRoutine = null;
+        }
+
+        private IEnumerator PlayOSTWithFade(MusicData music)
+        {
+            if(ostSource.isPlaying)
+            {
+                yield return FadeVolume(ostSource, ostSource.volume, 0f, music.fadeOutSeconds);
+
+                ostSource.Stop();
+            }
+
+            ostSource.clip = music.clip;
+            ostSource.loop = true;
+            ostSource.volume = 0f;
+            ostSource.Play();
+
+            yield return FadeVolume(ostSource, 0f, _ostBaseVolume, music.fadeInSeconds);
+
+            _ostFadeRoutine = null;
+        }
+
+        private IEnumerator FadeVolume(AudioSource source, float startVolume, float targetVolume, float duration)
+        {
+            if(duration <= 0f)
+            {
+                source.volume = targetVolume;
+                yield break;
+            }
+
+            float elapsed = 0f;
+            source.volume = startVolume;
+
+            while(elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+
+                float time = Mathf.Clamp01(elapsed / duration);
+
+                source.volume = Mathf.Lerp(startVolume, targetVolume, time);
+
+                yield return null;
+            }
+            
+            source.volume = targetVolume;
+        }
+
         #endregion
+        
     }
 }

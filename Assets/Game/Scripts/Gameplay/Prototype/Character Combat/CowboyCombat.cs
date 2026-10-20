@@ -1,3 +1,4 @@
+using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -27,6 +28,7 @@ namespace PiGame.Gameplay
         private Collider2D _bodyCollider;
         private SpriteRenderer _bodySprite;
         private Color _colorBeforeRoll;
+        private CowboySoundManager _cowboySound;
         private bool _visualRollActive;
         private LayerMask _originalExcludedLayers;
         private bool _isReloading;
@@ -41,6 +43,7 @@ namespace PiGame.Gameplay
             _playerMove = GetComponent<PlayerMove>();
             _bodyCollider = GetComponent<Collider2D>();
             _bodySprite = GetComponent<SpriteRenderer>();
+            _cowboySound = GetComponent<CowboySoundManager>();
             _originalExcludedLayers = _bodyCollider.excludeLayers;
 
             if (_projectile == null || _projectile.Prefab == null
@@ -150,6 +153,10 @@ namespace PiGame.Gameplay
 
             if (_isReloading && Time.time >= _reloadEndsAt)
             {
+                if(_cowboySound != null)
+                {
+                    _cowboySound.PlayCowboyReload();
+                }
                 _ammo.Value = _maximumAmmo;
                 _isReloading = false;
             }
@@ -157,12 +164,25 @@ namespace PiGame.Gameplay
 
         public void ShootServer(Vector2 direction)
         {
-            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value
-                || _isReloading || _ammo.Value <= 0 || Time.time < _nextShotAt)
+            if (!IsServer || !enabled) 
             {
                 return;
             }
 
+            if( _ammo.Value <= 0)
+            {
+                if(_cowboySound != null)
+                {
+                    _cowboySound.PlayCowboyEmpty();
+                    return;
+                }
+            }
+
+            if(!_playerState.CanAct || _isRolling.Value || _isReloading || Time.time < _nextShotAt)
+            {
+                return;
+            }
+            
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
                 ? direction.normalized
                 : Vector2.right;
@@ -176,6 +196,11 @@ namespace PiGame.Gameplay
                 OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
 
             _ammo.Value--;
+
+            if(_cowboySound != null)
+            {
+                _cowboySound.PlayCowboyShoot();
+            }
             _nextShotAt = Time.time + _shotCooldownSeconds;
             if (_ammo.Value == 0)
             {
@@ -200,6 +225,10 @@ namespace PiGame.Gameplay
                 return;
             }
 
+            if(_cowboySound != null)
+            {
+                _cowboySound.PlayCowboySkill();
+            }
             _ammo.Value = Mathf.Min(_maximumAmmo, _ammo.Value + 2);
             _isReloading = false;
             _rollDirectionX.Value = moveDirection.x < 0f ? -1f : 1f;

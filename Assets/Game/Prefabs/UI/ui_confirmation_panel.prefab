@@ -12,8 +12,9 @@ GameObject:
   - component: {fileID: 2110000002}
   - component: {fileID: 2110000003}
   - component: {fileID: 2110000004}
+  - component: {fileID: -2925241279235662125}
   m_Layer: 0
-  m_Name: ConfirmationPanel
+  m_Name: ui_confirmation_panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -92,6 +93,18 @@ MonoBehaviour:
   _messageText: {fileID: 2110000023}
   _confirmButton: {fileID: 2110000034}
   _cancelButton: {fileID: 2110000044}
+--- !u!114 &-2925241279235662125
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2110000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f258f69a598222e4f96a82ccd08b4e1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.UiAudioManager
 --- !u!1 &2110000010
 GameObject:
   m_ObjectHideFlags: 0
@@ -244,7 +257,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4284262617
   m_fontColor: {r: 0.85, g: 0.66, b: 0.36, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -257,7 +270,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -410,7 +423,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -428,7 +441,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2110000033}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: -2925241279235662125}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2110000035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -623,7 +648,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.35, g: 0.26, b: 0.12, a: 1}
     m_PressedColor: {r: 0.75, g: 0.45, b: 0.1, a: 1}
     m_SelectedColor: {r: 0.65, g: 0.36, b: 0.035, a: 1}
-    m_DisabledColor: {r: 0.10, g: 0.12, b: 0.14, a: 1}
+    m_DisabledColor: {r: 0.1, g: 0.12, b: 0.14, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -641,7 +666,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2110000043}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: -2925241279235662125}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2110000045
 MonoBehaviour:
   m_ObjectHideFlags: 0
