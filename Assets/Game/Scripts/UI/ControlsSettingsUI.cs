@@ -28,6 +28,7 @@ namespace PiGame.UI
 
         public bool IsVisible => enabled && _root.activeSelf;
         public bool BlocksBackShortcut => _rebind.IsCapturing
+            || (_conflictPanel != null && _conflictPanel.gameObject.activeSelf)
             || _lastRebindFinishedFrame == Time.frameCount;
 
         public event Action Closed;

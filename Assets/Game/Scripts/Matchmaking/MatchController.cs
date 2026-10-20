@@ -13,7 +13,7 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private int _killLimit = 2;
         [SerializeField] private float _respawnDelaySeconds = 2f;
-        [SerializeField] private float _resultDisplaySeconds = 3f;
+        private bool _returningToLobby;
 
         private readonly NetworkVariable<float> _remainingTime =
             new NetworkVariable<float>();
@@ -90,7 +90,7 @@ namespace PiGame.Gameplay
             _phase.Value = MatchPhase.Playing;
         }
 
-        public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition)
+        public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition, LobbyPlayerData playerData)
         {
             if (!IsServer || player == null)
             {
@@ -103,9 +103,7 @@ namespace PiGame.Gameplay
 
             if (FindScoreIndex(player.OwnerClientId) < 0)
             {
-                _scores.Add(new MatchPlayerScoreData(
-                    player.OwnerClientId,
-                    player.PlayerSlot));
+                _scores.Add(new MatchPlayerScoreData(playerData));
             }
         }
 
@@ -139,7 +137,7 @@ namespace PiGame.Gameplay
 
                 if (score.Kills >= _killLimit)
                 {
-                    StartCoroutine(FinishMatch(score.PlayerSlot));
+                    FinishMatch(score.PlayerSlot);
                     return;
                 }
             }
@@ -183,14 +181,14 @@ namespace PiGame.Gameplay
                 }
             }
 
-            StartCoroutine(FinishMatch(tied ? -1 : winningSlot));
+            FinishMatch(tied ? -1 : winningSlot);
         }
 
-        private IEnumerator FinishMatch(int winningPlayerSlot)
+        private void FinishMatch(int winningPlayerSlot)
         {
             if (_phase.Value != MatchPhase.Playing)
             {
-                yield break;
+                return;
             }
 
             _sceneOSTManager?.PlayVictoryOST();
@@ -205,10 +203,18 @@ namespace PiGame.Gameplay
                     player.SetMatchActiveServer(false);
                 }
             }
+        }
 
-            yield return new WaitForSeconds(_resultDisplaySeconds);
+        public bool ReturnToLobbyServer()
+        {
+            if (!IsServer || _phase.Value != MatchPhase.ShowingResult || _returningToLobby) return false;
+            _returningToLobby = true;
+            if (NetworkManager.SceneManager.LoadScene("scene_lobby", LoadSceneMode.Single)
+                == SceneEventProgressStatus.Started) return true;
 
-            NetworkManager.SceneManager.LoadScene("scene_lobby", LoadSceneMode.Single);
+            _returningToLobby = false;
+            Debug.LogError("Não foi possível retornar a sala ao lobby.", this);
+            return false;
         }
 
         private void HandleClientDisconnected(ulong clientId)
@@ -228,7 +234,8 @@ namespace PiGame.Gameplay
             _spawnPositions.Remove(clientId);
 
             int scoreIndex = FindScoreIndex(clientId);
-            if (scoreIndex >= 0)
+            // Depois do encerramento, a tela mantém o placar final mesmo se alguém sair.
+            if (scoreIndex >= 0 && _phase.Value != MatchPhase.ShowingResult)
             {
                 _scores.RemoveAt(scoreIndex);
             }
@@ -243,7 +250,7 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            StartCoroutine(FinishMatch(_scores[0].PlayerSlot));
+            FinishMatch(_scores[0].PlayerSlot);
         }
 
         private int FindScoreIndex(ulong clientId)

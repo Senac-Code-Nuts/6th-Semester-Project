@@ -62,6 +62,7 @@ namespace PiGame.Sound
             Instance = this;
             _sfxBaseVolume = sfxSource.volume;
             _ostBaseVolume = ostSource.volume;
+            RegisterMixer();
 
             foreach (var item in sfxList)
             {
@@ -79,6 +80,13 @@ namespace PiGame.Sound
         public override void OnNetworkSpawn()
         {
             Instance = this;
+            RegisterMixer();
+        }
+
+        private void RegisterMixer()
+        {
+            GameAudioSettings.UseMixer(ostSource != null
+                ? ostSource.outputAudioMixerGroup?.audioMixer : null);
         }
 
         public void PlaySFX(SFXList sfx)
