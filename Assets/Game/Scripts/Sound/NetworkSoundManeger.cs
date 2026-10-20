@@ -49,9 +49,6 @@ namespace PiGame.Sound
         private Coroutine _sfxFadeRoutine;
         private Coroutine _ostFadeRoutine;
 
-        private float _sfxBaseVolume;
-        private float _ostBaseVolume;
-
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -60,8 +57,6 @@ namespace PiGame.Sound
                 return;
             }
             Instance = this;
-            _sfxBaseVolume = sfxSource.volume;
-            _ostBaseVolume = ostSource.volume;
             RegisterMixer();
 
             foreach (var item in sfxList)
@@ -92,71 +87,66 @@ namespace PiGame.Sound
         public void PlaySFX(SFXList sfx, float volume = 0.2f)
         {
             if (Instance == null) return;
-            sfxSource.volume = volume;
-            Instance.SendSFXServerRpc(sfx);
+            Instance.SendSFXServerRpc(sfx, Mathf.Clamp01(volume));
         }
 
         public void LocalSFX(SFXList sfx, float volume = 0.2f)
         {
             if(Instance == null) return;
-            sfxSource.volume = volume;
-            Instance.PlaySFXLocal(sfx);
+            Instance.PlaySFXLocal(sfx, Mathf.Clamp01(volume));
         }
 
-        public void PlayOST(OSTList ost, float volume = 0.5f)
+        public void PlayOST(OSTList ost, float volume = 0.3f)
         {
             if (Instance == null) return;
-            ostSource.volume = volume;
-            Instance.SendOSTServerRpc(ost);
+            Instance.SendOSTServerRpc(ost, Mathf.Clamp01(volume));
         }
 
-        public void LocalOST(OSTList ost, float volume = 0.5f)
+        public void LocalOST(OSTList ost, float volume = 0.3f)
         {
             if(Instance == null) return;
-            ostSource.volume = volume;
-            Instance.PlayOSTLocal(ost);
+            Instance.PlayOSTLocal(ost, Mathf.Clamp01(volume));
         }
 
         #region RPC do SFX
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void SendSFXServerRpc(SFXList sfx)
+        private void SendSFXServerRpc(SFXList sfx, float volume)
         {
-            SendSFXClientRpc(sfx);
+            SendSFXClientRpc(sfx, volume);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void SendSFXClientRpc(SFXList sfx)
+        private void SendSFXClientRpc(SFXList sfx, float volume)
         {
-            PlaySFXLocal(sfx);
+            PlaySFXLocal(sfx, volume);
         }
         #endregion
 
         #region Rpc do OST
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void SendOSTServerRpc(OSTList ost)
+        private void SendOSTServerRpc(OSTList ost, float volume)
         {
-            SendOSTClientRpc(ost);
+            SendOSTClientRpc(ost, volume);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void SendOSTClientRpc(OSTList ost)
+        private void SendOSTClientRpc(OSTList ost, float volume)
         {
-            PlayOSTLocal(ost);
+            PlayOSTLocal(ost, volume);
         }
         #endregion
 
         #region Execu��o Local
-        private void PlaySFXLocal(SFXList sfx)
+        private void PlaySFXLocal(SFXList sfx, float volume)
         {
-            if (_sfxDict.TryGetValue(sfx, out SoundData clip))
+            if (_sfxDict.TryGetValue(sfx, out SoundData sound))
             {
-                //sfxSource.PlayOneShot(clip);
                 if(_sfxFadeRoutine != null)
                 {
                     StopCoroutine(_sfxFadeRoutine);
                 }
 
-                _sfxFadeRoutine = StartCoroutine(PlaySFXWithFade(clip));
+                _sfxFadeRoutine = StartCoroutine(PlaySFXWithFade(sound, volume));
             }
             else
             {
@@ -164,16 +154,16 @@ namespace PiGame.Sound
             }
         }
 
-        private void PlayOSTLocal(OSTList ost)
+        private void PlayOSTLocal(OSTList ost, float volume)
         {
-            if (_ostDict.TryGetValue(ost, out MusicData clip))
+            if (_ostDict.TryGetValue(ost, out MusicData music))
             {
                 if(_ostFadeRoutine != null)
                 {
                     StopCoroutine(_ostFadeRoutine);
                 }
 
-                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(clip));
+                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(music, volume));
             }
             else
             {
@@ -181,25 +171,38 @@ namespace PiGame.Sound
             }
         }
 
-        private IEnumerator PlaySFXWithFade(SoundData sound)
+        private IEnumerator PlaySFXWithFade(SoundData sound, float targetVolume)
         {
+            if (sound.clip == null)
+            {
+                _sfxFadeRoutine = null;
+                yield break;
+            }
+
             sfxSource.volume = 0f;
             sfxSource.PlayOneShot(sound.clip);
 
-            yield return FadeVolume(sfxSource, 0f,_sfxBaseVolume, sound.fadeInSeconds);
+            yield return FadeVolume(sfxSource, 0f, targetVolume, sound.fadeInSeconds);
 
-            float remainingTime = Mathf.Max(0f, sound.clip.length - sound.fadeInSeconds - sound.fadeOutSeconds);
+            float fadeOutStart = Mathf.Max(sound.fadeInSeconds, sound.clip.length - sound.fadeOutSeconds);
+            float remainingTime = Mathf.Max(0f, fadeOutStart - sound.fadeInSeconds);
 
-            yield return new WaitForSeconds(remainingTime);
+            yield return new WaitForSecondsRealtime(remainingTime);
 
-            yield return FadeVolume(sfxSource, _sfxBaseVolume, 0f, sound.fadeOutSeconds);
+            yield return FadeVolume(sfxSource, targetVolume, 0f, sound.fadeOutSeconds);
 
-            sfxSource.volume = _sfxBaseVolume;
+            sfxSource.volume = targetVolume;
             _sfxFadeRoutine = null;
         }
 
-        private IEnumerator PlayOSTWithFade(MusicData music)
+        private IEnumerator PlayOSTWithFade(MusicData music, float targetVolume)
         {
+            if (music.clip == null)
+            {
+                _ostFadeRoutine = null;
+                yield break;
+            }
+
             if(ostSource.isPlaying)
             {
                 yield return FadeVolume(ostSource, ostSource.volume, 0f, music.fadeOutSeconds);
@@ -212,7 +215,7 @@ namespace PiGame.Sound
             ostSource.volume = 0f;
             ostSource.Play();
 
-            yield return FadeVolume(ostSource, 0f, _ostBaseVolume, music.fadeInSeconds);
+            yield return FadeVolume(ostSource, 0f, targetVolume, music.fadeInSeconds);
 
             _ostFadeRoutine = null;
         }
