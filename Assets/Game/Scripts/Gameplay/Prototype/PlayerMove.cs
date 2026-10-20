@@ -368,6 +368,8 @@ namespace PiGame.Gameplay
             Collider2D platform = _groundHit.collider;
             if (!IsOneWayPlatform(platform)) return;
 
+            _playerSound?.PlayDownPlatform();
+
             ResetCrouch();
             BeginPlatformPassThrough(platform,
                 _groundHit.point + Vector2.down * Physics2D.defaultContactOffset, false);
@@ -406,6 +408,9 @@ namespace PiGame.Gameplay
             {
                 RaycastHit2D hit = _platformHits[i];
                 if (hit.normal.y >= -0.5f || !IsOneWayPlatform(hit.collider)) continue;
+
+                _playerSound?.PlayUpPlatform();
+
                 BeginPlatformPassThrough(hit.collider,
                     hit.point + Vector2.up * Physics2D.defaultContactOffset, true);
                 break;

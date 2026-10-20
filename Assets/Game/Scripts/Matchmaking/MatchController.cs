@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using PiGame.Lobby;
+using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -36,9 +37,12 @@ namespace PiGame.Gameplay
         public int KillLimit => _killLimit;
         public int ScoreCount => _scores != null ? _scores.Count : 0;
 
+        private SceneOSTManager _sceneOSTManager;
+
         private void Awake()
         {
             _scores = new NetworkList<MatchPlayerScoreData>();
+            _sceneOSTManager = FindFirstObjectByType<SceneOSTManager>();
         }
 
         public override void OnNetworkSpawn()
@@ -188,6 +192,8 @@ namespace PiGame.Gameplay
             {
                 yield break;
             }
+
+            _sceneOSTManager?.PlayVictoryOST();
 
             _winningPlayerSlot.Value = winningPlayerSlot;
             _phase.Value = MatchPhase.ShowingResult;

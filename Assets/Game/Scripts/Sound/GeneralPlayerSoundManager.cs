@@ -28,6 +28,16 @@ namespace PiGame.Sound
         {
             NetworkSoundManager.Instance.PlaySFX(SFXList.PlayerRespawn);
         }
+
+        public void PlayDownPlatform()
+        {
+            NetworkSoundManager.Instance.PlaySFX(SFXList.DownPlatform);
+        }
+
+        public void PlayUpPlatform()
+        {
+            NetworkSoundManager.Instance.PlaySFX(SFXList.UpPlatform);
+        }
     }
     
 }

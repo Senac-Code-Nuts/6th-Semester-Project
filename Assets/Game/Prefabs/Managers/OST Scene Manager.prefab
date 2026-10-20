@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &6244185062561848235
+--- !u!1 &4986482872561809570
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 19849627309501445}
-  - component: {fileID: 7535128270460876871}
+  - component: {fileID: 7513078691831894693}
+  - component: {fileID: 9009064476786970562}
   m_Layer: 0
-  m_Name: EnviromentAudioManager
+  m_Name: OST Scene Manager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &19849627309501445
+--- !u!4 &7513078691831894693
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6244185062561848235}
+  m_GameObject: {fileID: 4986482872561809570}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,15 +32,16 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7535128270460876871
+--- !u!114 &9009064476786970562
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6244185062561848235}
+  m_GameObject: {fileID: 4986482872561809570}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1574c0f215bdcd84d889bff47bcd212d, type: 3}
+  m_Script: {fileID: 11500000, guid: b76abcb90d4b30748a902dcf7431e0a2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.EnviromentSoundManager
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.SceneOSTManager
+  _sceneOst: 0

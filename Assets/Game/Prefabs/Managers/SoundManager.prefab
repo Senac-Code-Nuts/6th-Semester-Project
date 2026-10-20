@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4006005954
+  GlobalObjectIdHash: 1805117967
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -194,11 +194,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 743aaa31e9f4a964d845d75997fd602a, type: 3}
     fadeInSeconds: 0
     fadeOutSeconds: 0
-  ostList:
-  - ostType: 0
-    clip: {fileID: 8300000, guid: 902e173127cc8f54aace6a39e1cc1818, type: 3}
-    fadeInSeconds: 0
-    fadeOutSeconds: 0
+  ostList: []
 --- !u!1 &412281090290135861
 GameObject:
   m_ObjectHideFlags: 0

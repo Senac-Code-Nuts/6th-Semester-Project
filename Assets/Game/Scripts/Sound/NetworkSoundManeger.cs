@@ -9,7 +9,7 @@ namespace PiGame.Sound
     StuckNail, ShootNail, IrrigadorPull, IrrigadorSkill, DeserticoRoll, DeserticoShot, DeserticoEmpty, DeserticoReload, RebeldeBounce, RebeldeCatch, RebeldeEmpty, RebeldeSkill,
     RebeldeShot, FumaceiroEmpty, FumaceiroCatch, FumaceiroThrow, FumaceiroSkill, PlayerRespawn
         }
-    public enum OSTList { OST1, OST2, OST3 }
+    public enum OSTList { Battle_Desertico, Battle_Fumaceiro, Battle_Irrigador, Battle_Rebelde, Battle_Vitoria, Menu_Titulo, Menu_Screens }
 
     public class NetworkSoundManager : NetworkBehaviour
     {
@@ -156,10 +156,6 @@ namespace PiGame.Sound
         {
             if (_ostDict.TryGetValue(ost, out MusicData clip))
             {
-                /*ostSource.clip = clip;
-                ostSource.loop = true;
-                ostSource.Play();*/
-
                 if(_ostFadeRoutine != null)
                 {
                     StopCoroutine(_ostFadeRoutine);
