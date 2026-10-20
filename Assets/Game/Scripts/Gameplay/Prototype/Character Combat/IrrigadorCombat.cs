@@ -33,7 +33,9 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _abilityPullSpeed = 25f;
 
         private readonly List<IrrigadorProjectile> _abilityTargets = new();
+        private readonly List<Collider2D> _abilityHits = new(8);
         private bool _abilityActive;
+        private Vector2 _abilityAimDirection;
 
         private IrrigadorProjectile _magnetTarget;
         private bool _magnetActive;
@@ -43,6 +45,7 @@ namespace PiGame.Gameplay
         private IrrigadorSoundManager _irrigadorSound;
 
         private float _nextShotTime;
+        private readonly List<IrrigadorProjectile> _activeProjectiles = new();
 
         private void Awake()
         {
@@ -72,6 +75,12 @@ namespace PiGame.Gameplay
             _nails.OnValueChanged -= HandleNailsChanged;
             _playerState.StateChanged -= RefreshNailIndicators;
             _nailIndicators.SetCount(0, false, _playerState.IndicatorColor);
+
+            //Limpa quando o jogador desconectar do jogo
+            if (IsServer)
+            {
+                _activeProjectiles.Clear();
+            }
         }
 
         private void HandleNailsChanged(int previousValue, int currentValue)
@@ -114,6 +123,8 @@ namespace PiGame.Gameplay
             if(irrigadorProjectile != null)
             {
                 irrigadorProjectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile, _irrigadorSound);
+                _activeProjectiles.RemoveAll(p => p == null || !p.IsSpawned);
+                _activeProjectiles.Add(irrigadorProjectile);
             }
             else
             {
@@ -129,7 +140,28 @@ namespace PiGame.Gameplay
                 StopMagnetServer();
             }
         }
+        public void RefillAmmoServer()
+        {
+            if (!IsServer) return;
+            _nails.Value = _maxNails;
+        }
 
+        public void ClearProjectilesServer()
+        {
+            if (!IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                return;
+
+            _activeProjectiles.RemoveAll(p => p == null || !p.IsSpawned);
+
+            foreach (var proj in _activeProjectiles)
+            {
+                if (proj != null && proj.IsSpawned)
+                {
+                    proj.NetworkObject.Despawn(true);
+                }
+            }
+            _activeProjectiles.Clear();
+        }
         public void AddNailServer()
         {
             if(!IsServer)
@@ -249,15 +281,14 @@ namespace PiGame.Gameplay
                 toTarget.normalized * _magnetSpeed;
         }
 
-        private List<IrrigadorProjectile> FindAbilityTargets(Vector2 aimDirection)
+        private void RefreshAbilityTargets()
         {
-            List<IrrigadorProjectile> targets = new();
+            Physics2D.OverlapCircle(transform.position, _abilityRadius,
+                new ContactFilter2D { useTriggers = true }, _abilityHits);
 
-            Collider2D[] hits = Physics2D.OverlapCircleAll (transform.position, _abilityRadius);
+            Vector2 normalizedAim = _abilityAimDirection;
 
-            Vector2 normalizedAim = aimDirection.normalized;
-
-            foreach(Collider2D hit in hits)
+            foreach(Collider2D hit in _abilityHits)
             {
                 IrrigadorProjectile nail = hit.GetComponentInParent<IrrigadorProjectile>();
 
@@ -268,6 +299,8 @@ namespace PiGame.Gameplay
                     continue;
                 if(nail.ShooterClientId != OwnerClientId)
                     continue;
+                if(_abilityTargets.Contains(nail))
+                    continue;
                     
                 Vector2 toNail = ((Vector2)nail.transform.position - (Vector2)transform.position).normalized;
 
@@ -276,10 +309,8 @@ namespace PiGame.Gameplay
                 if(alignment < _abilityAimThreshold)
                     continue;
                 
-                targets.Add(nail);
+                _abilityTargets.Add(nail);
             }
-
-            return targets;
         }
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
@@ -291,14 +322,9 @@ namespace PiGame.Gameplay
                 return;
             
             _abilityTargets.Clear();
-
-            List<IrrigadorProjectile> targets = FindAbilityTargets(aimDirection);
-
-            if(targets.Count == 0)
-                return;
-
-            _abilityTargets.AddRange(targets);
+            _abilityAimDirection = aimDirection.normalized;
             _abilityActive = true;
+            RefreshAbilityTargets();
         }
 
         private void UpdateAbilityServer()
@@ -306,7 +332,16 @@ namespace PiGame.Gameplay
             if(!_abilityActive)
                 return;
 
-            if(_irrigadorSound != null)
+            if(!_playerState.CanAct)
+            {
+                EndAbilityServer(_abilityAimDirection, Vector2.zero);
+                return;
+            }
+
+            // Incluir também os pregos que fincam depois de apertar a habilidade.
+            RefreshAbilityTargets();
+
+            if(_abilityTargets.Count > 0 && _irrigadorSound != null)
             {
                 _irrigadorSound.PlayIrrigadorSkill();
             }
@@ -327,11 +362,6 @@ namespace PiGame.Gameplay
                     continue;
                 
                 nail.PullServer(toPlayer.normalized, _abilityPullSpeed,true);
-            }
-
-            if(_abilityTargets.Count == 0)
-            {
-                _abilityActive = false;
             }
         }
 

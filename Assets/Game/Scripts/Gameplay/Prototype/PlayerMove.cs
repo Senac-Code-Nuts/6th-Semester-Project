@@ -36,6 +36,9 @@ namespace PiGame.Gameplay
         [SerializeField] private LayerMask _wallLayer;
         [SerializeField] private float _wallStickTime = 0.5f;
         [SerializeField] private float _wallSlideSpeed = 3f;
+        
+        [Header("Fall")]
+        [SerializeField] private float _fallMultiplier = 2.0f;
 
         [Header("Wall Jump")]
         [SerializeField] private float _wallJumpHorizontalForce = 10f;
@@ -170,8 +173,17 @@ namespace PiGame.Gameplay
             HandleMovement();
             HandleWallSlide();
             HandleJump(jumpPressed, jumpReleased);
+            ApplyExtraFallGravity();
         }
-
+        private void ApplyExtraFallGravity()
+        {
+            // Gravidade basica da untiy: 1f
+            // basico + (_fallMultiplier - 1f) = 2.0f
+            if (_rigidbody.linearVelocity.y < 0f && !_isWallSliding)
+            {
+                _rigidbody.linearVelocity += Vector2.up * Physics2D.gravity.y * (_fallMultiplier - 1f) * Time.fixedDeltaTime;
+            }
+        }
         public void SetGameplayInputBlocked(bool isBlocked)
         {
             if (!IsOwner) return;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using PiGame.Sound;
@@ -30,7 +31,8 @@ namespace PiGame.Gameplay
         private Collider2D _projectileCollider;
         private BoxCollider2D _tipBox;
         private IrrigadorSoundManager _ownerSound;
-        private readonly Collider2D[] _collectionHits = new Collider2D[8];
+        private readonly List<Collider2D> _collectionHits = new(8);
+        private readonly List<RaycastHit2D> _collectionCastHits = new(8);
 
         public bool _abilityPull;
         private bool _beingPulled;
@@ -101,8 +103,8 @@ namespace PiGame.Gameplay
 
             Vector2 movement = direction * speed * Time.deltaTime;
 
-            if (_beingPulled && TryCollectOwner())
-                return;
+            if (_beingPulled)
+                Physics2D.SyncTransforms();
 
             Vector2 scale = _tipBox.transform.lossyScale;
             Vector2 tipSize = Vector2.Scale(_tipBox.size,
@@ -116,15 +118,22 @@ namespace PiGame.Gameplay
                 _surfaceLayer
             );
 
-            if (hit.collider != null)
+            bool blockedBySurface = hit.collider != null
+                && (!_beingPulled || hit.collider != _stuckSurface);
+
+            // Verificar também o trajeto evita atravessar o dono entre dois frames.
+            Vector2 collectionMovement = blockedBySurface
+                ? movement.normalized * hit.distance
+                : movement;
+            if (_beingPulled && TryCollectOwner(collectionMovement))
+                return;
+
+            if (blockedBySurface)
             {
-                if (!_beingPulled || hit.collider != _stuckSurface)
-                {
-                    transform.position += (Vector3)(movement.normalized * hit.distance
-                        + hit.normal * Physics2D.defaultContactOffset);
-                    HandleTipSurfaceContact(hit.collider);
-                    return;
-                }
+                transform.position += (Vector3)(movement.normalized * hit.distance
+                    + hit.normal * Physics2D.defaultContactOffset);
+                HandleTipSurfaceContact(hit.collider);
+                return;
             }
 
             transform.position += (Vector3)movement;
@@ -250,41 +259,50 @@ namespace PiGame.Gameplay
             }
         }
 
-        private bool TryCollectOwner()
+        private bool TryCollectOwner(Vector2 movement)
         {
             ContactFilter2D filter = new ContactFilter2D
             {
                 useTriggers = true
             };
 
-            int hitCount = _collectionTrigger.Overlap(
-                filter,
-                _collectionHits
-            );
+            // A lista cresce se vários pregos se sobrepõem; não descartar o dono
+            // quando os colliders dos próprios pregos ocupam os primeiros resultados.
+            int hitCount = _collectionTrigger.Overlap(filter, _collectionHits);
 
             for (int i = 0; i < hitCount; i++)
             {
-                NetworkPlayerState playerState =
-                    _collectionHits[i].GetComponentInParent<NetworkPlayerState>();
+                if (TryCollectFrom(_collectionHits[i]))
+                    return true;
+            }
 
-                if (playerState == null ||
-                    playerState.OwnerClientId != _shooterClientId)
+            if (movement.sqrMagnitude > 0f)
+            {
+                int castCount = _collectionTrigger.Cast(
+                    movement.normalized, filter, _collectionCastHits, movement.magnitude);
+                for (int i = 0; i < castCount; i++)
                 {
-                    continue;
+                    if (TryCollectFrom(_collectionCastHits[i].collider))
+                        return true;
                 }
-
-                IrrigadorCombat combat =
-                    playerState.GetComponent<IrrigadorCombat>();
-
-                if (combat == null)
-                    continue;
-
-                combat.AddNailServer();
-                NetworkObject.Despawn();
-                return true;
             }
 
             return false;
+        }
+
+        private bool TryCollectFrom(Collider2D hit)
+        {
+            NetworkPlayerState playerState = hit.GetComponentInParent<NetworkPlayerState>();
+            if (playerState == null || playerState.OwnerClientId != _shooterClientId)
+                return false;
+
+            IrrigadorCombat combat = playerState.GetComponent<IrrigadorCombat>();
+            if (combat == null)
+                return false;
+
+            combat.AddNailServer();
+            NetworkObject.Despawn();
+            return true;
         }
 
         private void StartFalling()
