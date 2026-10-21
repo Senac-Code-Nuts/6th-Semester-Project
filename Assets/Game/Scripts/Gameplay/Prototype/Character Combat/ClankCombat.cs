@@ -281,7 +281,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     {
     }
     #endregion
-
+    public void ClearProjectilesServer() { }
     private bool IsGroundedRaycast()
     {
         Collider2D col = GetComponent<Collider2D>();
@@ -349,7 +349,12 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             if (visible) _ammoIndicators[index].color = _playerState.IndicatorColor;
         }
     }
-
+    public void RefillAmmoServer()
+    {
+        if (!IsServer) return;
+        _ammo.Value = _maximumAmmo;
+        _abilityCharges.Value = _maxAbilityCharges;
+    }
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = _knockbackWireColor;

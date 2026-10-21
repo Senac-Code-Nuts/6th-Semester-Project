@@ -11,5 +11,7 @@ namespace PiGame.Gameplay
         
         void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection);
         void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection);
+        void RefillAmmoServer();
+        void ClearProjectilesServer();
     }
 }
